@@ -1,0 +1,47 @@
+import 'package:animate_do/animate_do.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:guess_game/core/theming/colors.dart';
+import 'package:guess_game/features/Intro/presentation/view/widgets/buttons_section.dart';
+import 'package:guess_game/features/Intro/presentation/view/widgets/logo_section.dart';
+
+class IntroView extends StatefulWidget {
+  const IntroView({super.key});
+
+  @override
+  State<IntroView> createState() => _IntroViewState();
+}
+
+class _IntroViewState extends State<IntroView> {
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Scaffold(
+        backgroundColor: AppColors.white,
+        body: SafeArea(
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              return FadeIn(
+                child: Center(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 120.w),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        // Logo
+                        LogoSection(constraints: constraints),
+                        SizedBox(height: constraints.maxHeight * 0.08),
+                        // Buttons
+                        ButtonsSection(constraints: constraints),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ),
+    );
+  }
+}

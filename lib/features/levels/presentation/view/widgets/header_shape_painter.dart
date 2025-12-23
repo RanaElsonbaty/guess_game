@@ -8,8 +8,8 @@ class HeaderShapePainter extends CustomPainter {
         center: Alignment.center,
         radius: 0.3,
         colors: [
-          Color(0xFF08274C).withOpacity(.3),
-          Color(0xFF08274C).withOpacity(.5),
+          Color(0xFF668899),
+          Color(0XFF617685),
         ],
         stops: [
           0.0,

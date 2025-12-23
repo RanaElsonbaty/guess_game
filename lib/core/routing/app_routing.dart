@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:guess_game/core/routing/routes.dart';
 import 'package:guess_game/features/Intro/presentation/view/intro_view.dart';
 import 'package:guess_game/features/Intro/presentation/view/start_view.dart';
+import 'package:guess_game/features/groups/presentation/view/groups_view.dart';
 import 'package:guess_game/features/levels/presentation/view/levels_view.dart';
 
 class AppRoutes {
@@ -13,6 +14,8 @@ class AppRoutes {
         return _createSmoothPageRoute(StartView());
       case Routes.level:
         return _createSmoothPageRoute(LevelsView());
+      case Routes.groups:
+        return _createSmoothPageRoute(GroupsView());
       default:
         return _createSmoothPageRoute(Container());
     }

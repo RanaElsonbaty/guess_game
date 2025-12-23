@@ -44,7 +44,7 @@ class LevelsView extends StatelessWidget {
                       // AppColors.black.withOpacity(.3),
                       //AppColors.black.withOpacity(.3),
                      // AppColors.black.withOpacity(.3),
-                      AppColors.black.withOpacity(.3),
+                      Color(0XFF8e8e8e),
                       AppColors.black.withOpacity(.2),
                       Colors.white.withOpacity(.5),
                     ],
@@ -65,7 +65,7 @@ class LevelsView extends StatelessWidget {
               ),
               Positioned(
                 top: -13,
-                left: 30,
+                left: 25,
                 child: Text(
                   'الفئات',
                   style: TextStyles.font14Secondary700Weight,

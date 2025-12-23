@@ -28,7 +28,7 @@ void main() async {
       fallbackLocale: const Locale('en'),
       child: GuessGame(
         appRoutes: AppRoutes(),
-        initialRoute: Routes.intro,
+        initialRoute: Routes.groups,
       ),
     ),
   );

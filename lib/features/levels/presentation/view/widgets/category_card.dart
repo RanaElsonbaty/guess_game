@@ -19,7 +19,7 @@ class CategoryCard extends StatelessWidget {
       height: 200.h,
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [Color(0xFF3280E4).withOpacity(.3), Color(0xFF08274C).withOpacity(.3)],
+          colors: [ Color(0xFF79899f),Color(0xFF8b929b), Color(0xFF79899f)],
         ),
       ),
       child: Column(
@@ -31,8 +31,10 @@ class CategoryCard extends StatelessWidget {
             width: double.infinity,
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Color(0xFF3280E4).withOpacity(.5), Color(0xFF08274C).withOpacity(.5)],
+              image: DecorationImage(
+                image: AssetImage(AppImages.card),
+                fit: BoxFit.fill,
+                alignment: Alignment.topCenter,
               ),
             ),
             child: Text(

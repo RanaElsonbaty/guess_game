@@ -44,7 +44,7 @@ class _StartViewState extends State<StartView> {
                         SizedBox(height: constraints.maxHeight * 0.02),
                         // Button
                         AppButton(text: 'ابدأ اللعبه', onPressed: () {
-                          context.pushReplacementNamed(Routes.level);
+                          context.pushReplacementNamed(Routes.groups);
                         },),
                       ],
                     ),

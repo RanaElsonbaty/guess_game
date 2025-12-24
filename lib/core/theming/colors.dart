@@ -22,4 +22,8 @@ class AppColors {
   static const cardBottom = Color(0xFF6B7280);
   static const yellowButton = Color(0xFFE3B23C);
   static const buttonBorderOrange = Color(0xFFC66E00);
+
+  // ألوان الزر الأخضر الجديدة
+  static const greenButtonLight = Color(0xFF18ef00);
+  static const greenButtonDark = Color(0xFF199100);
 }

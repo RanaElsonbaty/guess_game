@@ -19,3 +19,4 @@ Place the downloaded .ttf files directly in this fonts/ folder.
 
 After adding the files, run: flutter pub get
 
+

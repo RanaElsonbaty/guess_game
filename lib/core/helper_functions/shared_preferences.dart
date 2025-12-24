@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'package:guess_game/core/helper_functions/api_constants.dart';
+import 'package:guess_game/features/auth/login/presentation/data/model/user_model.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class CacheHelper {
@@ -32,6 +34,53 @@ class CacheHelper {
 
   static Future<bool> removeToken() async {
     return await sharedPreferences.remove(ApiConstants.TOKEN);
+  }
+
+  static Future<bool> saveUserData(UserModel user) async {
+    final userJson = jsonEncode(user.toJson());
+    return await sharedPreferences.setString(ApiConstants.USER, userJson);
+  }
+
+  static UserModel? getUserData() {
+    final userJson = sharedPreferences.getString(ApiConstants.USER);
+    if (userJson != null) {
+      try {
+        final userMap = jsonDecode(userJson) as Map<String, dynamic>;
+        return UserModel.fromJson(userMap);
+      } catch (e) {
+        return null;
+      }
+    }
+    return null;
+  }
+
+  static Future<bool> saveSubscription(SubscriptionModel? subscription) async {
+    if (subscription == null) {
+      return await sharedPreferences.remove(ApiConstants.SUBSCRIPTION);
+    }
+    final subscriptionJson = jsonEncode(subscription.toJson());
+    return await sharedPreferences.setString(ApiConstants.SUBSCRIPTION, subscriptionJson);
+  }
+
+  static SubscriptionModel? getSubscription() {
+    final subscriptionJson = sharedPreferences.getString(ApiConstants.SUBSCRIPTION);
+    if (subscriptionJson != null) {
+      try {
+        final subscriptionMap = jsonDecode(subscriptionJson) as Map<String, dynamic>;
+        return SubscriptionModel.fromJson(subscriptionMap);
+      } catch (e) {
+        return null;
+      }
+    }
+    return null;
+  }
+
+  static Future<bool> removeUserData() async {
+    return await sharedPreferences.remove(ApiConstants.USER);
+  }
+
+  static Future<bool> removeSubscription() async {
+    return await sharedPreferences.remove(ApiConstants.SUBSCRIPTION);
   }
 
   static dynamic getData({required String key}) {

@@ -2,7 +2,6 @@ import 'package:dartz/dartz.dart';
 import 'package:dio/dio.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:guess_game/core/helper_functions/api_constants.dart';
-import 'package:guess_game/core/helper_functions/shared_preferences.dart';
 import 'package:guess_game/core/network/api_failure.dart';
 import 'package:guess_game/guess_game.dart';
 
@@ -25,7 +24,8 @@ class ApiService {
       InterceptorsWrapper(
         onRequest: (options, handler) {
           // Add Authorization token
-          final token = CacheHelper.getToken();
+          final token ='14|Ewe1UYOresza8dU16g9WW9oKUy7zzi4OAte3PSCU7bc10157';
+          //CacheHelper.getToken();
           if (token != null && token.isNotEmpty) {
             options.headers['Authorization'] = 'Bearer $token';
           }

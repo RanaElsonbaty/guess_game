@@ -6,7 +6,6 @@ import 'package:guess_game/core/helper_functions/extension.dart';
 import 'package:guess_game/core/routing/routes.dart';
 import 'package:guess_game/core/theming/colors.dart';
 import 'package:guess_game/core/theming/fonts.dart';
-import 'package:guess_game/core/theming/styles.dart';
 import 'package:guess_game/core/widgets/app_button.dart';
 import 'package:guess_game/features/Intro/presentation/view/widgets/logo_section.dart';
 
@@ -44,7 +43,7 @@ class _StartViewState extends State<StartView> {
                         SizedBox(height: constraints.maxHeight * 0.02),
                         // Button
                         AppButton(text: 'ابدأ اللعبه', onPressed: () {
-                          context.pushReplacementNamed(Routes.groups);
+                          context.pushReplacementNamed(Routes.level);
                         },),
                       ],
                     ),

@@ -1,6 +1,6 @@
 class ApiConstants {
-  static const String APP_NAME = 'almaghsala';
-  static const String BASE_URL = 'https://washing-cars.storage-te.com/api';
+  static const String APP_NAME = 'Guess Game';
+  static const String BASE_URL = 'https://my-bus.storage-te.com/api/v1';
   static const String IMAGE_URL = 'https://lay6ofk.com/uploads/advimage/';
   static const String USER_ID = 'userId';
   static const String IS_VERIFIED = 'isVerified';
@@ -10,11 +10,13 @@ class ApiConstants {
 
 
   static const String services = '/services';
+  static const String categories = '/categories';
 
   // sharePreference
   static const String TOKEN = 'token';
   static const String USER = 'user';
   static const String USER_EMAIL = 'user_email';
+  static const String SUBSCRIPTION = 'subscription';
   static const String USER_NAME = 'user_name';
   static const String USER_PHONE = 'user_phone';
   static const String USER_Image = 'user_image';

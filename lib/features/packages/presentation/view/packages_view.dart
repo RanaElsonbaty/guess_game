@@ -23,7 +23,84 @@ class PackagesView extends StatefulWidget {
   State<PackagesView> createState() => _PackagesViewState();
 }
 
-class _PackagesViewState extends State<PackagesView> {
+class _PackagesViewState extends State<PackagesView> with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      // عند العودة للتطبيق، تحقق من البيانات
+      _checkSubscriptionAndNavigate();
+    }
+  }
+
+  Future<void> _checkSubscriptionAndNavigate() async {
+    print('🔍 فحص حالة الاشتراك بعد العودة من الدفع...');
+
+    // انتظار قليلاً لضمان تحديث البيانات
+    await Future.delayed(const Duration(milliseconds: 500));
+
+    // إعادة تحميل بيانات المستخدم من API
+    try {
+      final authCubit = getIt<AuthCubit>();
+      await authCubit.getProfile();
+
+      await Future.delayed(const Duration(milliseconds: 100));
+
+      final authState = authCubit.state;
+      if (authState is ProfileLoaded) {
+        final user = authState.user;
+
+        // تحديث GlobalStorage
+        GlobalStorage.user = user;
+        GlobalStorage.subscription = user.subscription;
+
+        print('✅ تم تحديث بيانات المستخدم بعد الدفع:');
+        print('  - User: ${user.name}');
+        print('  - Subscription: ${user.subscription}');
+
+        if (user.subscription != null) {
+          print('  - Status: ${user.subscription!.status}');
+          print('  - Used: ${user.subscription!.used}');
+          print('  - Limit: ${user.subscription!.limit}');
+
+          // حساب المتبقي
+          final remaining = (user.subscription!.limit ?? 0) - (user.subscription!.used ?? 0);
+          print('  - Remaining: $remaining');
+
+          // التحقق من التوجيه
+          if (user.subscription!.status == 'expired') {
+            print('🎯 الاشتراك منتهي الصلاحية - البقاء في صفحة الباقات');
+            // البقاء في packages_view
+          } else if (remaining > 0) {
+            print('🎯 الاشتراك نشط ولديه أسئلة متبقية - الانتقال إلى TeamCategoriesFirstTeamView');
+            if (mounted) {
+              Navigator.of(context).pushReplacementNamed(
+                Routes.teamCategories,
+                arguments: {'limit': user.subscription!.limit ?? 4},
+              );
+            }
+          } else {
+            print('🎯 الاشتراك نشط لكن انتهت الأسئلة - البقاء في صفحة الباقات');
+            // البقاء في packages_view
+          }
+        }
+      }
+    } catch (e) {
+      print('❌ خطأ في فحص البيانات بعد الدفع: $e');
+    }
+  }
+
   Future<void> _subscribeToPackage(Package package) async {
     try {
       // إظهار رسالة تحميل
@@ -75,78 +152,6 @@ class _PackagesViewState extends State<PackagesView> {
         );
       }
     }
-  }
-
-  Future<void> _refreshProfileAfterPayment() async {
-    try {
-      print('🔄 إعادة جلب profile بعد الدفع...');
-      final authCubit = getIt<AuthCubit>();
-      await authCubit.getProfile();
-
-      // انتظار تحديث البيانات
-      await Future.delayed(const Duration(milliseconds: 500));
-
-      final authState = authCubit.state;
-      if (authState is ProfileLoaded) {
-        final user = authState.user;
-        // تحديث GlobalStorage بالبيانات الجديدة
-        GlobalStorage.user = user;
-        GlobalStorage.subscription = user.subscription;
-
-        // حفظ البيانات في التخزين المحلي
-        await GlobalStorage.saveUserData(user);
-        await GlobalStorage.saveSubscription(user.subscription);
-
-        print('✅ تم تحديث subscription بعد الدفع:');
-        print('  - Subscription: ${GlobalStorage.subscription}');
-        if (GlobalStorage.subscription != null) {
-          print('  - Status: ${GlobalStorage.subscription!.status}');
-          print('  - Limit: ${GlobalStorage.subscription!.limit}');
-        }
-
-        // الانتقال لصفحة فئات الفريق إذا كان هناك اشتراك نشط
-        print('🔍 فحص الاشتراك بعد إعادة التحميل:');
-        print('  - GlobalStorage.subscription: ${GlobalStorage.subscription}');
-        if (GlobalStorage.subscription != null) {
-          print('  - Subscription status: ${GlobalStorage.subscription!.status}');
-          print('  - Subscription limit: ${GlobalStorage.subscription!.limit}');
-        }
-
-        if (GlobalStorage.subscription != null && mounted) {
-          if (GlobalStorage.subscription!.status == 'active') {
-            print('🚀 الانتقال لصفحة TeamCategoriesView (فئات الفريق الأول) - اشتراك نشط...');
-            print('   📋 الحد المسموح: ${GlobalStorage.subscription!.limit ?? 4} فئة');
-            Navigator.of(context).pushReplacementNamed(
-              Routes.teamCategories,
-              arguments: GlobalStorage.subscription!.limit ?? 0,
-            );
-          } else {
-            print('⚠️ الاشتراك منتهي الصلاحية، البقاء في صفحة الباقات للتجديد');
-            // يمكن إضافة رسالة للمستخدم هنا
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('انتهت صلاحية اشتراكك. يرجى تجديد الاشتراك.'),
-                backgroundColor: Colors.orange,
-                duration: Duration(seconds: 3),
-              ),
-            );
-          }
-        } else {
-          print('⚠️ لا يوجد اشتراك، البقاء في صفحة الباقات');
-        }
-      }
-    } catch (e) {
-      print('❌ خطأ في إعادة جلب profile: $e');
-    }
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    // إعادة جلب profile عند فتح صفحة الباقات (بعد العودة من الدفع)
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _refreshProfileAfterPayment();
-    });
   }
 
   @override

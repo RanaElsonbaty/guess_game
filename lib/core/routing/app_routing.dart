@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:guess_game/core/helper_functions/global_storage.dart';
 import 'package:guess_game/core/injection/service_locator.dart';
 import 'package:guess_game/core/routing/routes.dart';
 import 'package:guess_game/features/Intro/presentation/view/intro_view.dart';
@@ -20,7 +21,10 @@ import 'package:guess_game/features/packages/presentation/cubit/packages_cubit.d
 import 'package:guess_game/features/packages/presentation/view/packages_view.dart';
 import 'package:guess_game/features/packages/presentation/view/team_categories_second_team_view.dart';
 import 'package:guess_game/features/packages/presentation/view/team_categories_view.dart';
+import 'package:guess_game/features/game/presentation/cubit/game_cubit.dart';
 import 'package:guess_game/features/game_level/presentation/view/game_level_view.dart';
+import 'package:guess_game/features/qrcode/presentation/view/qrcode_view.dart';
+import 'package:guess_game/guess_game.dart';
 
 class AppRoutes {
   Route generateRoute(RouteSettings routeSettings) {
@@ -65,7 +69,12 @@ class AppRoutes {
           ),
         );
       case Routes.groups:
-        return _createSmoothPageRoute(GroupsView());
+        return _createSmoothPageRoute(
+          BlocProvider<GameCubit>(
+            create: (context) => getIt<GameCubit>(),
+            child: GroupsView(),
+          ),
+        );
       case Routes.packages:
         return _createSmoothPageRoute(
           BlocProvider<PackagesCubit>(
@@ -76,16 +85,30 @@ class AppRoutes {
       case Routes.teamCategories:
         print('📋 AppRoutes: تم استدعاء teamCategories (الفريق الأول)');
         print('📋 routeSettings.arguments: ${routeSettings.arguments}');
+        print('📋 GuessGame.globalInitialArguments: ${GuessGame.globalInitialArguments}');
 
-        // دعم كلا الطريقتين: int (من main.dart) أو Map (من pushNamed)
+        // دعم كلا الطريقتين: int (من main.dart) أو Map (من pushNamed أو globalInitialArguments)
         int limit;
         if (routeSettings.arguments is Map<String, dynamic>) {
           final args = routeSettings.arguments as Map<String, dynamic>;
           limit = args['limit'] as int? ?? 0;
-          print('📋 تم قراءة limit من Map: $limit');
+          print('📋 تم قراءة limit من routeSettings Map: $limit');
+        } else if (GuessGame.globalInitialArguments is Map<String, dynamic>) {
+          final args = GuessGame.globalInitialArguments as Map<String, dynamic>;
+          limit = args['limit'] as int? ?? 0;
+          print('📋 تم قراءة limit من globalInitialArguments Map: $limit');
         } else {
           limit = routeSettings.arguments as int? ?? 0;
           print('📋 تم قراءة limit من int: $limit');
+        }
+
+        // حساب وحساب remaining من GlobalStorage subscription
+        final userSubscription = GlobalStorage.subscription;
+        if (userSubscription != null) {
+          final remaining = (userSubscription.limit ?? 0) - (userSubscription.used ?? 0);
+          print('📋 Subscription remaining: $remaining');
+        } else {
+          print('📋 Subscription remaining: N/A (no subscription data)');
         }
 
         return _createSmoothPageRoute(
@@ -133,7 +156,31 @@ class AppRoutes {
           ),
         );
       case Routes.gameLevel:
-        return _createSmoothPageRoute(GameLevelView());
+        print('🎯 AppRoutes: تم استدعاء gameLevel');
+        print('🎯 routeSettings.arguments: ${routeSettings.arguments}');
+
+        // حفظ arguments في globalInitialArguments للاستخدام في GameLevelView
+        if (routeSettings.arguments != null) {
+          GuessGame.globalInitialArguments = routeSettings.arguments;
+          print('🎯 تم حفظ arguments في globalInitialArguments: ${GuessGame.globalInitialArguments}');
+        }
+
+        return _createSmoothPageRoute(
+          const GameLevelViewWithProvider(),
+        );
+      case Routes.qrcodeView:
+        print('🎯 AppRoutes: تم استدعاء qrcodeView');
+        print('🎯 routeSettings.arguments: ${routeSettings.arguments}');
+
+        // حفظ arguments في globalInitialArguments للاستخدام في QrcodeView
+        if (routeSettings.arguments != null) {
+          GuessGame.globalInitialArguments = routeSettings.arguments;
+          print('🎯 تم حفظ arguments في globalInitialArguments: ${GuessGame.globalInitialArguments}');
+        }
+
+        return _createSmoothPageRoute(
+          const QrcodeViewWithProvider(),
+        );
       default:
         return _createSmoothPageRoute(Container());
     }

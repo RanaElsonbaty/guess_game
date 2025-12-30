@@ -4,9 +4,12 @@ import 'package:guess_game/core/network/api_failure.dart';
 import 'package:guess_game/core/network/api_service.dart';
 import 'package:guess_game/features/game/data/models/game_start_request.dart';
 import 'package:guess_game/features/game/data/models/game_start_response.dart';
+import 'package:guess_game/features/game/data/models/update_point_plan_request.dart';
+import 'package:guess_game/features/game/data/models/update_point_plan_response.dart';
 
 abstract class GameRepository {
   Future<Either<ApiFailure, GameStartResponse>> startGame(GameStartRequest request);
+  Future<Either<ApiFailure, UpdatePointPlanResponse>> updatePointPlan(UpdatePointPlanRequest request);
 }
 
 class GameRepositoryImpl implements GameRepository {
@@ -32,6 +35,27 @@ class GameRepositoryImpl implements GameRepository {
       );
     } catch (e) {
       return Left(ApiFailure('حدث خطأ أثناء بدء اللعبة: $e'));
+    }
+  }
+
+  @override
+  Future<Either<ApiFailure, UpdatePointPlanResponse>> updatePointPlan(UpdatePointPlanRequest request) async {
+    try {
+      final response = await _apiService.patch(ApiConstants.gamesRoundDataUpdatePointPlan, data: request.toJson());
+
+      return response.fold(
+        (failure) => Left(failure),
+        (success) {
+          if (success.statusCode == 200) {
+            final updateResponse = UpdatePointPlanResponse.fromJson(success.data);
+            return Right(updateResponse);
+          } else {
+            return Left(ApiFailure('فشل في تحديث point_plan'));
+          }
+        },
+      );
+    } catch (e) {
+      return Left(ApiFailure('حدث خطأ أثناء تحديث point_plan: $e'));
     }
   }
 }

@@ -4,7 +4,6 @@ import 'package:guess_game/core/injection/service_locator.dart';
 import 'package:guess_game/core/routing/routes.dart';
 import 'package:guess_game/core/theming/colors.dart';
 import 'package:guess_game/core/theming/styles.dart';
-import 'package:guess_game/core/widgets/subscription_alert_dialog.dart';
 import 'package:guess_game/features/game/data/models/game_start_request.dart';
 import 'package:guess_game/features/game/presentation/cubit/game_cubit.dart';
 import 'package:guess_game/core/widgets/group_card.dart';
@@ -35,26 +34,6 @@ class _GroupsViewState extends State<GroupsView> {
 
 
 
-  void _showGameInstructionsDialog() {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext context) {
-        return SubscriptionAlertDialog(
-          title: 'تعليمات',
-          content: 'شروط اللعبه هتتكتب هنا و هيبان فيها كل الشروط اللازمه للعبه',
-          buttonText: 'ابدأ الان',
-          onButtonPressed: () {
-            // إغلاق الحوار أولاً
-            Navigator.of(context).pop();
-
-            // بدء اللعبة من خلال GroupsView
-            _startGame();
-          },
-        );
-      },
-    );
-  }
 
   void _startGame() async {
     setState(() {
@@ -123,7 +102,14 @@ class _GroupsViewState extends State<GroupsView> {
               duration: Duration(seconds: 2),
             ),
           );
-          Navigator.of(context).pushReplacementNamed(Routes.gameLevel);
+          Navigator.of(context).pushReplacementNamed(
+            Routes.gameLevel,
+            arguments: {
+              'team1Name': GlobalStorage.team1Name,
+              'team2Name': GlobalStorage.team2Name,
+              'gameStartResponse': gameState.response,
+            },
+          );
         }
       } else if (gameState is GameStartError) {
         // فشل - عرض رسالة خطأ
@@ -256,8 +242,8 @@ class _GroupsViewState extends State<GroupsView> {
                   GlobalStorage.team1Name = _team1Controller.text.trim();
                   GlobalStorage.team2Name = _team2Controller.text.trim();
 
-                  // إظهار dialog التعليمات
-                  _showGameInstructionsDialog();
+                  // بدء اللعبة مباشرة
+                  _startGame();
                 },
                       child: Stack(
                         alignment: Alignment.center,
@@ -280,7 +266,7 @@ class _GroupsViewState extends State<GroupsView> {
                                     ),
                                   )
                                 : Text(
-                                    'ابدأ',
+                                    'التالي',
                                     style: TextStyles.font10Secondary700Weight,
                                   ),
                           ),

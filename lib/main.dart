@@ -54,20 +54,57 @@ void main() async {
 
         // Log profile data
         print('✅ Profile loaded successfully:');
-        print('  - User: ${user.name}');
+        print('  - User Name: ${user.name}');
+        print('  - User Phone: ${user.phone}');
         print('  - Subscription: ${user.subscription}');
         if (user.subscription != null) {
           print('  - Subscription status: ${user.subscription!.status}');
+          print('  - Subscription startDate: ${user.subscription!.startDate}');
+          print('  - Subscription expiresAt: ${user.subscription!.expiresAt}');
+          print('  - Subscription used: ${user.subscription!.used}');
           print('  - Subscription limit: ${user.subscription!.limit}');
+
+          // حساب المتبقي
+          final remaining = (user.subscription!.limit ?? 0) - (user.subscription!.used ?? 0);
+          print('  - Subscription remaining: $remaining');
         }
 
         // Check subscription status
         if (user.subscription != null) {
-          // User has subscription, go directly to TeamCategoriesView for team category selection
-          initialRoute = Routes.teamCategories;
-          initialArguments = {'limit': user.subscription!.limit ?? 4};
-          print('🎯 Navigation: TeamCategoriesView - فئات الفريق الأول with limit ${user.subscription!.limit ?? 4}');
-          print('   📋 المستخدم مشترك: يمكنه اختيار ${user.subscription!.limit ?? 4} فئة للفريق الأول');
+          // حساب المتبقي
+          final remaining = (user.subscription!.limit ?? 0) - (user.subscription!.used ?? 0);
+
+          // Check if subscription is expired
+          if (user.subscription!.status == 'expired') {
+            // Subscription is expired, go to packages to renew
+            initialRoute = Routes.packages;
+            print('🎯 Navigation: Packages (subscription expired) - الاشتراك منتهي الصلاحية، عرض الباقات للتجديد');
+            print('   📋 Subscription status: ${user.subscription!.status}');
+            print('   📋 Subscription startDate: ${user.subscription!.startDate}');
+            print('   📋 Subscription expiresAt: ${user.subscription!.expiresAt}');
+            print('   📋 Subscription used: ${user.subscription!.used}');
+            print('   📋 Subscription limit: ${user.subscription!.limit}');
+            print('   📋 Subscription remaining: $remaining');
+          } else {
+            // Check if user has remaining questions
+            if (remaining > 0) {
+              // User has active subscription with remaining questions, go to TeamCategoriesView
+              initialRoute = Routes.teamCategories;
+              initialArguments = {'limit': user.subscription!.limit ?? 4};
+              print('🎯 Navigation: TeamCategoriesView - فئات الفريق الأول with limit ${user.subscription!.limit ?? 4}');
+              print('   📋 المستخدم مشترك ولديه أسئلة متبقية: $remaining سؤال');
+              print('   📋 Subscription status: ${user.subscription!.status}');
+              print('   📋 Subscription remaining: $remaining');
+            } else {
+              // User has active subscription but no remaining questions, go to packages to purchase more
+              initialRoute = Routes.packages;
+              print('🎯 Navigation: Packages (no remaining questions) - انتهت الأسئلة، عرض الباقات لشراء المزيد');
+              print('   📋 المستخدم مشترك لكن انتهت الأسئلة، المتبقي: $remaining');
+              print('   📋 Subscription status: ${user.subscription!.status}');
+              print('   📋 Subscription used: ${user.subscription!.used}');
+              print('   📋 Subscription limit: ${user.subscription!.limit}');
+            }
+          }
 
           // Update GlobalStorage for consistency
           GlobalStorage.subscription = user.subscription;

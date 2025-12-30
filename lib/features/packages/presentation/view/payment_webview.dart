@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
+import 'package:guess_game/core/routing/routes.dart';
 
 class PaymentWebView extends StatefulWidget {
   final String url;
@@ -67,12 +68,15 @@ class _PaymentWebViewState extends State<PaymentWebView> {
         ),
       );
 
-      // انتظار 3 ثوانٍ ثم العودة لصفحة الباقات لتحديث البيانات
+      // انتظار 3 ثوانٍ ثم الانتقال مباشرة إلى TeamCategoriesFirstTeamView
       Future.delayed(const Duration(seconds: 3), () {
         if (mounted) {
-          // العودة مرة واحدة فقط: خروج من WebView
-          // سيتم تحديث البيانات في packages_view وسيتم الانتقال من هناك
-          Navigator.of(context).pop(); // خروج من WebView
+          // الانتقال مباشرة إلى صفحة اختيار الفئات
+          Navigator.of(context).pushNamedAndRemoveUntil(
+            Routes.teamCategories,
+            (route) => false, // إزالة جميع الصفحات السابقة من stack
+            arguments: {'limit': 20}, // قيمة افتراضية، سيتم تحديثها من API لاحقاً
+          );
         }
       });
     }

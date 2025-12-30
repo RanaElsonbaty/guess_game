@@ -47,6 +47,7 @@ class _TeamCategoriesFirstTeamViewState extends State<TeamCategoriesFirstTeamVie
         // إلغاء اختيار الفئة
         selectedCategoriesForFirstTeam.remove(categoryId);
         print('❌ إلغاء اختيار الفئة ID: $categoryId');
+        print('💡 يمكنك إعادة اختيار الفئة أو اختيار فئة أخرى');
       } else {
         // التحقق من عدم تجاوز الحد الأقصى
         if (selectedCategoriesForFirstTeam.length >= maxSelectableCategories) {
@@ -59,6 +60,7 @@ class _TeamCategoriesFirstTeamViewState extends State<TeamCategoriesFirstTeamVie
         selectedCategoriesForFirstTeam.add(categoryId);
         print('✅ اختيار الفئة ID: $categoryId');
         print('📊 التقدم: ${selectedCategoriesForFirstTeam.length}/$maxSelectableCategories');
+        print('💡 انقر مرة أخرى على الفئة لإلغاء اختيارها');
 
         // إظهار alert عند الوصول للحد الأقصى
         if (selectedCategoriesForFirstTeam.length == maxSelectableCategories) {
@@ -244,9 +246,22 @@ class _TeamCategoriesFirstTeamViewState extends State<TeamCategoriesFirstTeamVie
                   Positioned(
                     top: -13,
                     left: 25,
-                    child: Text(
-                      'فئات الفريق 01',
-                      style: TextStyles.font14Secondary700Weight,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'فئات الفريق 01',
+                          style: TextStyles.font14Secondary700Weight,
+                        ),
+                        SizedBox(height: 2),
+                        Text(
+                          'انقر للاختيار • انقر مرة أخرى لإلغاء الاختيار',
+                          style: TextStyles.font10Secondary700Weight.copyWith(
+                            color: Colors.white.withOpacity(0.8),
+                            fontSize: 10,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                   /// Close button (top right of main container)

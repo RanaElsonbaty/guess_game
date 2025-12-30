@@ -13,6 +13,7 @@ class ApiConstants {
   static const String categories = '/categories';
   static const String games = '/games';
   static const String gamesStart = '/games/start';
+  static const String gamesRoundDataUpdatePointPlan = '/games/round/data/update-point-plan';
 
   // sharePreference
   static const String TOKEN = 'token';

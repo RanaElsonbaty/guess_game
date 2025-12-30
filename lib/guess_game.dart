@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'dart:ui' as ui;
 import 'package:guess_game/core/routing/app_routing.dart';
-import 'package:guess_game/core/routing/routes.dart';
 
 class GuessGame extends StatefulWidget {
   final AppRoutes appRoutes;
@@ -17,6 +16,9 @@ class GuessGame extends StatefulWidget {
   });
   static GlobalKey<NavigatorState> navKey = GlobalKey<NavigatorState>();
 
+  // Store initial arguments globally
+  static Object? globalInitialArguments;
+
   @override
   State<GuessGame> createState() => _GuessGameState();
 }
@@ -26,16 +28,10 @@ class _GuessGameState extends State<GuessGame> {
   void initState() {
     super.initState();
 
-    // Handle initial route with arguments
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (widget.initialArguments != null && widget.initialRoute == Routes.teamCategories) {
-        // Navigate to team categories with arguments
-        Navigator.of(context).pushReplacementNamed(
-          widget.initialRoute,
-          arguments: widget.initialArguments,
-        );
-      }
-    });
+    // Store initial arguments globally
+    GuessGame.globalInitialArguments = widget.initialArguments;
+
+    print('🎯 GuessGame: تم حفظ initialArguments في globalInitialArguments: ${GuessGame.globalInitialArguments}');
   }
   @override
   Widget build(BuildContext context) {

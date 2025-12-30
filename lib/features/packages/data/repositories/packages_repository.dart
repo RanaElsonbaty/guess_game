@@ -8,6 +8,9 @@ import 'package:guess_game/features/packages/presentation/data/models/package.da
 abstract class PackagesRepository {
   /// Get all packages from API
   Future<Either<ApiFailure, List<Package>>> getPackages();
+
+  /// Subscribe to a package with payment
+  Future<Either<ApiFailure, String>> subscribeToPackage(int packageId);
 }
 
 /// Implementation of PackagesRepository using ApiService
@@ -62,6 +65,46 @@ class PackagesRepositoryImpl extends BaseRepository implements PackagesRepositor
               .toList();
 
           return packages;
+        },
+      );
+    });
+  }
+
+  @override
+  Future<Either<ApiFailure, String>> subscribeToPackage(int packageId) async {
+    return guardFuture(() async {
+      final response = await _apiService.post('/payment/subscribe-in-package', data: {
+        'package_id': packageId,
+        'payment_method': 'online',
+      });
+
+      return response.fold(
+        (failure) => throw failure,
+        (success) {
+          final data = success.data;
+          if (data == null) {
+            throw ApiFailure('No data received from server');
+          }
+
+          // Check if response has the expected structure
+          if (data is! Map<String, dynamic>) {
+            throw ApiFailure('Invalid response format');
+          }
+
+          // Check for success status
+          final isSuccess = data['success'] as bool?;
+          if (isSuccess != true) {
+            final message = data['message'] as String? ?? 'Payment failed';
+            throw ApiFailure(message);
+          }
+
+          // Extract payment URL
+          final paymentUrl = data['data'] as String?;
+          if (paymentUrl == null || paymentUrl.isEmpty) {
+            throw ApiFailure('No payment URL received');
+          }
+
+          return paymentUrl;
         },
       );
     });

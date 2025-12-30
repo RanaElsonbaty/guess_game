@@ -91,6 +91,38 @@ class CacheHelper {
     return await sharedPreferences.remove(key);
   }
 
+  static Future<bool> saveGameData({
+    required List<int> team1Categories,
+    required List<int> team2Categories,
+    required String team1Name,
+    required String team2Name,
+  }) async {
+    final gameData = {
+      'team1Categories': team1Categories,
+      'team2Categories': team2Categories,
+      'team1Name': team1Name,
+      'team2Name': team2Name,
+    };
+    final gameDataJson = jsonEncode(gameData);
+    return await sharedPreferences.setString(ApiConstants.GAME_DATA, gameDataJson);
+  }
+
+  static Map<String, dynamic> getGameData() {
+    final gameDataJson = sharedPreferences.getString(ApiConstants.GAME_DATA);
+    if (gameDataJson != null) {
+      try {
+        return jsonDecode(gameDataJson) as Map<String, dynamic>;
+      } catch (e) {
+        return {};
+      }
+    }
+    return {};
+  }
+
+  static Future<bool> removeGameData() async {
+    return await sharedPreferences.remove(ApiConstants.GAME_DATA);
+  }
+
   static Future<bool> clearData() async {
     return await sharedPreferences.clear();
   }

@@ -5,12 +5,14 @@ import 'package:guess_game/core/theming/styles.dart';
 
 class AppButton extends StatelessWidget {
   final String text;
-  final VoidCallback onPressed;
+  final VoidCallback? onPressed;
+  final Widget? child;
 
   const AppButton({
     super.key,
     required this.text,
-    required this.onPressed,
+    this.onPressed,
+    this.child,
   });
 
   @override
@@ -97,7 +99,7 @@ class AppButton extends StatelessWidget {
                 ],
               ),
               alignment: Alignment.center,
-              child: Text(
+              child: child ?? Text(
                 text,
                 style: TextStyles.font30Secondary700Weight,
               ),

@@ -29,8 +29,8 @@ class PackageCard extends StatelessWidget {
     return Stack(
       children: [
         Container(
-          width: 145.w,
-          height: 260.h, // تقليل الارتفاع قليلاً بسبب تصغير الصورة
+          width: 160.w,
+          height: 270.h, // تقليل الارتفاع قليلاً بسبب تصغير الصورة
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: [Color(0xFF79899f), Color(0xFF8b929b), Color(0xFF79899f)],
@@ -52,46 +52,41 @@ class PackageCard extends StatelessWidget {
                   ),
                 ),
                 child: Text(
-                  title ?? package?.name ?? 'غير محدد',
+                  title ?? package?.name ?? '',
                   style: TextStyles.font14Secondary700Weight,
                   textAlign: TextAlign.center,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
                 ),
               ),
 
               // Package Image
               SizedBox(
-                width: 60,
-                height: 60,
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(30),
-                  child: package != null
-                      ? CachedNetworkImage(
-                          imageUrl: package!.image,
-                          width: 60,
-                          height: 60,
-                          fit: BoxFit.cover,
-                          placeholder: (context, url) => Image.asset(
-                            AppImages.ball,
-                            width: 60,
-                            height: 60,
-                            fit: BoxFit.cover,
-                          ),
-                          errorWidget: (context, url, error) => Image.asset(
-                            AppImages.ball,
-                            width: 60,
-                            height: 60,
-                            fit: BoxFit.cover,
-                          ),
-                        )
-                      : Image.asset(
+                width: 38.w,
+                height: 38.h,
+                child: package != null
+                    ? CachedNetworkImage(
+                        imageUrl: package!.image,
+                        width: 38.w,
+                        height: 38.h,
+                        fit: BoxFit.cover,
+                        placeholder: (context, url) => Image.asset(
                           AppImages.ball,
-                          width: 60,
-                          height: 60,
+                          width: 38.w,
+                          height: 38.h,
                           fit: BoxFit.cover,
                         ),
-                ),
+                        errorWidget: (context, url, error) => Image.asset(
+                          AppImages.ball,
+                          width: 38.w,
+                          height: 38.h,
+                          fit: BoxFit.cover,
+                        ),
+                      )
+                    : Image.asset(
+                        AppImages.ball,
+                  width: 38.w,
+                  height: 38.h,
+                        fit: BoxFit.cover,
+                      ),
               ),
 
               // Description
@@ -100,17 +95,15 @@ class PackageCard extends StatelessWidget {
                   padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
                   child: Text(
                     package!.description,
-                    style: TextStyles.font10Secondary700Weight,
-                    textAlign: TextAlign.center,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
+                    style: TextStyles.font14Secondary700Weight,
+                    textAlign: TextAlign.start,
                   ),
                 ),
               ] else ...[
                 Padding(
                   padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
                   child: Text(
-                    'وصف الباقة',
+                    '',
                     style: TextStyles.font10Secondary700Weight,
                     textAlign: TextAlign.center,
                   ),
@@ -119,20 +112,21 @@ class PackageCard extends StatelessWidget {
 
               // Price
               if (package != null) ...[
-                Text(
-                  '${package!.price} ريال',
-                  style: TextStyles.font14Secondary700Weight.copyWith(
-                    color: AppColors.buttonYellow,
-                    fontWeight: FontWeight.w800,
-                  ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Image.asset(AppImages.dollar,height: 20.h,width: 20.w,),
+                    SizedBox(width: 4.w,),
+                    Text(
+                      '${package!.price} د.ك',
+                      style: TextStyles.font15Green700Weight,
+                    ),
+                  ],
                 ),
               ] else ...[
                 Text(
-                  'السعر',
-                  style: TextStyles.font14Secondary700Weight.copyWith(
-                    color: AppColors.buttonYellow,
-                    fontWeight: FontWeight.w800,
-                  ),
+                  '',
+                  style: TextStyles.font15Green700Weight,
                 ),
               ],
 

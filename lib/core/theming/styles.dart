@@ -47,4 +47,10 @@ class TextStyles {
     fontWeight: FontWeight.w700,
     fontSize: 10.sp,
   );
+  static final font15Green700Weight = GoogleFonts.getFont(
+    AppFonts.bukra,
+    color: AppColors.green,
+    fontWeight: FontWeight.w700,
+    fontSize: 15.sp,
+  );
 }

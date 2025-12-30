@@ -8,7 +8,18 @@ import 'package:guess_game/core/theming/images.dart';
 import 'package:guess_game/core/theming/styles.dart';
 
 class SubscriptionAlertDialog extends StatelessWidget {
-  const SubscriptionAlertDialog({super.key});
+  final String title;
+  final String content;
+  final String buttonText;
+  final VoidCallback? onButtonPressed;
+
+  const SubscriptionAlertDialog({
+    super.key,
+    this.title = 'اشعار',
+    this.content = 'يجب اختيار احد الباقات لدينا لكي يتم البدء اللعبه',
+    this.buttonText = 'شراء الان',
+    this.onButtonPressed,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -52,9 +63,9 @@ class SubscriptionAlertDialog extends StatelessWidget {
                       height: 24.w,
                     ),
                   ),
-                  // كلمة "اشعار" في الوسط
+                  // كلمة في الوسط
                   Text(
-                    'اشعار',
+                    title,
                     style: TextStyles.font24Secondary700Weight,
                     textAlign: TextAlign.center,
                   ),
@@ -77,16 +88,16 @@ class SubscriptionAlertDialog extends StatelessWidget {
 
                   // النص الرئيسي
                   Text(
-                    'يجب اختيار احد الباقات لدينا لكي يتم البدء اللعبه\nالان بكل سهوله',
+                    content,
                     style: TextStyles.font16Secondary700Weight,
                     textAlign: TextAlign.center,
                   ),
 
                   SizedBox(height: 30.h),
 
-                  // الزر الأخضر "شراء الان"
+                  // الزر الأخضر
                   GestureDetector(
-                    onTap: () {
+                    onTap: onButtonPressed ?? () {
                       // إغلاق الحوار أولاً
                       Navigator.of(context).pop();
                       // ثم الانتقال إلى صفحة الباقات عبر routes
@@ -170,7 +181,7 @@ class SubscriptionAlertDialog extends StatelessWidget {
                             ),
                             alignment: Alignment.center,
                             child: Text(
-                              'شراء الان',
+                              buttonText,
                               style: TextStyles.font10Secondary700Weight.copyWith(
                                 color: Colors.white,
                                 fontSize: 12.sp,

@@ -99,25 +99,93 @@ class UserModel {
 
 /// Subscription model representing subscription data
 class SubscriptionModel {
-  // Add fields based on your subscription object structure
-  // Since you mentioned it's an empty object {}, I'll create a flexible model
-  final Map<String, dynamic>? data;
+  final int? id;
+  final int? userId;
+  final int? packageId;
+  final int? paymentWebhookId;
+  final DateTime? startDate;
+  final String? status;
+  final String? price;
+  final int? points;
+  final int? used;
+  final int? limit;
+  final int? moneyPngCount;
+  final String? paymentMethod;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
+  final DateTime? expiresAt;
 
-  SubscriptionModel({this.data});
+  SubscriptionModel({
+    this.id,
+    this.userId,
+    this.packageId,
+    this.paymentWebhookId,
+    this.startDate,
+    this.status,
+    this.price,
+    this.points,
+    this.used,
+    this.limit,
+    this.moneyPngCount,
+    this.paymentMethod,
+    this.createdAt,
+    this.updatedAt,
+    this.expiresAt,
+  });
 
   /// Factory constructor to create SubscriptionModel from JSON
   factory SubscriptionModel.fromJson(Map<String, dynamic> json) {
-    return SubscriptionModel(data: json);
+    return SubscriptionModel(
+      id: json['id'] as int?,
+      userId: json['user_id'] as int?,
+      packageId: json['package_id'] as int?,
+      paymentWebhookId: json['payment_webhook_id'] as int?,
+      startDate: json['start_date'] != null
+          ? DateTime.parse(json['start_date'] as String)
+          : null,
+      status: json['status'] as String?,
+      price: json['price'] as String?,
+      points: json['points'] as int?,
+      used: json['used'] as int?,
+      limit: json['limit'] as int?,
+      moneyPngCount: json['money_png_count'] as int?,
+      paymentMethod: json['payment_method'] as String?,
+      createdAt: json['created_at'] != null
+          ? DateTime.parse(json['created_at'] as String)
+          : null,
+      updatedAt: json['updated_at'] != null
+          ? DateTime.parse(json['updated_at'] as String)
+          : null,
+      expiresAt: json['expires_at'] != null
+          ? DateTime.parse(json['expires_at'] as String)
+          : null,
+    );
   }
 
   /// Convert SubscriptionModel to JSON
   Map<String, dynamic> toJson() {
-    return data ?? {};
+    return {
+      'id': id,
+      'user_id': userId,
+      'package_id': packageId,
+      'payment_webhook_id': paymentWebhookId,
+      'start_date': startDate?.toIso8601String(),
+      'status': status,
+      'price': price,
+      'points': points,
+      'used': used,
+      'limit': limit,
+      'money_png_count': moneyPngCount,
+      'payment_method': paymentMethod,
+      'created_at': createdAt?.toIso8601String(),
+      'updated_at': updatedAt?.toIso8601String(),
+      'expires_at': expiresAt?.toIso8601String(),
+    };
   }
 
   @override
   String toString() {
-    return 'SubscriptionModel(data: $data)';
+    return 'SubscriptionModel(id: $id, status: $status, limit: $limit)';
   }
 }
 

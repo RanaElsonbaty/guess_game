@@ -21,6 +21,20 @@ class PackagesError extends PackagesState {
   PackagesError(this.message);
 }
 
+class PackagesSubscribing extends PackagesState {}
+
+class PackagesSubscribed extends PackagesState {
+  final String paymentUrl;
+
+  PackagesSubscribed(this.paymentUrl);
+}
+
+class PackagesSubscriptionError extends PackagesState {
+  final String message;
+
+  PackagesSubscriptionError(this.message);
+}
+
 /// Cubit for managing packages state
 class PackagesCubit extends Cubit<PackagesState> {
   final PackagesRepository _packagesRepository;
@@ -62,6 +76,37 @@ class PackagesCubit extends Cubit<PackagesState> {
   String? get errorMessage {
     if (state is PackagesError) {
       return (state as PackagesError).message;
+    }
+    return null;
+  }
+
+  /// Subscribe to a package
+  Future<void> subscribeToPackage(int packageId) async {
+    emit(PackagesSubscribing());
+
+    final result = await _packagesRepository.subscribeToPackage(packageId);
+
+    result.fold(
+      (failure) => emit(PackagesSubscriptionError(failure.message)),
+      (paymentUrl) => emit(PackagesSubscribed(paymentUrl)),
+    );
+  }
+
+  /// Check if subscribing
+  bool get isSubscribing => state is PackagesSubscribing;
+
+  /// Get subscription error message
+  String? get subscriptionErrorMessage {
+    if (state is PackagesSubscriptionError) {
+      return (state as PackagesSubscriptionError).message;
+    }
+    return null;
+  }
+
+  /// Get payment URL
+  String? get paymentUrl {
+    if (state is PackagesSubscribed) {
+      return (state as PackagesSubscribed).paymentUrl;
     }
     return null;
   }

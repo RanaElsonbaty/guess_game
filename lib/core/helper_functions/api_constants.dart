@@ -11,12 +11,15 @@ class ApiConstants {
 
   static const String services = '/services';
   static const String categories = '/categories';
+  static const String games = '/games';
+  static const String gamesStart = '/games/start';
 
   // sharePreference
   static const String TOKEN = 'token';
   static const String USER = 'user';
   static const String USER_EMAIL = 'user_email';
   static const String SUBSCRIPTION = 'subscription';
+  static const String GAME_DATA = 'game_data';
   static const String USER_NAME = 'user_name';
   static const String USER_PHONE = 'user_phone';
   static const String USER_Image = 'user_image';

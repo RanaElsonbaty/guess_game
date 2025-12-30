@@ -21,89 +21,89 @@ class CategoryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        Container(
-          width: 145.w,
-          height: 200.h,
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [ Color(0xFF79899f),Color(0xFF8b929b), Color(0xFF79899f)],
+    return GestureDetector(
+      onTap: onPressed,
+      child: Stack(
+        children: [
+          Container(
+            width: 145.w,
+            height: 200.h,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Color(0xFF79899f), Color(0xFF8b929b), Color(0xFF79899f)],
+              ),
             ),
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              // Title
-              Container(
-                height: 40,
-                width: double.infinity,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  image: DecorationImage(
-                    image: AssetImage(AppImages.card),
-                    fit: BoxFit.fill,
-                    alignment: Alignment.topCenter,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                // Title
+                Container(
+                  height: 40,
+                  width: double.infinity,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    image: DecorationImage(
+                      image: AssetImage(AppImages.card),
+                      fit: BoxFit.fill,
+                      alignment: Alignment.topCenter,
+                    ),
+                  ),
+                  child: Text(
+                    title,
+                    style: TextStyles.font14Secondary700Weight,
                   ),
                 ),
-                child: Text(
-                  title,
-                  style: TextStyles.font14Secondary700Weight,
-                ),
-              ),
 
-              // Ball Image with optional lock overlay
-              SizedBox(
-                width: 72,
-                height: 72,
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    // Ball Image
-                    Image.asset(
-                      AppImages.ball,
-                      width: 72,
-                      height: 72,
-                      fit: BoxFit.cover,
-                    ),
+                // Ball Image with optional lock overlay
+                SizedBox(
+                  width: 72,
+                  height: 72,
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      // Ball Image
+                      Image.asset(
+                        AppImages.ball,
+                        width: 72,
+                        height: 72,
+                        fit: BoxFit.cover,
+                      ),
 
-                    // Lock overlay if locked
-                    if (isLocked) ...[
-                      // Blur effect
-                      Positioned.fill(
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: Colors.black.withOpacity(0.3),
-                            borderRadius: BorderRadius.circular(36),
-                          ),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(36),
-                            child: BackdropFilter(
-                              filter: ImageFilter.blur(sigmaX: 2, sigmaY: 2),
-                              child: Container(
-                                color: Colors.transparent,
+                      // Lock overlay if locked
+                      if (isLocked) ...[
+                        // Blur effect
+                        Positioned.fill(
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: Colors.black.withOpacity(0.3),
+                              borderRadius: BorderRadius.circular(36),
+                            ),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(36),
+                              child: BackdropFilter(
+                                filter: ImageFilter.blur(sigmaX: 2, sigmaY: 2),
+                                child: Container(
+                                  color: Colors.transparent,
+                                ),
                               ),
                             ),
                           ),
                         ),
-                      ),
 
-                      // Lock image
-                      Image.asset(
-                        AppImages.lock,
-                        width: 24,
-                        height: 24,
-                      ),
+                        // Lock image
+                        Image.asset(
+                          AppImages.lock,
+                          width: 24,
+                          height: 24,
+                        ),
+                      ],
                     ],
-                  ],
+                  ),
                 ),
-              ),
 
-              // Button
-              Padding(
-                padding: const EdgeInsets.only(bottom: 15),
-                child: GestureDetector(
-                  onTap: onPressed,
+                // Button
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 15),
                   child: Stack(
                     alignment: Alignment.center,
                     children: [
@@ -145,32 +145,11 @@ class CategoryCard extends StatelessWidget {
                     ],
                   ),
                 ),
-              ),
-            ],
-          ),
-        ),
-
-        // Subscription lock overlay (clickable overlay with lock icon)
-        if (isSubscriptionLocked) ...[
-          Positioned.fill(
-            child: GestureDetector(
-              onTap: onPressed, // Make the entire overlay clickable
-              child: Container(
-                color: Colors.black.withOpacity(0.3),
-                child: Center(
-                  child: Image.asset(
-                    AppImages.lock,
-                    width: 64,
-                    height: 64,
-                    color: Colors.white.withOpacity(0.9),
-                  ),
-                ),
-              ),
+              ],
             ),
           ),
         ],
-
-      ],
+      ),
     );
   }
 }

@@ -3,11 +3,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'dart:ui' as ui;
 import 'package:guess_game/core/routing/app_routing.dart';
+import 'package:guess_game/core/routing/routes.dart';
 
 class GuessGame extends StatefulWidget {
   final AppRoutes appRoutes;
   final String initialRoute;
-  const GuessGame({super.key, required this.appRoutes, required this.initialRoute});
+  final Object? initialArguments;
+  const GuessGame({
+    super.key,
+    required this.appRoutes,
+    required this.initialRoute,
+    this.initialArguments,
+  });
   static GlobalKey<NavigatorState> navKey = GlobalKey<NavigatorState>();
 
   @override
@@ -18,6 +25,17 @@ class _GuessGameState extends State<GuessGame> {
   @override
   void initState() {
     super.initState();
+
+    // Handle initial route with arguments
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (widget.initialArguments != null && widget.initialRoute == Routes.teamCategories) {
+        // Navigate to team categories with arguments
+        Navigator.of(context).pushReplacementNamed(
+          widget.initialRoute,
+          arguments: widget.initialArguments,
+        );
+      }
+    });
   }
   @override
   Widget build(BuildContext context) {

@@ -26,4 +26,5 @@ class AppColors {
   // ألوان الزر الأخضر الجديدة
   static const greenButtonLight = Color(0xFF18ef00);
   static const greenButtonDark = Color(0xFF199100);
+  static const green = Color(0xFF00FCAE);
 }

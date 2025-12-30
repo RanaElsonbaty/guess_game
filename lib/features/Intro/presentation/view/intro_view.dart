@@ -25,15 +25,17 @@ class _IntroViewState extends State<IntroView> {
                 child: Center(
                   child: Padding(
                     padding: EdgeInsets.symmetric(horizontal: 120.w),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        // Logo
-                        LogoSection(constraints: constraints),
-                        SizedBox(height: constraints.maxHeight * 0.08),
-                        // Buttons
-                        ButtonsSection(constraints: constraints),
-                      ],
+                    child: SingleChildScrollView(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          // Logo
+                          LogoSection(constraints: constraints),
+                          SizedBox(height: constraints.maxHeight * 0.04),
+                          // Buttons
+                          ButtonsSection(constraints: constraints),
+                        ],
+                      ),
                     ),
                   ),
                 ),

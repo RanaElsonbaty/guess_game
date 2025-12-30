@@ -64,7 +64,7 @@ class _LevelsViewState extends State<LevelsView> {
                   top: -23,
                   left: 0,
                   child: SizedBox(
-                    width: 260.w,
+                    width: 285.w,
                     height: 80.h,
                     child: CustomPaint(
                       painter: HeaderShapePainter(),

@@ -6,8 +6,17 @@ import 'package:guess_game/core/widgets/file_shape_clipper.dart';
 
 class GroupCard extends StatelessWidget {
   final String title;
+  final TextEditingController? controller;
+  final Function(String)? onChanged;
+  final String hintText;
 
-  const GroupCard({super.key, required this.title});
+  const GroupCard({
+    super.key,
+    required this.title,
+    this.controller,
+    this.onChanged,
+    this.hintText = 'اسم الفريق',
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -44,45 +53,35 @@ class GroupCard extends StatelessWidget {
                     style: TextStyles.font14Secondary700Weight,
                   ),
                   Spacer(),
-                  Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      /// 🔸 Main Button Body
-                      Container(
-                        height: 36,
-                        width: 120,
-                        decoration: BoxDecoration(
-                          color: AppColors.buttonYellow,
-                        ),
-                        alignment: Alignment.center,
-                        child: Text(
-                          'اضف اسم الفريق',
-                          style: TextStyles.font14Secondary700Weight,
-                        ),
-                      ),
-
-                      /// Right Border
-                      Positioned(
-                        right: 0,
-                        top: 0,
-                        bottom: 0,
-                        child: Container(
+                  Container(
+                    width: 160.w, // تكبير العرض
+                    padding: EdgeInsets.symmetric(horizontal: 12.w,vertical: 8.h),
+                    decoration: BoxDecoration(
+                      color: AppColors.buttonYellow,
+                      border: Border(
+                        right: BorderSide(
+                          color: AppColors.buttonBorderOrange,
                           width: 2,
+                        ),
+                        bottom: BorderSide(
                           color: AppColors.buttonBorderOrange,
+                          width: 2,
                         ),
                       ),
-
-                      /// Bottom Border
-                      Positioned(
-                        bottom: 0,
-                        left: 0,
-                        right: 0,
-                        child: Container(
-                          height: 2,
-                          color: AppColors.buttonBorderOrange,
-                        ),
+                    ),
+                    child: TextField(
+                      controller: controller,
+                      textAlign: TextAlign.center,
+                      style: TextStyles.font13Secondary700Weight,
+                      decoration: InputDecoration(
+                        hintText: hintText,
+                        hintStyle: TextStyles.font14Secondary700Weight,
+                        border: InputBorder.none,
+                        contentPadding: EdgeInsets.zero,
+                        isDense: true,
                       ),
-                    ],
+                      onChanged: onChanged,
+                    ),
                   ),
                 ],
               ),

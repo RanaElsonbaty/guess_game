@@ -102,23 +102,24 @@ class _GameLevelViewState extends State<GameLevelView> {
               // كاردات الفرق
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
+                textDirection: TextDirection.ltr,
                 children: [
-                  GameLevelCard(
-                    teamName: team1Name,
-                    teamTitle: 'فريق 01',
-                    onLevelSelected: (level) {
-                      setState(() {
-                        team1Level = level;
-                      });
-                    },
-                  ),
-                  const SizedBox(width: 48),
                   GameLevelCard(
                     teamName: team2Name,
                     teamTitle: 'فريق 02',
                     onLevelSelected: (level) {
                       setState(() {
                         team2Level = level;
+                      });
+                    },
+                  ),
+                  const SizedBox(width: 48),
+                  GameLevelCard(
+                    teamName: team1Name,
+                    teamTitle: 'فريق 01',
+                    onLevelSelected: (level) {
+                      setState(() {
+                        team1Level = level;
                       });
                     },
                   ),
@@ -259,29 +260,34 @@ class _GameLevelViewState extends State<GameLevelView> {
   }
 
   void _showGameInstructionsDialog(BuildContext context, gameStartResponse) {
+    // الحصول على UpdatePointPlanResponse من GameCubit قبل عرض الـ dialog
+    final gameCubit = context.read<GameCubit>();
+    final updatePointPlanResponse = gameCubit.updatePointPlanResponse;
+
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (BuildContext context) {
+      builder: (BuildContext dialogContext) {
         return SubscriptionAlertDialog(
           title: 'تعليمات',
           content: 'شروط اللعبه هتتكتب هنا و هيبان فيها كل الشروط اللازمه للعبه',
           buttonText: 'حسنا',
-          onButtonPressed: () {
-            // إغلاق dialog التعليمات
-            Navigator.of(context).pop();
+          onButtonPressed: () async {
+            // إغلاق dialog التعليمات باستخدام dialog context
+            Navigator.of(dialogContext).pop();
 
-            // الحصول على UpdatePointPlanResponse من GameCubit
-            final gameCubit = context.read<GameCubit>();
-            final updatePointPlanResponse = gameCubit.updatePointPlanResponse;
+            // انتظار إغلاق الـ dialog
+            await Future.delayed(const Duration(milliseconds: 200));
 
-            // الانتقال إلى صفحة QR codes
-            Navigator.of(context).pushNamed(
-              Routes.qrcodeView,
-              arguments: {
-                'updatePointPlanResponse': updatePointPlanResponse,
-              },
-            );
+            // الانتقال إلى صفحة QR codes باستخدام الـ context الخارجي
+            if (context.mounted) {
+              Navigator.of(context).pushNamed(
+                Routes.qrcodeView,
+                arguments: {
+                  'updatePointPlanResponse': updatePointPlanResponse,
+                },
+              );
+            }
           },
         );
       },

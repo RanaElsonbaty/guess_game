@@ -22,6 +22,16 @@ class UpdatePointPlanResponse {
       metaData: json['meta_data'] ?? [],
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'success': success,
+      'message': message,
+      'code': code,
+      'data': data.toJson(),
+      'meta_data': metaData,
+    };
+  }
 }
 
 class UpdatePointPlanData {
@@ -47,6 +57,15 @@ class UpdatePointPlanData {
           .toList() ?? [],
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'game_id': gameId,
+      'round_id': roundId,
+      'round_data': roundData.map((e) => e.toJson()).toList(),
+    };
+  }
 }
 
 class UpdatedRoundData {
@@ -59,8 +78,11 @@ class UpdatedRoundData {
   final int pointEarned;
   final int pointPlan;
   final String qrCode;
+  final String imagePath;
   final bool canUpdateQuestions;
   final bool canUpdateAnswers;
+  final int maxAnswers;
+  final int maxQuestions;
 
   UpdatedRoundData({
     required this.id,
@@ -72,8 +94,11 @@ class UpdatedRoundData {
     required this.pointEarned,
     required this.pointPlan,
     required this.qrCode,
+    required this.imagePath,
     required this.canUpdateQuestions,
     required this.canUpdateAnswers,
+    required this.maxAnswers,
+    required this.maxQuestions,
   });
 
   factory UpdatedRoundData.fromJson(Map<String, dynamic> json) {
@@ -87,8 +112,33 @@ class UpdatedRoundData {
       pointEarned: json['point_earned'] ?? 0,
       pointPlan: json['point_plan'] ?? 0,
       qrCode: json['qr_code'] ?? '',
+      imagePath: json['image_path'] ?? '',
       canUpdateQuestions: json['can_update_questions'] ?? false,
       canUpdateAnswers: json['can_update_answers'] ?? false,
+      maxAnswers: json['max_answers'] ?? 0,
+      maxQuestions: json['max_questions'] ?? 0,
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'round_id': roundId,
+      'team_id': teamId,
+      'category_id': categoryId,
+      'question_number': questionNumber,
+      'answer_number': answerNumber,
+      'point_earned': pointEarned,
+      'point_plan': pointPlan,
+      'qr_code': qrCode,
+      'image_path': imagePath,
+      'can_update_questions': canUpdateQuestions,
+      'can_update_answers': canUpdateAnswers,
+      'max_answers': maxAnswers,
+      'max_questions': maxQuestions,
+    };
+  }
 }
+
+
+

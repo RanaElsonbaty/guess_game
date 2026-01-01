@@ -6,10 +6,13 @@ import 'package:guess_game/features/game/data/models/game_start_request.dart';
 import 'package:guess_game/features/game/data/models/game_start_response.dart';
 import 'package:guess_game/features/game/data/models/update_point_plan_request.dart';
 import 'package:guess_game/features/game/data/models/update_point_plan_response.dart';
+import 'package:guess_game/features/game/data/models/update_score_request.dart';
+import 'package:guess_game/features/game/data/models/update_score_response.dart';
 
 abstract class GameRepository {
   Future<Either<ApiFailure, GameStartResponse>> startGame(GameStartRequest request);
   Future<Either<ApiFailure, UpdatePointPlanResponse>> updatePointPlan(UpdatePointPlanRequest request);
+  Future<Either<ApiFailure, UpdateScoreResponse>> updateScore(UpdateScoreRequest request);
 }
 
 class GameRepositoryImpl implements GameRepository {
@@ -56,6 +59,30 @@ class GameRepositoryImpl implements GameRepository {
       );
     } catch (e) {
       return Left(ApiFailure('حدث خطأ أثناء تحديث point_plan: $e'));
+    }
+  }
+
+  @override
+  Future<Either<ApiFailure, UpdateScoreResponse>> updateScore(UpdateScoreRequest request) async {
+    try {
+      final response = await _apiService.patch(
+        ApiConstants.gamesRoundDataUpdateScore,
+        data: request.toJson(),
+      );
+
+      return response.fold(
+        (failure) => Left(failure),
+        (success) {
+          if (success.statusCode == 200) {
+            final updateResponse = UpdateScoreResponse.fromJson(success.data);
+            return Right(updateResponse);
+          } else {
+            return Left(ApiFailure('فشل في تحديث score'));
+          }
+        },
+      );
+    } catch (e) {
+      return Left(ApiFailure('حدث خطأ أثناء تحديث score: $e'));
     }
   }
 }

@@ -39,6 +39,10 @@ class _PackagesViewState extends State<PackagesView> with WidgetsBindingObserver
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
+      // Ensure packages are reloaded when returning (e.g. after payment).
+      if (mounted) {
+        context.read<PackagesCubit>().loadPackages();
+      }
       // عند العودة للتطبيق، تحقق من البيانات
       _checkSubscriptionAndNavigate();
     }
@@ -133,11 +137,16 @@ class _PackagesViewState extends State<PackagesView> with WidgetsBindingObserver
         print('🔗 فتح صفحة الدفع: $url');
 
         if (mounted) {
-          Navigator.of(context).push(
+          // Await return from payment then reload packages so the list is not empty.
+          await Navigator.of(context).push(
             MaterialPageRoute(
               builder: (context) => PaymentWebView(url: url),
             ),
           );
+          if (!mounted) return;
+          await context.read<PackagesCubit>().loadPackages();
+          // Also refresh subscription state after return.
+          await _checkSubscriptionAndNavigate();
         }
 
         return;

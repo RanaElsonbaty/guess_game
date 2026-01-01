@@ -6,7 +6,6 @@ import 'package:guess_game/core/helper_functions/global_storage.dart';
 import 'package:guess_game/core/routing/routes.dart';
 import 'package:guess_game/core/theming/colors.dart';
 import 'package:guess_game/core/theming/icons.dart';
-import 'package:guess_game/core/theming/images.dart';
 import 'package:guess_game/core/theming/styles.dart';
 import 'package:guess_game/features/levels/presentation/cubit/categories_cubit.dart';
 import 'package:guess_game/features/levels/presentation/view/widgets/category_card.dart';
@@ -28,7 +27,7 @@ class TeamCategoriesSecondTeamView extends StatefulWidget {
 }
 
 class _TeamCategoriesSecondTeamViewState extends State<TeamCategoriesSecondTeamView> {
-  final List<int> selectedCategoriesForSecondTeam = [];
+  late List<int> selectedCategoriesForSecondTeam;
   int maxSelectableCategories = 0;
   int userLimit = 0;
   List<int> team1Categories = [];
@@ -43,6 +42,12 @@ class _TeamCategoriesSecondTeamViewState extends State<TeamCategoriesSecondTeamV
 
     team1Categories = widget.team1Categories;
     print('📋 team1Categories من widget: $team1Categories');
+
+    // تهيئة قائمة الفئات المختارة
+    selectedCategoriesForSecondTeam = [];
+
+    // تحميل الفئات المحفوظة سابقاً
+    _loadSavedCategories();
 
     // تخزين الـ limit المرسل من الصفحة السابقة
     userLimit = widget.limit;
@@ -71,8 +76,7 @@ class _TeamCategoriesSecondTeamViewState extends State<TeamCategoriesSecondTeamV
 
         // التحقق من الحد الأقصى للفريق الثاني
         if (selectedCategoriesForSecondTeam.length >= maxSelectableCategories) {
-          print('⚠️ لا يمكن اختيار المزيد من الفئات للفريق الثاني (الحد الأقصى: $maxSelectableCategories)');
-          _showCannotSelectMoreAlert();
+          // لا نظهر أي تنبيه
           return;
         }
 
@@ -82,156 +86,33 @@ class _TeamCategoriesSecondTeamViewState extends State<TeamCategoriesSecondTeamV
         print('📊 التقدم: ${selectedCategoriesForSecondTeam.length}/$maxSelectableCategories');
         print('📊 المجموع الكلي: ${team1Categories.length + selectedCategoriesForSecondTeam.length}/$userLimit');
 
-        // إظهار alert عند الوصول للحد الأقصى للفريق أو المجموع الكلي
-        if (selectedCategoriesForSecondTeam.length == maxSelectableCategories ||
-            team1Categories.length + selectedCategoriesForSecondTeam.length == userLimit) {
-          _showLimitReachedAlert();
-        }
+        // لا نحتاج لإظهار alert في الفريق الثاني
       }
+
+      // حفظ التغييرات
+      _saveCategories();
     });
   }
 
-  void _showLimitReachedAlert() {
-    showDialog(
-      context: context,
-      barrierDismissible: false, // لا يمكن إغلاقه بالضغط خارج الـ dialog
-      builder: (BuildContext context) {
-        return Dialog(
-          backgroundColor: Colors.transparent,
-          child: Container(
-            width: 600,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  Color(0xFF79899f).withOpacity(0.3),
-                  Color(0xFF8b929b).withOpacity(0.3),
-                  Color(0xFF79899f).withOpacity(0.3)
-                ],
-              ),
-            ),
-            child: Stack(
-              clipBehavior: Clip.none,
-              children: [
-                // Header with card image background
-                Positioned(
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  child: Container(
-                    height: 80,
-                    decoration: BoxDecoration(
-                      image: DecorationImage(
-                        image: AssetImage(AppImages.card),
-                        fit: BoxFit.cover,
-                      ),
-                    ),
-                    child: Stack(
-                      children: [
-                        // Cancel icon on the right
-                        Positioned(
-                          top: 10,
-                          right: 10,
-                          child: GestureDetector(
-                            onTap: () => Navigator.of(context).pop(),
-                            child: SvgPicture.asset(
-                              AppIcons.cancel,
-                              width: 24,
-                              height: 24,
-                            ),
-                          ),
-                        ),
-                        // Title in center
-                        Center(
-                          child: Padding(
-                            padding: EdgeInsets.only(top: 20),
-                            child: Text(
-                              'اشعار',
-                              style: TextStyles.font13Secondary700Weight.copyWith(
-                                color: Colors.white,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
 
-                // Content
-                Positioned(
-                  top: 70,
-                  left: 20,
-                  right: 20,
-                  bottom: 20,
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      SizedBox(height: 20),
-                      Text(
-                        'يمكنك اختيار حتى $maxSelectableCategories فئة\nللفريق الثاني (من أصل $userLimit إجمالي)',
-                        style: TextStyles.font10Secondary700Weight,
-                        textAlign: TextAlign.center,
-                      ),
-                      SizedBox(height: 30),
+  void _loadSavedCategories() {
+    // تحميل الفئات المحفوظة من GlobalStorage
+    GlobalStorage.loadGameData();
 
-                      // 3D Green Button
-                      GestureDetector(
-                        onTap: () => Navigator.of(context).pop(),
-                        child: Container(
-                          width: 104,
-                          height: 40,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.only(
-                              topLeft: Radius.circular(20),
-                              topRight: Radius.circular(20),
-                              bottomLeft: Radius.circular(20),
-                              bottomRight: Radius.circular(20),
-                            ),
-                            gradient: LinearGradient(
-                              begin: Alignment.topCenter,
-                              end: Alignment.bottomCenter,
-                              colors: [
-                                AppColors.greenButtonLight,
-                                AppColors.greenButtonDark,
-                              ],
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.3),
-                                offset: Offset(0, 4),
-                                blurRadius: 8,
-                              ),
-                            ],
-                          ),
-                          child: Center(
-                            child: Text(
-                              'حسنا',
-                              style: TextStyles.font10Secondary700Weight.copyWith(
-                                color: Colors.white,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
+    // تحميل فئات الفريق الثاني المحفوظة
+    selectedCategoriesForSecondTeam = [...GlobalStorage.team2Categories];
+    print('📋 تم تحميل فئات الفريق الثاني المحفوظة: $selectedCategoriesForSecondTeam');
   }
 
-  void _showCannotSelectMoreAlert() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('لا يمكن اختيار المزيد من الفئات للفريق الثاني. الحد الأقصى $maxSelectableCategories فئة'),
-        backgroundColor: Colors.orange,
-        duration: Duration(seconds: 3),
-      ),
+  void _saveCategories() async {
+    // حفظ الفئات في GlobalStorage
+    await GlobalStorage.saveGameData(
+      team1Cats: team1Categories,
+      team2Cats: selectedCategoriesForSecondTeam,
+      t1Name: GlobalStorage.team1Name,
+      t2Name: GlobalStorage.team2Name,
     );
+    print('💾 تم حفظ فئات الفريق الثاني: $selectedCategoriesForSecondTeam');
   }
 
   void _showTotalLimitReachedAlert() {
@@ -370,13 +251,14 @@ class _TeamCategoriesSecondTeamViewState extends State<TeamCategoriesSecondTeamV
                                       horizontal: 8.w,
                                       vertical: 20.h,
                                     ),
-                                    child: GestureDetector(
-                                      onTap: category.status ? () {
-                                        _toggleCategorySelection(category.id);
-                                        print('🏷️ الفئة: ${category.name} (ID: ${category.id}) للفريق الثاني');
-                                        print('📋 الفئات المختارة حالياً: $selectedCategoriesForSecondTeam');
-                                      } : null,
-                                      child: Stack(
+                                  child: GestureDetector(
+                                    onTap: category.status ? () {
+                                      _toggleCategorySelection(category.id);
+                                      print('🏷️ الفئة: ${category.name} (ID: ${category.id}) للفريق الثاني');
+                                      print('📋 الفئات المختارة حالياً: $selectedCategoriesForSecondTeam');
+                                    } : null,
+                                    behavior: HitTestBehavior.translucent,
+                                    child: Stack(
                                         children: [
                                           CategoryCard(
                                             title: category.name,

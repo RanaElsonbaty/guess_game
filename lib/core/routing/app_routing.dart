@@ -20,23 +20,24 @@ import 'package:guess_game/features/levels/presentation/view/levels_view.dart';
 import 'package:guess_game/features/packages/presentation/cubit/packages_cubit.dart';
 import 'package:guess_game/features/packages/presentation/view/packages_view.dart';
 import 'package:guess_game/features/packages/presentation/view/team_categories_second_team_view.dart';
-import 'package:guess_game/features/packages/presentation/view/team_categories_view.dart';
+import 'package:guess_game/features/packages/presentation/view/team_categories_first_team_view.dart';
 import 'package:guess_game/features/game/presentation/cubit/game_cubit.dart';
 import 'package:guess_game/features/game_level/presentation/view/game_level_view.dart';
 import 'package:guess_game/features/qrcode/presentation/view/qrcode_view.dart';
+import 'package:guess_game/features/qrcode/presentation/view/qr_image_view.dart';
 import 'package:guess_game/guess_game.dart';
 
 class AppRoutes {
   Route generateRoute(RouteSettings routeSettings) {
     switch (routeSettings.name) {
       case Routes.intro:
-        return _createSmoothPageRoute(IntroView());
+        return _createSmoothPageRoute(IntroView(), settings: routeSettings);
       case Routes.start:
-        return _createSmoothPageRoute(StartView());
+        return _createSmoothPageRoute(StartView(), settings: routeSettings);
       case Routes.register:
-        return _createSmoothPageRoute(RegisterView());
+        return _createSmoothPageRoute(RegisterView(), settings: routeSettings);
       case Routes.otp:
-        return _createSmoothPageRoute(OtpView());
+        return _createSmoothPageRoute(OtpView(), settings: routeSettings);
       case Routes.otpVerify:
         final phone = routeSettings.arguments as String? ?? '';
         return _createSmoothPageRoute(
@@ -44,6 +45,7 @@ class AppRoutes {
             create: (context) => getIt<OtpCubit>(),
             child: OtpVerifyView(phone: phone),
           ),
+          settings: routeSettings,
         );
       case Routes.login:
         final args = routeSettings.arguments as Map<String, dynamic>? ?? {};
@@ -54,19 +56,21 @@ class AppRoutes {
             create: (context) => getIt<LoginOtpCubit>(),
             child: LoginView(phone: phone, otp: otp),
           ),
+          settings: routeSettings,
         );
       case Routes.emailLogin:
-        return _createSmoothPageRoute(LoginEmailView());
+        return _createSmoothPageRoute(LoginEmailView(), settings: routeSettings);
       case Routes.chooseLoginType:
-        return _createSmoothPageRoute(ChooseLoginTypeView());
+        return _createSmoothPageRoute(ChooseLoginTypeView(), settings: routeSettings);
       case Routes.about:
-        return _createSmoothPageRoute(AboutView());
+        return _createSmoothPageRoute(AboutView(), settings: routeSettings);
       case Routes.level:
         return _createSmoothPageRoute(
           BlocProvider<CategoriesCubit>(
             create: (context) => getIt<CategoriesCubit>()..loadCategories(),
             child: LevelsView(),
           ),
+          settings: routeSettings,
         );
       case Routes.groups:
         return _createSmoothPageRoute(
@@ -74,6 +78,7 @@ class AppRoutes {
             create: (context) => getIt<GameCubit>(),
             child: GroupsView(),
           ),
+          settings: routeSettings,
         );
       case Routes.packages:
         return _createSmoothPageRoute(
@@ -81,6 +86,7 @@ class AppRoutes {
             create: (context) => getIt<PackagesCubit>()..loadPackages(),
             child: PackagesView(),
           ),
+          settings: routeSettings,
         );
       case Routes.teamCategories:
         print('📋 AppRoutes: تم استدعاء teamCategories (الفريق الأول)');
@@ -116,6 +122,7 @@ class AppRoutes {
             create: (context) => getIt<CategoriesCubit>()..loadCategories(),
             child: TeamCategoriesFirstTeamView(limit: limit),
           ),
+          settings: routeSettings,
         );
       case Routes.teamCategoriesSecondTeam:
         print('📋 AppRoutes: تم استدعاء teamCategoriesSecondTeam');
@@ -131,7 +138,7 @@ class AppRoutes {
           limit = args['limit'] as int? ?? 0;
           team1Categories = args['team1Categories'] as List<int>? ?? [];
         } else if (routeSettings.arguments is int) {
-          // البيانات تأتي من team_categories_view.dart (int فقط)
+          // البيانات تأتي من team_categories_first_team_view.dart (int فقط)
           limit = routeSettings.arguments as int;
           team1Categories = []; // فارغ للفريق الثاني
         }
@@ -154,6 +161,7 @@ class AppRoutes {
               team1Categories: team1Categories,
             ),
           ),
+          settings: routeSettings,
         );
       case Routes.gameLevel:
         print('🎯 AppRoutes: تم استدعاء gameLevel');
@@ -167,6 +175,7 @@ class AppRoutes {
 
         return _createSmoothPageRoute(
           const GameLevelViewWithProvider(),
+          settings: routeSettings,
         );
       case Routes.qrcodeView:
         print('🎯 AppRoutes: تم استدعاء qrcodeView');
@@ -180,14 +189,29 @@ class AppRoutes {
 
         return _createSmoothPageRoute(
           const QrcodeViewWithProvider(),
+          settings: routeSettings,
+        );
+      case Routes.qrimageView:
+        print('🎯 AppRoutes: تم استدعاء qrimageView');
+        print('🎯 routeSettings.arguments: ${routeSettings.arguments}');
+
+        if (routeSettings.arguments != null) {
+          GuessGame.globalInitialArguments = routeSettings.arguments;
+          print('🎯 تم حفظ arguments في globalInitialArguments: ${GuessGame.globalInitialArguments}');
+        }
+
+        return _createSmoothPageRoute(
+          const QrImageView(),
+          settings: routeSettings,
         );
       default:
-        return _createSmoothPageRoute(Container());
+        return _createSmoothPageRoute(Container(), settings: routeSettings);
     }
   }
 
-  PageRouteBuilder _createSmoothPageRoute(Widget page) {
+  PageRouteBuilder _createSmoothPageRoute(Widget page, {RouteSettings? settings}) {
     return PageRouteBuilder(
+      settings: settings,
       pageBuilder: (context, animation, secondaryAnimation) => page,
       transitionsBuilder: (context, animation, secondaryAnimation, child) {
         const begin = Offset(1.0, 0.0);

@@ -32,4 +32,18 @@ class PointPlanUpdateError extends GameState {
   PointPlanUpdateError(this.message);
 }
 
+class ScoreUpdating extends GameState {}
+
+class ScoreUpdated extends GameState {
+  final UpdateScoreResponse response;
+
+  ScoreUpdated(this.response);
+}
+
+class ScoreUpdateError extends GameState {
+  final String message;
+
+  ScoreUpdateError(this.message);
+}
+
 

@@ -62,9 +62,10 @@ class _LoginEmailViewState extends State<LoginEmailView> {
                 child: BlocConsumer<LoginEmailCubit, LoginEmailState>(
                   listener: (context, state) {
                     if (state is LoginEmailSuccess) {
-                      // Save user data and token
+                      // Save user data, token, and subscription
                       GlobalStorage.saveUserData(state.response.data.user);
                       GlobalStorage.saveToken(state.response.data.token);
+                      GlobalStorage.saveSubscription(state.response.data.user.subscription);
 
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(

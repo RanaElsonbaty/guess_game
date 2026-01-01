@@ -18,6 +18,8 @@ class GroupsView extends StatefulWidget {
 class _GroupsViewState extends State<GroupsView> {
   final TextEditingController _team1Controller = TextEditingController();
   final TextEditingController _team2Controller = TextEditingController();
+  late final VoidCallback _team1Listener;
+  late final VoidCallback _team2Listener;
 
   List<int> _team1Categories = [];
   List<int> _team2Categories = [];
@@ -25,6 +27,10 @@ class _GroupsViewState extends State<GroupsView> {
 
   @override
   void dispose() {
+    // إزالة الـ listeners قبل dispose
+    _team1Controller.removeListener(_team1Listener);
+    _team2Controller.removeListener(_team2Listener);
+
     _team1Controller.dispose();
     _team2Controller.dispose();
     super.dispose();
@@ -144,6 +150,34 @@ class _GroupsViewState extends State<GroupsView> {
   @override
   void initState() {
     super.initState();
+
+    // إعداد listeners لحفظ الأسماء فوراً عند التغيير
+    _team1Listener = () {
+      GlobalStorage.team1Name = _team1Controller.text.trim();
+      GlobalStorage.saveGameData(
+        team1Cats: GlobalStorage.team1Categories,
+        team2Cats: GlobalStorage.team2Categories,
+        t1Name: GlobalStorage.team1Name,
+        t2Name: GlobalStorage.team2Name,
+      );
+      print('💾 تم حفظ اسم الفريق الأول: "${GlobalStorage.team1Name}"');
+    };
+
+    _team2Listener = () {
+      GlobalStorage.team2Name = _team2Controller.text.trim();
+      GlobalStorage.saveGameData(
+        team1Cats: GlobalStorage.team1Categories,
+        team2Cats: GlobalStorage.team2Categories,
+        t1Name: GlobalStorage.team1Name,
+        t2Name: GlobalStorage.team2Name,
+      );
+      print('💾 تم حفظ اسم الفريق الثاني: "${GlobalStorage.team2Name}"');
+    };
+
+    // إضافة الـ listeners للـ controllers
+    _team1Controller.addListener(_team1Listener);
+    _team2Controller.addListener(_team2Listener);
+
     // تحميل بيانات اللعبة من GlobalStorage إذا كانت متوفرة
     if (GlobalStorage.team1Categories.isNotEmpty || GlobalStorage.team2Categories.isNotEmpty) {
       _team1Categories = GlobalStorage.team1Categories;
@@ -174,12 +208,13 @@ class _GroupsViewState extends State<GroupsView> {
                 children: [
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
+                    textDirection: TextDirection.ltr,
                     children: [
                       SizedBox(
                         width: 210,
                         child: GroupCard(
-                          title: 'فريق 01',
-                          controller: _team1Controller,
+                          title: 'فريق 02',
+                          controller: _team2Controller,
                           hintText: 'اضف اسم الفريق',
                           onChanged: (value) {
                             setState(() {});
@@ -190,8 +225,8 @@ class _GroupsViewState extends State<GroupsView> {
                       SizedBox(
                         width: 210,
                         child: GroupCard(
-                          title: 'فريق 02',
-                          controller: _team2Controller,
+                          title: 'فريق 01',
+                          controller: _team1Controller,
                           hintText: 'اضف اسم الفريق',
                           onChanged: (value) {
                             setState(() {});

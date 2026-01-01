@@ -1,12 +1,14 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:guess_game/core/helper_functions/global_storage.dart';
 import 'package:guess_game/core/helper_functions/shared_preferences.dart';
 import 'package:guess_game/core/injection/service_locator.dart';
 import 'package:guess_game/core/routing/app_routing.dart';
 import 'package:guess_game/core/routing/routes.dart';
 import 'package:guess_game/features/auth/login/presentation/cubit/auth_cubit.dart';
+import 'package:guess_game/features/game/presentation/cubit/game_cubit.dart';
 import 'package:guess_game/guess_game.dart';
 
 void main() async {
@@ -27,7 +29,7 @@ void main() async {
 
   // Log initial data
   print('🚀 App Startup - Initial data:');
-  print('  - Token: ${GlobalStorage.token.isNotEmpty ? "Present" : "Empty"}');
+  GlobalStorage.debugPrintToken(full: true);
   print('  - User: ${GlobalStorage.user != null ? GlobalStorage.user!.name : "Null"}');
   print('  - Subscription: ${GlobalStorage.subscription}');
 
@@ -51,6 +53,9 @@ void main() async {
         // Update global storage with fresh data
         GlobalStorage.user = user;
         GlobalStorage.subscription = user.subscription;
+
+        // Save subscription to cache for future app launches
+        await GlobalStorage.saveSubscription(user.subscription);
 
         // Log profile data
         print('✅ Profile loaded successfully:');
@@ -108,7 +113,8 @@ void main() async {
 
           // Update GlobalStorage for consistency
           GlobalStorage.subscription = user.subscription;
-          print('   💾 تم تحديث GlobalStorage بالاشتراك');
+          await GlobalStorage.saveSubscription(user.subscription);
+          print('   💾 تم تحديث GlobalStorage والـ cache بالاشتراك');
         } else {
           // User logged in but no subscription, go to packages page to purchase
           initialRoute = Routes.packages;
@@ -134,15 +140,25 @@ void main() async {
   print('🏁 Final navigation: $initialRoute with args: $initialArguments');
 
   runApp(
-    EasyLocalization(
-      supportedLocales: const [Locale('ar'), Locale('en')],
-      path: 'assets/translations',
-      startLocale: const Locale('ar'),
-      fallbackLocale: const Locale('en'),
-      child: GuessGame(
-        appRoutes: AppRoutes(),
-        initialRoute: initialRoute,
-        initialArguments: initialArguments,
+    MultiBlocProvider(
+      providers: [
+        BlocProvider<GameCubit>(
+          create: (context) => getIt<GameCubit>(),
+        ),
+        BlocProvider<AuthCubit>(
+          create: (context) => getIt<AuthCubit>(),
+        ),
+      ],
+      child: EasyLocalization(
+        supportedLocales: const [Locale('ar'), Locale('en')],
+        path: 'assets/translations',
+        startLocale: const Locale('ar'),
+        fallbackLocale: const Locale('en'),
+        child: GuessGame(
+          appRoutes: AppRoutes(),
+          initialRoute: initialRoute,
+          initialArguments: initialArguments,
+        ),
       ),
     ),
   );

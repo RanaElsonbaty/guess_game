@@ -119,6 +119,37 @@ class CacheHelper {
     return {};
   }
 
+  static Future<bool> saveGameScore({
+    required int team1Questions,
+    required int team1Answers,
+    required int team2Questions,
+    required int team2Answers,
+  }) async {
+    final scoreData = {
+      'team1Questions': team1Questions,
+      'team1Answers': team1Answers,
+      'team2Questions': team2Questions,
+      'team2Answers': team2Answers,
+    };
+    return await sharedPreferences.setString(ApiConstants.GAME_SCORE, jsonEncode(scoreData));
+  }
+
+  static Map<String, dynamic> getGameScore() {
+    final scoreJson = sharedPreferences.getString(ApiConstants.GAME_SCORE);
+    if (scoreJson != null) {
+      try {
+        return jsonDecode(scoreJson) as Map<String, dynamic>;
+      } catch (e) {
+        return {};
+      }
+    }
+    return {};
+  }
+
+  static Future<bool> removeGameScore() async {
+    return await sharedPreferences.remove(ApiConstants.GAME_SCORE);
+  }
+
   static Future<bool> removeGameData() async {
     return await sharedPreferences.remove(ApiConstants.GAME_DATA);
   }

@@ -14,6 +14,7 @@ class ApiConstants {
   static const String games = '/games';
   static const String gamesStart = '/games/start';
   static const String gamesRoundDataUpdatePointPlan = '/games/round/data/update-point-plan';
+  static const String gamesRoundDataUpdateScore = '/games/round/data/update-score';
 
   // sharePreference
   static const String TOKEN = 'token';
@@ -21,6 +22,7 @@ class ApiConstants {
   static const String USER_EMAIL = 'user_email';
   static const String SUBSCRIPTION = 'subscription';
   static const String GAME_DATA = 'game_data';
+  static const String GAME_SCORE = 'game_score';
   static const String USER_NAME = 'user_name';
   static const String USER_PHONE = 'user_phone';
   static const String USER_Image = 'user_image';

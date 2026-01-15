@@ -12,7 +12,8 @@ abstract class CategoriesRepository {
 }
 
 /// Implementation of CategoriesRepository using ApiService
-class CategoriesRepositoryImpl extends BaseRepository implements CategoriesRepository {
+class CategoriesRepositoryImpl extends BaseRepository
+    implements CategoriesRepository {
   final ApiService _apiService;
 
   CategoriesRepositoryImpl(this._apiService);
@@ -22,49 +23,44 @@ class CategoriesRepositoryImpl extends BaseRepository implements CategoriesRepos
     return guardFuture(() async {
       final response = await _apiService.get(ApiConstants.categories);
 
-      return response.fold(
-        (failure) => throw failure,
-        (success) {
-          final data = success.data;
-          if (data == null) {
-            throw ApiFailure('No data received from server');
+      return response.fold((failure) => throw failure, (success) {
+        final data = success.data;
+        if (data == null) {
+          throw ApiFailure('No data received from server');
+        }
+
+        // Check if response has the expected structure
+        if (data is! Map<String, dynamic>) {
+          throw ApiFailure('Invalid response format');
+        }
+
+        // Check for success status
+        final isSuccess = data['success'] as bool?;
+        if (isSuccess != true) {
+          final message = data['message'] as String? ?? 'Request failed';
+          throw ApiFailure(message);
+        }
+
+        // Extract categories data
+        final categoriesData = data['data'];
+        if (categoriesData == null) {
+          throw ApiFailure('No categories data found');
+        }
+
+        if (categoriesData is! List) {
+          throw ApiFailure('Categories data is not a list');
+        }
+
+        // Parse categories
+        final categories = categoriesData.map((categoryJson) {
+          if (categoryJson is! Map<String, dynamic>) {
+            throw ApiFailure('Invalid category format');
           }
+          return Category.fromJson(categoryJson);
+        }).toList();
 
-          // Check if response has the expected structure
-          if (data is! Map<String, dynamic>) {
-            throw ApiFailure('Invalid response format');
-          }
-
-          // Check for success status
-          final isSuccess = data['success'] as bool?;
-          if (isSuccess != true) {
-            final message = data['message'] as String? ?? 'Request failed';
-            throw ApiFailure(message);
-          }
-
-          // Extract categories data
-          final categoriesData = data['data'];
-          if (categoriesData == null) {
-            throw ApiFailure('No categories data found');
-          }
-
-          if (categoriesData is! List) {
-            throw ApiFailure('Categories data is not a list');
-          }
-
-          // Parse categories
-          final categories = categoriesData
-              .map((categoryJson) {
-                if (categoryJson is! Map<String, dynamic>) {
-                  throw ApiFailure('Invalid category format');
-                }
-                return Category.fromJson(categoryJson);
-              })
-              .toList();
-
-          return categories;
-        },
-      );
+        return categories;
+      });
     });
   }
 }

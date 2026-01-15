@@ -4,9 +4,12 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:guess_game/core/theming/colors.dart';
 import 'package:guess_game/core/theming/icons.dart';
+import 'package:guess_game/features/game/data/models/game_start_response.dart';
 import 'package:guess_game/features/game/data/models/update_point_plan_response.dart';
 import 'package:guess_game/features/game/data/models/update_score_response.dart';
+import 'package:guess_game/core/routing/routes.dart';
 import 'package:guess_game/features/qrcode/presentation/view/widgets/folder_team_image_card.dart';
+import 'package:guess_game/features/qrcode/presentation/view/widgets/small_yellow_corner_button.dart';
 import 'package:guess_game/guess_game.dart';
 
 class QrImageView extends StatefulWidget {
@@ -19,6 +22,7 @@ class QrImageView extends StatefulWidget {
 class _QrImageViewState extends State<QrImageView> {
   UpdatePointPlanResponse? _pointPlanResponse;
   UpdateScoreResponse? _scoreResponse;
+  GameStartResponse? _gameStartResponse;
   bool _didReadArgs = false;
 
   @override
@@ -37,14 +41,48 @@ class _QrImageViewState extends State<QrImageView> {
       print('🎯 QrImageView: globalArgs = $globalArgs');
     }
 
-    final effectiveArgs = args ?? globalArgs;
-    final p = effectiveArgs?['updatePointPlanResponse'];
-    final s = effectiveArgs?['updateScoreResponse'];
-    if (p is UpdatePointPlanResponse) {
-      setState(() => _pointPlanResponse = p);
+    // First priority: read from args directly
+    if (args != null) {
+      final p = args['updatePointPlanResponse'];
+      final s = args['updateScoreResponse'];
+      final g = args['gameStartResponse'];
+      if (p is UpdatePointPlanResponse) {
+        setState(() => _pointPlanResponse = p);
+      }
+      if (s is UpdateScoreResponse) {
+        setState(() => _scoreResponse = s);
+      }
+      if (g is GameStartResponse) {
+        setState(() => _gameStartResponse = g);
+      }
     }
-    if (s is UpdateScoreResponse) {
-      setState(() => _scoreResponse = s);
+
+    // Fallback: read from globalArgs if not found in args
+    if (_pointPlanResponse == null && globalArgs != null) {
+      final p = globalArgs['updatePointPlanResponse'];
+      if (p is UpdatePointPlanResponse) {
+        setState(() => _pointPlanResponse = p);
+      }
+    }
+
+    if (_scoreResponse == null && globalArgs != null) {
+      final s = globalArgs['updateScoreResponse'];
+      if (s is UpdateScoreResponse) {
+        setState(() => _scoreResponse = s);
+      }
+    }
+
+    if (_gameStartResponse == null && globalArgs != null) {
+      final g = globalArgs['gameStartResponse'];
+      if (g is GameStartResponse) {
+        setState(() => _gameStartResponse = g);
+      }
+    }
+
+    if (kDebugMode) {
+      print('🎯 QrImageView: didChangeDependencies finished');
+      print('🎯 QrImageView: _scoreResponse: ${_scoreResponse != null}');
+      print('🎯 QrImageView: _gameStartResponse: ${_gameStartResponse != null}');
     }
   }
 
@@ -87,6 +125,29 @@ class _QrImageViewState extends State<QrImageView> {
                           imageBoxSize: 145,
                         ),
                       ],
+                    ),
+                    SizedBox(height: 16.h),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: SmallYellowCornerButton(
+                        text: 'التالي',
+                        onTap: () {
+                          // الانتقال إلى صفحة تحديد الفائز
+                          // تمرير البيانات المطلوبة
+                          if (kDebugMode) {
+                            print('🎯 QrImageView: Navigating to RoundWinnerView');
+                            print('🎯 QrImageView: _scoreResponse: ${_scoreResponse != null}');
+                            print('🎯 QrImageView: _gameStartResponse: ${_gameStartResponse != null}');
+                          }
+                          Navigator.of(context).pushNamed(
+                            Routes.roundWinnerView,
+                            arguments: {
+                              'updateScoreResponse': _scoreResponse,
+                              'gameStartResponse': _gameStartResponse,
+                            },
+                          );
+                        },
+                      ),
                     ),
                   ],
                 ),

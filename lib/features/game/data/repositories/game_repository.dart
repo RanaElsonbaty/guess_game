@@ -2,6 +2,8 @@ import 'package:dartz/dartz.dart';
 import 'package:guess_game/core/helper_functions/api_constants.dart';
 import 'package:guess_game/core/network/api_failure.dart';
 import 'package:guess_game/core/network/api_service.dart';
+import 'package:guess_game/features/game/data/models/assign_winner_request.dart';
+import 'package:guess_game/features/game/data/models/assign_winner_response.dart';
 import 'package:guess_game/features/game/data/models/game_start_request.dart';
 import 'package:guess_game/features/game/data/models/game_start_response.dart';
 import 'package:guess_game/features/game/data/models/update_point_plan_request.dart';
@@ -13,6 +15,7 @@ abstract class GameRepository {
   Future<Either<ApiFailure, GameStartResponse>> startGame(GameStartRequest request);
   Future<Either<ApiFailure, UpdatePointPlanResponse>> updatePointPlan(UpdatePointPlanRequest request);
   Future<Either<ApiFailure, UpdateScoreResponse>> updateScore(UpdateScoreRequest request);
+  Future<Either<ApiFailure, AssignWinnerResponse>> assignWinner(AssignWinnerRequest request);
 }
 
 class GameRepositoryImpl implements GameRepository {
@@ -83,6 +86,30 @@ class GameRepositoryImpl implements GameRepository {
       );
     } catch (e) {
       return Left(ApiFailure('حدث خطأ أثناء تحديث score: $e'));
+    }
+  }
+
+  @override
+  Future<Either<ApiFailure, AssignWinnerResponse>> assignWinner(AssignWinnerRequest request) async {
+    try {
+      final response = await _apiService.put(
+        ApiConstants.gamesRoundAssignWinner,
+        data: request.toJson(),
+      );
+
+      return response.fold(
+        (failure) => Left(failure),
+        (success) {
+          if (success.statusCode == 200) {
+            final assignResponse = AssignWinnerResponse.fromJson(success.data);
+            return Right(assignResponse);
+          } else {
+            return Left(ApiFailure('فشل في تعيين الفائز'));
+          }
+        },
+      );
+    } catch (e) {
+      return Left(ApiFailure('حدث خطأ أثناء تعيين الفائز: $e'));
     }
   }
 }

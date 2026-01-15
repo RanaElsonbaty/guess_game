@@ -93,7 +93,7 @@ class SubscriptionAlertDialog extends StatelessWidget {
                     textAlign: TextAlign.center,
                   ),
 
-                  SizedBox(height: 30.h),
+                  SizedBox(height: 20.h),
 
                   // الزر الأخضر
                   GestureDetector(

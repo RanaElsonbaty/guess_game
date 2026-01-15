@@ -198,6 +198,34 @@ class _TeamCategoriesSecondTeamViewState extends State<TeamCategoriesSecondTeamV
                       child: BlocBuilder<CategoriesCubit, CategoriesState>(
                         builder: (context, state) {
                           if (state is CategoriesError) {
+                            // التحقق من رسالة انتهاء الاشتراك
+                            if (state.message.contains('لا يمكن اختيار المزيد') ||
+                                state.message.contains('المجموع الكلي سيصل 0 فئة')) {
+                            // التحقق من subscription
+                            final subscription = GlobalStorage.subscription;
+                            final remaining = subscription?.limit != null && subscription?.used != null
+                                ? subscription!.limit! - subscription.used!
+                                : 0;
+                            if (subscription == null || subscription.status != 'active' || remaining <= 0) {
+                                // إعادة توجيه لصفحة الباقات
+                                WidgetsBinding.instance.addPostFrameCallback((_) {
+                                  Navigator.of(context).pushNamedAndRemoveUntil(
+                                    Routes.packages,
+                                    (route) => false,
+                                  );
+                                });
+                                return Center(
+                                  child: Text(
+                                    'انتهى اشتراكك. جاري إعادة توجيهك لصفحة الباقات...',
+                                    style: TextStyles.font14Secondary700Weight.copyWith(
+                                      color: Colors.orange,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                );
+                              }
+                            }
+
                             return Center(
                               child: Text(
                                 'خطأ في تحميل الفئات: ${state.message}',
@@ -236,14 +264,14 @@ class _TeamCategoriesSecondTeamViewState extends State<TeamCategoriesSecondTeamV
                                 ),
                               );
                             } else {
-                              final limitedCategories = categories.take(userLimit).toList();
+                              // عرض جميع الفئات المتاحة
                               return ListView.builder(
                                 scrollDirection: Axis.horizontal,
                                 physics: const BouncingScrollPhysics(),
                                 padding: EdgeInsets.symmetric(horizontal: 12.w),
-                                itemCount: limitedCategories.length,
+                                itemCount: categories.length,
                                 itemBuilder: (context, index) {
-                                  final category = limitedCategories[index];
+                                  final category = categories[index];
                                   final isSelected = selectedCategoriesForSecondTeam.contains(category.id);
 
                                   return Padding(

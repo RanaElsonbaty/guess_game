@@ -46,4 +46,18 @@ class ScoreUpdateError extends GameState {
   ScoreUpdateError(this.message);
 }
 
+class WinnerAssigning extends GameState {}
+
+class WinnerAssigned extends GameState {
+  final AssignWinnerResponse response;
+
+  WinnerAssigned(this.response);
+}
+
+class WinnerAssignError extends GameState {
+  final String message;
+
+  WinnerAssignError(this.message);
+}
+
 

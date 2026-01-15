@@ -108,6 +108,9 @@ class _GroupsViewState extends State<GroupsView> {
               duration: Duration(seconds: 2),
             ),
           );
+          // حفظ gameStartResponse في GlobalStorage للاستعادة
+          GlobalStorage.lastGameStartResponse = gameState.response;
+
           Navigator.of(context).pushReplacementNamed(
             Routes.gameLevel,
             arguments: {

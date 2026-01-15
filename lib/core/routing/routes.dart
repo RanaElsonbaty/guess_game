@@ -15,5 +15,7 @@ class Routes {
   static const String gameLevel = 'game_level';
   static const String qrcodeView = 'qrcode_view';
   static const String qrimageView = 'qrimage_view';
+  static const String roundWinnerView = 'round_winner_view';
+  static const String scoreView = 'score_view';
   static const String about = 'about';
 }

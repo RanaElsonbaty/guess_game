@@ -39,6 +39,19 @@ class _TeamCategoriesFirstTeamViewState extends State<TeamCategoriesFirstTeamVie
 
     // كل فريق يمكنه اختيار حتى limit/2، مع مراعاة المجموع الكلي
     maxSelectableCategories = (widget.limit / 2).ceil();
+
+    // تحميل الفئات من API إذا لم تكن محملة
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final categoriesCubit = context.read<CategoriesCubit>();
+      if (!categoriesCubit.isLoaded) {
+        print('📋 TeamCategoriesFirstTeamView: تحميل الفئات من API...');
+        categoriesCubit.loadCategories();
+      } else {
+        print('📋 TeamCategoriesFirstTeamView: الفئات محملة مسبقاً');
+        // التحقق من صحة الفئات المحفوظة
+        _validateSavedCategories();
+      }
+    });
   }
 
   void _toggleCategorySelection(int categoryId) {
@@ -83,6 +96,27 @@ class _TeamCategoriesFirstTeamViewState extends State<TeamCategoriesFirstTeamVie
     // تحميل فئات الفريق الأول المحفوظة
     selectedCategoriesForFirstTeam = [...GlobalStorage.team1Categories];
     print('📋 تم تحميل فئات الفريق الأول المحفوظة: $selectedCategoriesForFirstTeam');
+
+    // تنظيف الفئات المحفوظة التي لم تعد متاحة (سيتم التحقق لاحقاً في BlocBuilder)
+    _validateSavedCategories();
+  }
+
+  void _validateSavedCategories() {
+    // سيتم استدعاء هذا بعد تحميل الفئات من API
+    final categoriesCubit = context.read<CategoriesCubit>();
+    if (categoriesCubit.isLoaded) {
+      final availableCategoryIds = categoriesCubit.categories.map((c) => c.id).toSet();
+      final validSavedCategories = selectedCategoriesForFirstTeam.where((id) => availableCategoryIds.contains(id)).toList();
+
+      if (validSavedCategories.length != selectedCategoriesForFirstTeam.length) {
+        print('⚠️ تم العثور على فئات محفوظة غير متاحة: ${selectedCategoriesForFirstTeam.where((id) => !availableCategoryIds.contains(id)).toList()}');
+        selectedCategoriesForFirstTeam = validSavedCategories;
+        print('📋 تم تنظيف الفئات المحفوظة: $selectedCategoriesForFirstTeam');
+
+        // حفظ الفئات الصحيحة
+        _saveCategories();
+      }
+    }
   }
 
   void _saveCategories() async {
@@ -182,6 +216,34 @@ class _TeamCategoriesFirstTeamViewState extends State<TeamCategoriesFirstTeamVie
                     child: BlocBuilder<CategoriesCubit, CategoriesState>(
                       builder: (context, state) {
                         if (state is CategoriesError) {
+                          // التحقق من رسالة انتهاء الاشتراك
+                          if (state.message.contains('لا يمكن اختيار المزيد') ||
+                              state.message.contains('المجموع الكلي سيصل 0 فئة')) {
+                            // التحقق من subscription
+                            final subscription = GlobalStorage.subscription;
+                            final remaining = subscription?.limit != null && subscription?.used != null
+                                ? subscription!.limit! - subscription.used!
+                                : 0;
+                            if (subscription == null || subscription.status != 'active' || remaining <= 0) {
+                              // إعادة توجيه لصفحة الباقات
+                              WidgetsBinding.instance.addPostFrameCallback((_) {
+                                Navigator.of(context).pushNamedAndRemoveUntil(
+                                  Routes.packages,
+                                  (route) => false,
+                                );
+                              });
+                              return Center(
+                                child: Text(
+                                  'انتهى اشتراكك. جاري إعادة توجيهك لصفحة الباقات...',
+                                  style: TextStyles.font14Secondary700Weight.copyWith(
+                                    color: Colors.orange,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                              );
+                            }
+                          }
+
                           return Center(
                             child: Text(
                               'خطأ في تحميل الفئات: ${state.message}',
@@ -195,6 +257,11 @@ class _TeamCategoriesFirstTeamViewState extends State<TeamCategoriesFirstTeamVie
                           // Show shimmer or real categories
                           final isLoading = state is CategoriesLoading;
                           final categories = state is CategoriesLoaded ? state.categories : [];
+
+                          // التحقق من صحة الفئات المحفوظة عند تحميل الفئات من API
+                          if (!isLoading && categories.isNotEmpty) {
+                            _validateSavedCategories();
+                          }
 
                           if (isLoading) {
                             return Shimmer.fromColors(
@@ -220,15 +287,16 @@ class _TeamCategoriesFirstTeamViewState extends State<TeamCategoriesFirstTeamVie
                               ),
                             );
                           } else {
-                            final limitedCategories = categories.take(widget.limit).toList();
+                            // عرض جميع الفئات المتاحة
                             return ListView.builder(
                               scrollDirection: Axis.horizontal,
                               physics: const BouncingScrollPhysics(),
                               padding: EdgeInsets.symmetric(horizontal: 12.w),
-                              itemCount: limitedCategories.length,
+                              itemCount: categories.length,
                               itemBuilder: (context, index) {
-                                final category = limitedCategories[index];
+                                final category = categories[index];
                                 final isSelected = selectedCategoriesForFirstTeam.contains(category.id);
+
 
                                 return Padding(
                                   padding: EdgeInsets.symmetric(
@@ -301,6 +369,10 @@ class _TeamCategoriesFirstTeamViewState extends State<TeamCategoriesFirstTeamVie
                 // منطق الانتقال لصفحة الفريق الثاني
                 print('🚀 الضغط على زر التالي - الانتقال لفئات الفريق الثاني');
                 print('📋 الفئات المختارة للفريق الأول: $selectedCategoriesForFirstTeam ($team1Count فئة)');
+                // حفظ البيانات الأساسية في GlobalStorage للاستعادة
+                GlobalStorage.lastLimit = widget.limit;
+                GlobalStorage.lastTeam1Categories = selectedCategoriesForFirstTeam;
+
                 Navigator.of(context).pushNamed(
                   Routes.teamCategoriesSecondTeam,
                   arguments: {

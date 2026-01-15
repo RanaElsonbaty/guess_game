@@ -15,6 +15,10 @@ class ApiConstants {
   static const String gamesStart = '/games/start';
   static const String gamesRoundDataUpdatePointPlan = '/games/round/data/update-point-plan';
   static const String gamesRoundDataUpdateScore = '/games/round/data/update-score';
+  static const String gamesRoundAssignWinner = '/games/round/assign-winner';
+
+  // Settings
+  static const String gameTerms = '/settings/game-terms';
 
   // sharePreference
   static const String TOKEN = 'token';
@@ -37,6 +41,7 @@ class ApiConstants {
   static const String LANG_KEY = 'lang';
   static const String INTRO = 'intro';
   static const String OPENED_STORIES = "openedStories";
+  static const String NAVIGATION_STATE = "navigation_state";
   static String errorInternetNotAvailable = 'Your internet is not working';
 
 }

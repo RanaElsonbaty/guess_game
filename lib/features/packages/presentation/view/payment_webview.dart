@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:guess_game/core/routing/routes.dart';
@@ -84,81 +86,155 @@ class _PaymentWebViewState extends State<PaymentWebView> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('صفحة الدفع'),
-        leading: IconButton(
-          icon: const Icon(Icons.close),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: () {
-              _webViewController?.reload();
-            },
-          ),
-        ],
+    return Dialog(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
       ),
-      body: Stack(
-        children: [
-          InAppWebView(
-            initialUrlRequest: URLRequest(url: WebUri.uri(Uri.parse(widget.url))),
-            initialOptions: InAppWebViewGroupOptions(
-              crossPlatform: InAppWebViewOptions(
-                javaScriptEnabled: true,
-                useShouldOverrideUrlLoading: true,
-                useOnLoadResource: true,
-              ),
-            ),
-            onWebViewCreated: (controller) {
-              _webViewController = controller;
-              print('🌐 تم إنشاء WebView');
-            },
-            onLoadStart: (controller, url) {
-              print('🌐 بدء تحميل صفحة الدفع: $url');
-              setState(() {
-                _isLoading = true;
-              });
-            },
-            onLoadStop: (controller, url) async {
-              print('✅ انتهاء تحميل صفحة الدفع: $url');
-              setState(() {
-                _isLoading = false;
-              });
-
-              // فحص محتوى الصفحة للكشف عن نجاح الدفع
-              await _checkPaymentSuccess();
-            },
-            onLoadError: (controller, url, code, message) {
-              print('❌ خطأ في تحميل صفحة الدفع: $message');
-              setState(() {
-                _isLoading = false;
-              });
-            },
-            shouldOverrideUrlLoading: (controller, navigationAction) async {
-              final url = navigationAction.request.url?.toString() ?? '';
-              print('🧭 طلب تنقل: $url');
-
-              // السماح بجميع التنقلات
-              return NavigationActionPolicy.ALLOW;
-            },
-          ),
-          if (_isLoading)
+      child: Container(
+        height: MediaQuery.of(context).size.height * 0.8, // 80% من ارتفاع الشاشة
+        width: MediaQuery.of(context).size.width * 0.9, // 90% من عرض الشاشة
+        child: Column(
+          children: [
+            // Header مع أزرار التحكم
             Container(
-              color: Colors.white,
-              child: const Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    CircularProgressIndicator(),
-                    SizedBox(height: 16),
-                    Text('جاري تحميل صفحة الدفع...'),
-                  ],
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(16),
+                  topRight: Radius.circular(16),
                 ),
               ),
+              child: Row(
+                children: [
+                  const Text(
+                    'صفحة الدفع',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const Spacer(),
+                  IconButton(
+                    icon: const Icon(Icons.refresh, size: 20),
+                    onPressed: () {
+                      _webViewController?.reload();
+                    },
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close, size: 20),
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                ],
+              ),
             ),
-        ],
+            // WebView body
+            Expanded(
+              child: Stack(
+                children: [
+                  InAppWebView(
+                    initialUrlRequest: URLRequest(url: WebUri.uri(Uri.parse(widget.url))),
+                    initialOptions: InAppWebViewGroupOptions(
+                      crossPlatform: InAppWebViewOptions(
+                        javaScriptEnabled: true,
+                        useShouldOverrideUrlLoading: true,
+                        useOnLoadResource: true,
+                        // تحسينات لحقول الإدخال
+                        supportZoom: false,
+                        disableHorizontalScroll: true,
+                        disableVerticalScroll: false,
+                        // تحسين الأداء العام
+                        cacheEnabled: true,
+                        clearCache: false,
+                        // تحسين التفاعل مع المستخدم
+                        allowFileAccessFromFileURLs: true,
+                        allowUniversalAccessFromFileURLs: true,
+                      ),
+                      android: AndroidInAppWebViewOptions(
+                        // تحسينات خاصة بـ Android
+                        useHybridComposition: true,
+                        allowFileAccess: true,
+                        allowContentAccess: true,
+                        // تحسين حقول الإدخال
+                        hardwareAcceleration: true,
+                        supportMultipleWindows: false,
+                        // تحسين الأداء
+                        databaseEnabled: true,
+                        domStorageEnabled: true,
+                        geolocationEnabled: false,
+                      ),
+                      ios: IOSInAppWebViewOptions(
+                        // تحسينات خاصة بـ iOS
+                        allowsInlineMediaPlayback: true,
+                        allowsAirPlayForMediaPlayback: false,
+                        allowsPictureInPictureMediaPlayback: false,
+                        // تحسين حقول الإدخال
+                        allowsLinkPreview: false,
+                        suppressesIncrementalRendering: false,
+                      ),
+                    ),
+                    onWebViewCreated: (controller) {
+                      _webViewController = controller;
+                      print('🌐 تم إنشاء WebView');
+                    },
+                    onLoadStart: (controller, url) {
+                      print('🌐 بدء تحميل صفحة الدفع: $url');
+                      setState(() {
+                        _isLoading = true;
+                      });
+                    },
+                    onLoadStop: (controller, url) async {
+                      print('✅ انتهاء تحميل صفحة الدفع: $url');
+                      setState(() {
+                        _isLoading = false;
+                      });
+
+                      // فحص محتوى الصفحة للكشف عن نجاح الدفع
+                      await _checkPaymentSuccess();
+                    },
+                    onLoadError: (controller, url, code, message) {
+                      print('❌ خطأ في تحميل صفحة الدفع: $message');
+                      setState(() {
+                        _isLoading = false;
+                      });
+                    },
+                    shouldOverrideUrlLoading: (controller, navigationAction) async {
+                      final url = navigationAction.request.url?.toString() ?? '';
+                      print('🧭 طلب تنقل: $url');
+
+                      // السماح بجميع التنقلات
+                      return NavigationActionPolicy.ALLOW;
+                    },
+                    gestureRecognizers: Set()
+                      ..add(Factory<VerticalDragGestureRecognizer>(
+                        () => VerticalDragGestureRecognizer(),
+                      ))
+                      ..add(Factory<HorizontalDragGestureRecognizer>(
+                        () => HorizontalDragGestureRecognizer(),
+                      ))
+                      ..add(Factory<TapGestureRecognizer>(
+                        () => TapGestureRecognizer(),
+                      )),
+                  ),
+                  if (_isLoading)
+                    Container(
+                      color: Colors.white,
+                      child: const Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            CircularProgressIndicator(),
+                            SizedBox(height: 16),
+                            Text('جاري تحميل صفحة الدفع...'),
+                          ],
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

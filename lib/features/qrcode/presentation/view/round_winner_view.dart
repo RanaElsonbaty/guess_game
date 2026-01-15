@@ -1,0 +1,363 @@
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:guess_game/core/helper_functions/global_storage.dart';
+import 'package:guess_game/core/routing/routes.dart';
+import 'package:guess_game/core/theming/colors.dart';
+import 'package:guess_game/core/theming/icons.dart';
+import 'package:guess_game/core/theming/styles.dart';
+import 'package:guess_game/features/game/data/models/assign_winner_request.dart';
+import 'package:guess_game/features/game/data/models/game_start_response.dart';
+import 'package:guess_game/features/game/data/models/update_score_response.dart';
+import 'package:guess_game/features/game/presentation/cubit/game_cubit.dart';
+import 'package:guess_game/features/levels/presentation/view/widgets/header_shape_painter.dart';
+import 'package:guess_game/features/qrcode/presentation/view/widgets/yellow_pill_button.dart';
+import 'package:guess_game/guess_game.dart';
+
+class RoundWinnerView extends StatefulWidget {
+  const RoundWinnerView({super.key});
+
+  @override
+  State<RoundWinnerView> createState() => _RoundWinnerViewState();
+}
+
+class _RoundWinnerViewState extends State<RoundWinnerView> {
+  UpdateScoreResponse? _updateScoreResponse;
+  GameStartResponse? _gameStartResponse;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // First priority: get from arguments (passed from previous screens)
+    final Map<String, dynamic>? args =
+        ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+    final Map<String, dynamic>? globalArgs =
+        GuessGame.globalInitialArguments as Map<String, dynamic>?;
+
+    final effectiveArgs = args ?? globalArgs;
+    _updateScoreResponse = effectiveArgs?['updateScoreResponse'];
+    _gameStartResponse = effectiveArgs?['gameStartResponse'];
+
+    if (kDebugMode) {
+      print('🎯 RoundWinnerView: From arguments - updateScoreResponse: ${_updateScoreResponse != null}');
+      print('🎯 RoundWinnerView: From arguments - gameStartResponse: ${_gameStartResponse != null}');
+      print('🎯 RoundWinnerView: args keys: ${args?.keys.toList()}');
+      print('🎯 RoundWinnerView: globalArgs keys: ${globalArgs?.keys.toList()}');
+      print('🎯 RoundWinnerView: data loaded successfully');
+    }
+
+    // Fallback: get from cubit if not available in arguments
+    final cubit = context.read<GameCubit>();
+    _updateScoreResponse ??= cubit.updateScoreResponse;
+    _gameStartResponse ??= cubit.gameStartResponse;
+
+    // Final fallback: get from GlobalStorage
+    _gameStartResponse ??= GlobalStorage.gameStartResponse;
+
+
+    if (kDebugMode) {
+      print('🎯 RoundWinnerView: After cubit fallback - updateScoreResponse: ${_updateScoreResponse != null}');
+      print('🎯 RoundWinnerView: After cubit fallback - gameStartResponse: ${_gameStartResponse != null}');
+      print('🎯 RoundWinnerView: From GlobalStorage - gameStartResponse: ${GlobalStorage.gameStartResponse != null}');
+    }
+  }
+
+
+  int? _getTeamId(int teamIndex) {
+    // teamIndex: 0 = team1, 1 = team2
+    if (_updateScoreResponse == null || _updateScoreResponse!.data.length <= teamIndex) {
+      return null;
+    }
+    return _updateScoreResponse!.data[teamIndex].teamId;
+  }
+
+  Future<void> _assignWinner(int teamIndex) async {
+    if (kDebugMode) {
+      print('🎯 RoundWinnerView: _assignWinner called with teamIndex = $teamIndex');
+      print('🎯 RoundWinnerView: _updateScoreResponse = ${_updateScoreResponse != null}');
+      print('🎯 RoundWinnerView: _gameStartResponse = ${_gameStartResponse != null}');
+    }
+
+    if (_updateScoreResponse == null || _updateScoreResponse!.data.isEmpty) {
+      if (kDebugMode) {
+        print('🎯 RoundWinnerView: No update score response data');
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('لا توجد بيانات متاحة لتعيين الفائز')),
+      );
+      return;
+    }
+
+    if (_gameStartResponse == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('لا توجد بيانات اللعبة المتاحة')),
+      );
+      return;
+    }
+
+    final teamId = _getTeamId(teamIndex);
+    if (teamId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('لا يمكن تحديد معرف الفريق')),
+      );
+      return;
+    }
+
+    // Get base round_id from GlobalStorage based on current round index
+    final baseRoundId = GlobalStorage.getCurrentRoundId();
+
+    // زيادة round_id بناءً على رقم الجولة الحالية
+    final currentRoundIndex = GlobalStorage.currentRoundIndex;
+    final roundId = baseRoundId + currentRoundIndex;
+
+    if (kDebugMode) {
+      print('🎯 RoundWinnerView: Base round ID from GlobalStorage: $baseRoundId');
+      print('🎯 RoundWinnerView: Current round index: $currentRoundIndex');
+      print('🎯 RoundWinnerView: Updated round ID for AssignWinnerRequest: $roundId');
+    }
+    if (roundId == 0) {
+      if (kDebugMode) {
+        print('🎯 RoundWinnerView: Invalid round ID from GlobalStorage');
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('خطأ في تحديد رقم الجولة')),
+      );
+      return;
+    }
+
+    // Get game_id from GameStartResponse
+    final gameId = _gameStartResponse!.data.id;
+
+    final request = AssignWinnerRequest(
+      gameId: gameId,
+      roundId: roundId,
+      teamId: teamId,
+    );
+
+    if (kDebugMode) {
+      print('🎯 RoundWinnerView: ===== ASSIGN WINNER REQUEST =====');
+      print('🎯 RoundWinnerView: Base round ID: $baseRoundId');
+      print('🎯 RoundWinnerView: Round index increment: $currentRoundIndex');
+      print('🎯 RoundWinnerView: Final round ID: $roundId');
+      print('🎯 RoundWinnerView: AssignWinnerRequest JSON:');
+      print(request.toJson());
+      print('🎯 RoundWinnerView: AssignWinnerRequest details:');
+      print('  - gameId: $gameId');
+      print('  - roundId: $roundId (+$currentRoundIndex from base)');
+      print('  - teamId: $teamId');
+      print('🎯 RoundWinnerView: ==============================');
+    }
+
+    final cubit = context.read<GameCubit>();
+    final response = await cubit.assignWinner(request);
+
+    if (kDebugMode) {
+      print('🎯 RoundWinnerView: AssignWinnerResponse JSON:');
+      print(response?.toJson() ?? 'null');
+      if (response != null) {
+        print('🎯 RoundWinnerView: AssignWinnerResponse details:');
+        print('  - success: ${response.success}');
+        print('  - message: ${response.message}');
+        print('  - code: ${response.code}');
+        print('  - gameId: ${response.data.gameId}');
+        print('  - roundId: ${response.data.roundId}');
+        print('  - teams count: ${response.data.roundData.length}');
+        for (var i = 0; i < response.data.roundData.length; i++) {
+          final roundData = response.data.roundData[i];
+          print('    Team ${i + 1}: ${roundData.team.name} (${roundData.team.totalPoints} points) - Winner: ${roundData.team.isWinner}');
+        }
+      }
+    }
+
+    if (response != null && mounted) {
+      // Navigate to ScoreView immediately after assigning winner
+      Navigator.of(context).pushNamed(
+        Routes.scoreView,
+        arguments: {
+          'assignWinnerResponse': response,
+          'updateScoreResponse': _updateScoreResponse,
+          'gameStartResponse': _gameStartResponse,
+        },
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (kDebugMode) {
+      print('🎯 RoundWinnerView: build() called');
+      print('🎯 RoundWinnerView: _updateScoreResponse: ${_updateScoreResponse != null}');
+      print('🎯 RoundWinnerView: _gameStartResponse: ${_gameStartResponse != null}');
+    }
+
+    final team1Name = GlobalStorage.team1Name.isNotEmpty ? GlobalStorage.team1Name : 'الفريق الأول';
+    final team2Name = GlobalStorage.team2Name.isNotEmpty ? GlobalStorage.team2Name : 'الفريق الثاني';
+
+    return BlocBuilder<GameCubit, GameState>(
+      builder: (context, state) {
+        // Show loading indicator when assigning winner
+        if (state is WinnerAssigning) {
+          return const Scaffold(
+            body: Center(
+              child: CircularProgressIndicator(),
+            ),
+          );
+        }
+
+        // Handle error state
+        if (state is WinnerAssignError) {
+          if (kDebugMode) {
+            print('🎯 RoundWinnerView: WinnerAssignError state received: ${state.message}');
+          }
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('خطأ: ${state.message}')),
+            );
+          });
+        }
+
+        if (kDebugMode) {
+          print('🎯 RoundWinnerView: Building main UI');
+        }
+
+        // Return main UI
+        return Scaffold(
+      backgroundColor: Colors.white,
+      body: Center(
+        child: Container(
+          width: 740.w,
+          height: 280.h, // زيادة الارتفاع قليلاً لاستيعاب المحتوى
+          decoration: BoxDecoration(
+            color: Colors.white,
+          ),
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              /// Background gradient
+              Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Color(0XFF8e8e8e),
+                      AppColors.black.withOpacity(.2),
+                      Colors.white.withOpacity(.5),
+                    ],
+                  ),
+                ),
+              ),
+              /// Header (painted) INSIDE main container
+              Positioned(
+                top: -23,
+                left: 0,
+                child: SizedBox(
+                  width: 285.w,
+                  height: 80.h,
+                  child: CustomPaint(
+                    painter: HeaderShapePainter(),
+                  ),
+                ),
+              ),
+              Positioned(
+                top: -13,
+                left: 25,
+                child: Text(
+                  'الفائز؟',
+                  style: TextStyles.font14Secondary700Weight,
+                ),
+              ),
+              /// Close button (top right of main container)
+              Positioned(
+                top: -15,
+                right: -15,
+                child: GestureDetector(
+                  onTap: () => Navigator.of(context).pop(),
+                  child: SvgPicture.asset(AppIcons.cancel),
+                ),
+              ),
+              /// Content container
+              Positioned(
+                top: 18.h,
+                left: 10.w,
+                right: 10.w,
+                bottom: 20.h,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: const Color(0XFF231F20).withOpacity(.3),
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      // النص الرئيسي
+                      Text(
+                        'الفريق الفائز',
+                        style: TextStyles.font16Secondary700Weight,
+                        textAlign: TextAlign.center,
+                      ),
+                      SizedBox(height: 30.h),
+
+                      // الأزرار الثلاثة
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          // زر الفريق الأول (على اليمين)
+                          YellowPillButton(
+                            width: 90,
+                            height: 38,
+                            onTap: () => _assignWinner(0), // team 1 (index 0)
+                            child: Text(
+                              team1Name,
+                              style: TextStyles.font20Secondary700Weight,
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+
+                          SizedBox(width: 12.w),
+
+                          // زر الفريق الثاني (في الوسط)
+                          YellowPillButton(
+                            width: 90,
+                            height: 38,
+                            onTap: () => _assignWinner(1), // team 2 (index 1)
+                            child: Text(
+                              team2Name,
+                              style: TextStyles.font20Secondary700Weight,
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+
+                          SizedBox(width: 12.w),
+
+                          // زر التعادل (على اليسار)
+                          YellowPillButton(
+                            width: 90,
+                            height: 38,
+                            onTap: () {
+                              // للتعادل، ننتقل مباشرة إلى صفحة النتائج بدون استدعاء API
+                              Navigator.of(context).pushNamed(Routes.scoreView);
+                            },
+                            child: Text(
+                              'تعادل',
+                              style: TextStyles.font20Secondary700Weight,
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        ],
+                        )
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+        },
+      );
+  }
+}
+

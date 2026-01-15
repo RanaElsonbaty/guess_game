@@ -19,6 +19,25 @@ class GlobalStorage {
   static int team2Questions = 0;
   static int team2Answers = 0;
 
+  // Game responses
+  static dynamic gameStartResponse;
+
+  // Current round tracking
+  static int currentRoundIndex = 0;
+
+  // Last used round data IDs for incrementing
+  static int lastTeam1RoundDataId = 0;
+  static int lastTeam2RoundDataId = 0;
+
+  // Navigation state persistence
+  static String lastRoute = "";
+  static Map<String, dynamic> lastRouteArguments = {};
+
+  // Essential data for route restoration
+  static int? lastLimit;
+  static List<int>? lastTeam1Categories;
+  static dynamic lastGameStartResponse;
+
   static Future<void> loadData() async {
     appLang = CacheHelper.getData(key: "myLang") as String? ?? "";
     token = CacheHelper.getToken() ?? "";
@@ -29,6 +48,9 @@ class GlobalStorage {
     team1Answers = score['team1Answers'] as int? ?? 0;
     team2Questions = score['team2Questions'] as int? ?? 0;
     team2Answers = score['team2Answers'] as int? ?? 0;
+
+    // Load navigation state
+    await loadNavigationState();
   }
 
   static Future<void> saveUserData(UserModel userData) async {
@@ -91,6 +113,93 @@ class GlobalStorage {
     );
   }
 
+  static Future<void> saveGameStartResponse(dynamic response) async {
+    gameStartResponse = response;
+    // Reset round index when starting a new game
+    currentRoundIndex = 0;
+    // Note: We're not saving to cache since it's a complex object
+    // It will be available during the app session
+  }
+
+  static int getCurrentRoundId() {
+    if (gameStartResponse == null || gameStartResponse.data.rounds == null) {
+      return 0;
+    }
+    final rounds = gameStartResponse.data.rounds;
+    if (currentRoundIndex < rounds.length) {
+      return rounds[currentRoundIndex].id;
+    }
+    return 0;
+  }
+
+  static int getNextRoundNumber() {
+    return currentRoundIndex + 2; // Next round number (1-based + 1)
+  }
+
+  static void moveToNextRound() {
+    currentRoundIndex++;
+  }
+
+  static void updateLastRoundDataIds(int team1Id, int team2Id) {
+    lastTeam1RoundDataId = team1Id;
+    lastTeam2RoundDataId = team2Id;
+  }
+
+  static int getNextTeam1RoundDataId() {
+    return lastTeam1RoundDataId + 1;
+  }
+
+  static int getNextTeam2RoundDataId() {
+    return lastTeam2RoundDataId + 1;
+  }
+
+  static void saveNavigationState(String route, Map<String, dynamic>? arguments) {
+    lastRoute = route;
+    lastRouteArguments = arguments ?? {};
+
+    // Extract and save essential data based on route
+    switch (route) {
+      case 'team_categories':
+        lastLimit = arguments?['limit'] as int?;
+        break;
+      case 'team_categories_second_team':
+        lastLimit = arguments?['limit'] as int?;
+        lastTeam1Categories = arguments?['team1Categories'] as List<int>?;
+        break;
+      case 'game_level':
+        lastGameStartResponse = arguments?['gameStartResponse'];
+        break;
+    }
+
+    // Merge essential data with arguments for saving
+    final extendedArgs = Map<String, dynamic>.from(arguments ?? {});
+    extendedArgs['limit'] = lastLimit;
+    extendedArgs['team1Categories'] = lastTeam1Categories;
+    extendedArgs['gameStartResponse'] = lastGameStartResponse;
+
+    // Save to persistent storage
+    CacheHelper.saveNavigationState(route, extendedArgs);
+  }
+
+  static Future<void> loadNavigationState() async {
+    final navState = CacheHelper.getNavigationState();
+    if (navState != null) {
+      lastRoute = navState['route'] ?? "";
+      lastRouteArguments = navState['arguments'] ?? {};
+
+      // Load essential data
+      lastLimit = navState['limit'] as int?;
+      lastTeam1Categories = navState['team1Categories'] as List<int>?;
+      lastGameStartResponse = navState['gameStartResponse'];
+    }
+  }
+
+  static void clearNavigationState() {
+    lastRoute = "";
+    lastRouteArguments = {};
+    CacheHelper.clearNavigationState();
+  }
+
   static Future<void> clearData() async {
     await CacheHelper.clearData();
     token = "";
@@ -105,6 +214,15 @@ class GlobalStorage {
     team1Answers = 0;
     team2Questions = 0;
     team2Answers = 0;
+    gameStartResponse = null;
+    currentRoundIndex = 0;
+    lastTeam1RoundDataId = 0;
+    lastTeam2RoundDataId = 0;
+    lastRoute = "";
+    lastRouteArguments = {};
+    lastLimit = null;
+    lastTeam1Categories = null;
+    lastGameStartResponse = null;
   }
 
   /// Prints the current token to logs (debug only).

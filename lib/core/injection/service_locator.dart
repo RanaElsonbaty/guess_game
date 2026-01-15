@@ -17,6 +17,8 @@ import 'package:guess_game/features/packages/data/repositories/packages_reposito
 import 'package:guess_game/features/packages/presentation/cubit/packages_cubit.dart';
 import 'package:guess_game/features/game/data/repositories/game_repository.dart';
 import 'package:guess_game/features/game/presentation/cubit/game_cubit.dart';
+import 'package:guess_game/features/terms/data/repositories/terms_repository.dart';
+import 'package:guess_game/features/terms/presentation/cubit/terms_cubit.dart';
 
 final getIt = GetIt.instance;
 
@@ -57,6 +59,10 @@ Future<void> setupServiceLocator() async {
     () => GameRepositoryImpl(getIt<ApiService>()),
   );
 
+  getIt.registerLazySingleton<TermsRepository>(
+    () => TermsRepositoryImpl(getIt<ApiService>()),
+  );
+
   // Cubits
   getIt.registerFactory<AuthCubit>(
     () => AuthCubit(getIt<AuthRepository>()),
@@ -92,5 +98,9 @@ Future<void> setupServiceLocator() async {
 
   getIt.registerFactory<GameCubit>(
     () => GameCubit(getIt<GameRepository>()),
+  );
+
+  getIt.registerFactory<TermsCubit>(
+    () => TermsCubit(getIt<TermsRepository>()),
   );
 }

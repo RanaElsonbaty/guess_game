@@ -7,6 +7,7 @@ import 'package:guess_game/core/theming/colors.dart';
 import 'package:guess_game/core/theming/icons.dart';
 import 'package:guess_game/core/helper_functions/global_storage.dart';
 import 'package:guess_game/core/routing/routes.dart';
+import 'package:guess_game/features/game/data/models/game_start_response.dart';
 import 'package:guess_game/features/game/data/models/update_point_plan_response.dart';
 import 'package:guess_game/features/game/data/models/update_score_request.dart';
 import 'package:guess_game/features/game/presentation/cubit/game_cubit.dart';
@@ -34,6 +35,7 @@ class QrcodeViewWithProvider extends StatelessWidget {
 
 class _QrcodeViewState extends State<QrcodeView> {
   UpdatePointPlanResponse? updatePointPlanResponse;
+  GameStartResponse? gameStartResponse;
   bool _didReadArgs = false;
   bool _isSubmitting = false;
 
@@ -59,13 +61,41 @@ class _QrcodeViewState extends State<QrcodeView> {
       print('🎯 QrcodeView: globalArgs = $globalArgs');
     }
 
-    final effectiveArgs = args ?? globalArgs;
-    final response = effectiveArgs?['updatePointPlanResponse'];
-    if (response is UpdatePointPlanResponse) {
-      setState(() => updatePointPlanResponse = response);
-      if (kDebugMode) {
-        // Debug log for troubleshooting payload issues (do not enable in release).
-        print('🧾 updatePointPlanResponse JSON: ${jsonEncode(response.toJson())}');
+    // First priority: read from args directly
+    if (args != null) {
+      final response = args['updatePointPlanResponse'];
+      if (response is UpdatePointPlanResponse) {
+        setState(() => updatePointPlanResponse = response);
+        if (kDebugMode) {
+          // Debug log for troubleshooting payload issues (do not enable in release).
+          print('🧾 updatePointPlanResponse JSON: ${jsonEncode(response.toJson())}');
+        }
+      }
+
+      final gameResponse = args['gameStartResponse'];
+      if (gameResponse is GameStartResponse) {
+        setState(() => gameStartResponse = gameResponse);
+        if (kDebugMode) {
+          print('🎯 QrcodeView: gameStartResponse received from args');
+        }
+      }
+    }
+
+    // Fallback: read from globalArgs if not found in args
+    if (updatePointPlanResponse == null && globalArgs != null) {
+      final response = globalArgs['updatePointPlanResponse'];
+      if (response is UpdatePointPlanResponse) {
+        setState(() => updatePointPlanResponse = response);
+      }
+    }
+
+    if (gameStartResponse == null && globalArgs != null) {
+      final gameResponse = globalArgs['gameStartResponse'];
+      if (gameResponse is GameStartResponse) {
+        setState(() => gameStartResponse = gameResponse);
+        if (kDebugMode) {
+          print('🎯 QrcodeView: gameStartResponse received from globalArgs');
+        }
       }
     }
   }
@@ -248,11 +278,19 @@ class _QrcodeViewState extends State<QrcodeView> {
         t2Answers: _team02Answers,
       );
 
+      if (kDebugMode) {
+        print('🎯 QrcodeView: Navigating to QrImageView');
+        print('🎯 QrcodeView: scoreResponse: ${scoreResponse != null}');
+        print('🎯 QrcodeView: updateResp: ${updateResp != null}');
+        print('🎯 QrcodeView: gameStartResponse: ${gameStartResponse != null}');
+      }
+
       Navigator.of(context).pushNamed(
         Routes.qrimageView,
         arguments: {
           'updateScoreResponse': scoreResponse,
           'updatePointPlanResponse': updateResp,
+          'gameStartResponse': gameStartResponse,
         },
       );
     } finally {

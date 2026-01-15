@@ -11,6 +11,64 @@ import 'package:guess_game/features/auth/login/presentation/cubit/auth_cubit.dar
 import 'package:guess_game/features/game/presentation/cubit/game_cubit.dart';
 import 'package:guess_game/guess_game.dart';
 
+Map<String, dynamic> _rebuildArgumentsForRoute(String route, Map<String, dynamic> savedArgs) {
+  final args = Map<String, dynamic>.from(savedArgs);
+
+  // Add essential data from GlobalStorage
+  switch (route) {
+    case Routes.teamCategoriesSecondTeam:
+      if (GlobalStorage.lastLimit != null) {
+        args['limit'] = GlobalStorage.lastLimit;
+      }
+      if (GlobalStorage.lastTeam1Categories != null) {
+        args['team1Categories'] = GlobalStorage.lastTeam1Categories;
+      }
+      break;
+
+    case Routes.gameLevel:
+      if (GlobalStorage.lastGameStartResponse != null) {
+        args['gameStartResponse'] = GlobalStorage.lastGameStartResponse;
+      }
+      break;
+  }
+
+  return args;
+}
+
+bool _hasRequiredDataForRoute(String route, Map<String, dynamic> arguments) {
+  switch (route) {
+    case Routes.teamCategoriesSecondTeam:
+      // Requires limit and team1Categories
+      return arguments['limit'] != null &&
+             arguments['team1Categories'] != null &&
+             (arguments['team1Categories'] as List?)?.isNotEmpty == true;
+
+    case Routes.gameLevel:
+      // Requires gameStartResponse
+      return arguments['gameStartResponse'] != null;
+
+    case Routes.qrcodeView:
+      // Requires updatePointPlanResponse
+      return arguments['updatePointPlanResponse'] != null;
+
+    case Routes.qrimageView:
+      // Requires updateScoreResponse
+      return arguments['updateScoreResponse'] != null;
+
+    case Routes.roundWinnerView:
+      // Requires updateScoreResponse
+      return arguments['updateScoreResponse'] != null;
+
+    case Routes.scoreView:
+      // Requires some basic data
+      return arguments['updateScoreResponse'] != null ||
+             arguments['assignWinnerResponse'] != null;
+
+    default:
+      return true; // Other routes don't have strict requirements
+  }
+}
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -137,7 +195,36 @@ void main() async {
     print('🎯 Navigation: Intro (no token)');
   }
 
-  print('🏁 Final navigation: $initialRoute with args: $initialArguments');
+  // Check for saved navigation state
+  if (GlobalStorage.lastRoute.isNotEmpty) {
+    // Skip restoring intro and other initial pages
+    if (GlobalStorage.lastRoute != Routes.intro &&
+        GlobalStorage.lastRoute != Routes.start &&
+        GlobalStorage.lastRoute != Routes.login &&
+        GlobalStorage.lastRoute != Routes.emailLogin &&
+        GlobalStorage.lastRoute != Routes.register) {
+
+      // Rebuild arguments with essential data
+      final restoredArgs = _rebuildArgumentsForRoute(GlobalStorage.lastRoute, GlobalStorage.lastRouteArguments);
+
+      // Ensure we have the required data for the restored route
+      if (_hasRequiredDataForRoute(GlobalStorage.lastRoute, restoredArgs)) {
+        initialRoute = GlobalStorage.lastRoute;
+        initialArguments = restoredArgs;
+        print('🎯 Navigation: Restored from saved state - $initialRoute');
+      } else {
+        // Clear invalid navigation state and go to default
+        GlobalStorage.clearNavigationState();
+        print('⚠️ Navigation: Invalid saved state data, going to default route');
+        print('🏁 Final navigation: $initialRoute with args: $initialArguments');
+      }
+    } else {
+      print('🏁 Navigation: Skipping restore of initial page - ${GlobalStorage.lastRoute}');
+      print('🏁 Final navigation: $initialRoute with args: $initialArguments');
+    }
+  } else {
+    print('🏁 Final navigation: $initialRoute with args: $initialArguments');
+  }
 
   runApp(
     MultiBlocProvider(

@@ -25,6 +25,8 @@ import 'package:guess_game/features/game/presentation/cubit/game_cubit.dart';
 import 'package:guess_game/features/game_level/presentation/view/game_level_view.dart';
 import 'package:guess_game/features/qrcode/presentation/view/qrcode_view.dart';
 import 'package:guess_game/features/qrcode/presentation/view/qr_image_view.dart';
+import 'package:guess_game/features/qrcode/presentation/view/round_winner_view.dart';
+import 'package:guess_game/features/qrcode/presentation/view/score_view.dart';
 import 'package:guess_game/guess_game.dart';
 
 class AppRoutes {
@@ -202,6 +204,22 @@ class AppRoutes {
 
         return _createSmoothPageRoute(
           const QrImageView(),
+          settings: routeSettings,
+        );
+      case Routes.roundWinnerView:
+        print('🎯 AppRoutes: تم استدعاء roundWinnerView');
+        print('🎯 routeSettings.arguments: ${routeSettings.arguments}');
+
+        return _createSmoothPageRoute(
+          const RoundWinnerView(),
+          settings: routeSettings,
+        );
+      case Routes.scoreView:
+        print('🎯 AppRoutes: تم استدعاء scoreView');
+        print('🎯 routeSettings.arguments: ${routeSettings.arguments}');
+
+        return _createSmoothPageRoute(
+          const ScoreView(),
           settings: routeSettings,
         );
       default:

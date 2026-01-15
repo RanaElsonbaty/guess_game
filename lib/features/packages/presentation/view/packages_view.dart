@@ -285,6 +285,10 @@ class _PackagesViewState extends State<PackagesView> with WidgetsBindingObserver
                               itemCount: packages.length,
                               itemBuilder: (context, index) {
                                 final package = packages[index];
+                                // التحقق من وجود اشتراك نشط
+                                final hasActiveSubscription = GlobalStorage.subscription != null &&
+                                    GlobalStorage.subscription!.status == 'active';
+
                                 return Padding(
                                   padding: EdgeInsets.symmetric(
                                     horizontal: 8.w,
@@ -292,6 +296,7 @@ class _PackagesViewState extends State<PackagesView> with WidgetsBindingObserver
                                   ),
                                   child: PackageCard(
                                     package: package,
+                                    isSubscriptionLocked: !hasActiveSubscription,
                                     onPressed: () => _subscribeToPackage(package),
                                   ),
                                 );

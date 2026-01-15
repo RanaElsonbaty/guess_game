@@ -1,4 +1,7 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:guess_game/features/game/data/models/assign_winner_request.dart';
+import 'package:guess_game/features/game/data/models/assign_winner_response.dart';
 import 'package:guess_game/features/game/data/models/game_start_request.dart';
 import 'package:guess_game/features/game/data/models/game_start_response.dart';
 import 'package:guess_game/features/game/data/models/update_point_plan_request.dart';
@@ -13,6 +16,7 @@ class GameCubit extends Cubit<GameState> {
   final GameRepository _gameRepository;
 
   // حفظ response للاستخدام في صفحات أخرى
+  GameStartResponse? gameStartResponse;
   UpdatePointPlanResponse? updatePointPlanResponse;
   UpdateScoreResponse? updateScoreResponse;
 
@@ -28,6 +32,8 @@ class GameCubit extends Cubit<GameState> {
         emit(GameStartError(failure.message));
       },
       (response) {
+        // حفظ response للاستخدام في صفحات أخرى
+        gameStartResponse = response;
         emit(GameStarted(response));
       },
     );
@@ -62,6 +68,33 @@ class GameCubit extends Cubit<GameState> {
       (response) {
         updateScoreResponse = response;
         emit(ScoreUpdated(response));
+        return response;
+      },
+    );
+  }
+
+  Future<AssignWinnerResponse?> assignWinner(AssignWinnerRequest request) async {
+    if (kDebugMode) {
+      print('🎯 GameCubit: assignWinner called');
+      print('🎯 GameCubit: request = ${request.toJson()}');
+    }
+
+    emit(WinnerAssigning());
+
+    final result = await _gameRepository.assignWinner(request);
+    return result.fold(
+      (failure) {
+        if (kDebugMode) {
+          print('🎯 GameCubit: assignWinner failed: ${failure.message}');
+        }
+        emit(WinnerAssignError(failure.message));
+        return null;
+      },
+      (response) {
+        if (kDebugMode) {
+          print('🎯 GameCubit: assignWinner success');
+        }
+        emit(WinnerAssigned(response));
         return response;
       },
     );

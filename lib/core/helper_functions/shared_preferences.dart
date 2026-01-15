@@ -154,6 +154,31 @@ class CacheHelper {
     return await sharedPreferences.remove(ApiConstants.GAME_DATA);
   }
 
+  static Future<bool> saveNavigationState(String route, Map<String, dynamic>? arguments) async {
+    final navState = {
+      'route': route,
+      'arguments': arguments ?? {},
+    };
+    final navStateJson = jsonEncode(navState);
+    return await sharedPreferences.setString(ApiConstants.NAVIGATION_STATE, navStateJson);
+  }
+
+  static Map<String, dynamic>? getNavigationState() {
+    final navStateJson = sharedPreferences.getString(ApiConstants.NAVIGATION_STATE);
+    if (navStateJson != null) {
+      try {
+        return jsonDecode(navStateJson) as Map<String, dynamic>;
+      } catch (e) {
+        return null;
+      }
+    }
+    return null;
+  }
+
+  static Future<bool> clearNavigationState() async {
+    return await sharedPreferences.remove(ApiConstants.NAVIGATION_STATE);
+  }
+
   static Future<bool> clearData() async {
     return await sharedPreferences.clear();
   }

@@ -51,8 +51,8 @@ class _TeamCategoriesSecondTeamViewState extends State<TeamCategoriesSecondTeamV
 
     // تخزين الـ limit المرسل من الصفحة السابقة
     userLimit = widget.limit;
-    // كل فريق يمكنه اختيار حتى limit/2، مع مراعاة المجموع الكلي
-    maxSelectableCategories = (userLimit / 2).ceil();
+    // كل فريق يمكنه اختيار حتى limit فئة
+    maxSelectableCategories = userLimit;
     print('📋 widget.limit: ${widget.limit}');
     print('📋 userLimit: $userLimit');
     print('📋 team1Categories.length: ${team1Categories.length}');
@@ -66,15 +66,7 @@ class _TeamCategoriesSecondTeamViewState extends State<TeamCategoriesSecondTeamV
         selectedCategoriesForSecondTeam.remove(categoryId);
         print('❌ إلغاء اختيار الفئة ID: $categoryId');
       } else {
-        // التحقق من أن المجموع الكلي للفئات لا يتجاوز الlimit
-        int totalCategories = team1Categories.length + selectedCategoriesForSecondTeam.length;
-        if (totalCategories >= userLimit) {
-          print('⚠️ لا يمكن اختيار المزيد - المجموع الكلي سيصل $userLimit فئة');
-          _showTotalLimitReachedAlert();
-          return;
-        }
-
-        // التحقق من الحد الأقصى للفريق الثاني
+        // التحقق من الحد الأقصى للفريق الثاني (حتى limit فئة)
         if (selectedCategoriesForSecondTeam.length >= maxSelectableCategories) {
           // لا نظهر أي تنبيه
           return;
@@ -83,8 +75,7 @@ class _TeamCategoriesSecondTeamViewState extends State<TeamCategoriesSecondTeamV
         // اختيار الفئة
         selectedCategoriesForSecondTeam.add(categoryId);
         print('✅ اختيار الفئة ID: $categoryId');
-        print('📊 التقدم: ${selectedCategoriesForSecondTeam.length}/$maxSelectableCategories');
-        print('📊 المجموع الكلي: ${team1Categories.length + selectedCategoriesForSecondTeam.length}/$userLimit');
+        print('📊 التقدم: ${selectedCategoriesForSecondTeam.length}/$maxSelectableCategories فئة');
 
         // لا نحتاج لإظهار alert في الفريق الثاني
       }
@@ -344,11 +335,22 @@ class _TeamCategoriesSecondTeamViewState extends State<TeamCategoriesSecondTeamV
                   return;
                 }
 
-                // التحقق من أن المجموع الكلي لا يتجاوز الlimit
-                if (totalCount > userLimit) {
+                // التحقق من أن عدد الفئات متساوي و زوجي
+                if (team1Count != team2Count) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text('المجموع الكلي للفئات يتجاوز الحد المسموح ($totalCount > $userLimit)'),
+                      content: Text('يجب أن يكون عدد الفئات متساوياً بين الفريقين (الفريق الأول: $team1Count، الفريق الثاني: $team2Count)'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                  return;
+                }
+
+                // التحقق من أن العدد زوجي
+                if (team1Count % 2 != 0 || team2Count % 2 != 0) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('يجب أن يكون عدد الفئات زوجياً (الفريق الأول: $team1Count، الفريق الثاني: $team2Count)'),
                       backgroundColor: Colors.red,
                     ),
                   );
@@ -367,7 +369,7 @@ class _TeamCategoriesSecondTeamViewState extends State<TeamCategoriesSecondTeamV
                 print('🚀 الضغط على زر التالي - الانتقال لصفحة المجموعات');
                 print('📋 الفئات المختارة للفريق الأول: $team1Categories ($team1Count فئة)');
                 print('📋 الفئات المختارة للفريق الثاني: $selectedCategoriesForSecondTeam ($team2Count فئة)');
-                print('📊 المجموع الكلي: $totalCount/$userLimit فئة');
+                print('✅ تم التحقق من أن العدد زوجي ومتساوي ($team1Count = $team2Count)');
                 Navigator.of(context).pushNamed(
                   Routes.groups,
                   arguments: {

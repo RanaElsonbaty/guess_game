@@ -71,6 +71,18 @@ class _ScoreViewState extends State<ScoreView> {
       print('🎯 ScoreView: _isLastRound: $_isLastRound');
       print('🎯 ScoreView: Current round ID: ${GlobalStorage.getCurrentRoundId()}');
       print('🎯 ScoreView: Next round number: ${GlobalStorage.getNextRoundNumber()}');
+
+      // طباعة round id للجولة التالية من rounds array
+      if (_gameStartResponse != null) {
+        final nextRoundIndex = GlobalStorage.currentRoundIndex + 1;
+        if (nextRoundIndex < _gameStartResponse!.data.rounds.length) {
+          final nextRound = _gameStartResponse!.data.rounds[nextRoundIndex];
+          print('🎯 ScoreView: Round ID للجولة التالية:');
+          print('🎯 ScoreView:   Round ${nextRoundIndex + 1}: id = ${nextRound.id} (round_number: ${nextRound.roundNumber})');
+        } else {
+          print('🎯 ScoreView: انتهت جميع الجولات');
+        }
+      }
     }
   }
 
@@ -141,7 +153,16 @@ class _ScoreViewState extends State<ScoreView> {
                             Navigator.of(context).pop();
                           } else {
                             // الانتقال للجولة التالية
+                            print('🔄 الانتقال للجولة التالية - IDs من round_data في /games/start response:');
+                            if (_gameStartResponse != null) {
+                              for (int i = 0; i < _gameStartResponse!.data.teams.length; i++) {
+                                final team = _gameStartResponse!.data.teams[i];
+                                print('  فريق ${i + 1}: ${team.roundData.map((rd) => 'id=${rd.id}').join(', ')}');
+                              }
+                            }
+
                             GlobalStorage.moveToNextRound();
+                            print('🔄 بعد moveToNextRound: currentRoundIndex = ${GlobalStorage.currentRoundIndex}');
                             Navigator.of(context).pushNamed(
                               Routes.gameLevel,
                               arguments: {

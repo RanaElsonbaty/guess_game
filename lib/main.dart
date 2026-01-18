@@ -69,6 +69,16 @@ bool _hasRequiredDataForRoute(String route, Map<String, dynamic> arguments) {
   }
 }
 
+/// منطق التنقل المحسن:
+/// - يستعيد آخر صفحة كانت مفتوحة للمستخدمين المسجلين
+/// - يدعم جميع الصفحات (لعب، إعدادات، إلخ)
+/// - يضمن استمرار تجربة المستخدم من حيث توقف
+///
+/// منطق الاستعادة:
+/// - يتحقق من صحة البيانات المحفوظة
+/// - يستعيد الصفحة والمعاملات إذا كانت صالحة
+/// - يذهب إلى LevelsView كافتراضي للمستخدمين المسجلين
+/// تم التعديل في: 2024-01-18
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -84,19 +94,38 @@ void main() async {
 
   // Load global data
   await GlobalStorage.loadData();
+  await GlobalStorage.loadNavigationState();
+
+  // Debug: Print loaded navigation state
+  print('📱 Loaded Navigation State:');
+  print('  - Last Route: ${GlobalStorage.lastRoute}');
+  print('  - Last Arguments: ${GlobalStorage.lastRouteArguments}');
+
+  // Clear navigation state for fresh start (temporary debug)
+  // GlobalStorage.clearNavigationState();
 
   // Log initial data
   print('🚀 App Startup - Initial data:');
   GlobalStorage.debugPrintToken(full: true);
   print('  - User: ${GlobalStorage.user != null ? GlobalStorage.user!.name : "Null"}');
   print('  - Subscription: ${GlobalStorage.subscription}');
+  if (GlobalStorage.subscription != null) {
+    print('  - Subscription details:');
+    print('    - ID: ${GlobalStorage.subscription!.id}');
+    print('    - Status: ${GlobalStorage.subscription!.status}');
+    print('    - Used: ${GlobalStorage.subscription!.used}');
+    print('    - Limit: ${GlobalStorage.subscription!.limit}');
+    final remaining = (GlobalStorage.subscription!.limit ?? 0) - (GlobalStorage.subscription!.used ?? 0);
+    print('    - Remaining: $remaining');
+  }
 
   // Determine initial route
   String initialRoute = Routes.intro;
   Object? initialArguments;
 
-  // Check if user is logged in (has token)
+        // Check if user is logged in (has token)
   if (GlobalStorage.token.isNotEmpty) {
+    print('🔐 User has token, loading profile...');
     try {
       // Try to get user profile from API
       final authCubit = getIt<AuthCubit>();
@@ -106,8 +135,13 @@ void main() async {
       await Future.delayed(const Duration(milliseconds: 100));
 
       final authState = authCubit.state;
+      print('📋 Auth state: $authState');
       if (authState is ProfileLoaded) {
         final user = authState.user;
+        print('✅ Profile loaded successfully!');
+        print('👤 User: ${user.name}');
+        print('📧 User Phone: ${user.phone}, Email: ${user.email}');
+        print('🔒 User Subscription: ${user.subscription}');
         // Update global storage with fresh data
         GlobalStorage.user = user;
         GlobalStorage.subscription = user.subscription;
@@ -132,51 +166,21 @@ void main() async {
           print('  - Subscription remaining: $remaining');
         }
 
-        // Check subscription status
+        // For logged-in users, set default route to LevelsView
+        // Navigation state restoration will override this if valid state exists
+        print('🎯 Navigation: Setting default route for logged-in user');
+        print('🔍 DEBUG: user.subscription = ${user.subscription}');
+        initialRoute = Routes.level;
+        print('🎯 DEFAULT DECISION: LevelsView (will be overridden by saved navigation state if available)');
+
+        // Update GlobalStorage for consistency
+        GlobalStorage.subscription = user.subscription;
+        await GlobalStorage.saveSubscription(user.subscription);
+        print('   💾 تم تحديث GlobalStorage والـ cache بالاشتراك');
+
         if (user.subscription != null) {
-          // حساب المتبقي
           final remaining = (user.subscription!.limit ?? 0) - (user.subscription!.used ?? 0);
-
-          // Check if subscription is expired
-          if (user.subscription!.status == 'expired') {
-            // Subscription is expired, go to packages to renew
-            initialRoute = Routes.packages;
-            print('🎯 Navigation: Packages (subscription expired) - الاشتراك منتهي الصلاحية، عرض الباقات للتجديد');
-            print('   📋 Subscription status: ${user.subscription!.status}');
-            print('   📋 Subscription startDate: ${user.subscription!.startDate}');
-            print('   📋 Subscription expiresAt: ${user.subscription!.expiresAt}');
-            print('   📋 Subscription used: ${user.subscription!.used}');
-            print('   📋 Subscription limit: ${user.subscription!.limit}');
-            print('   📋 Subscription remaining: $remaining');
-          } else {
-            // Check if user has remaining questions
-            if (remaining > 0) {
-              // User has active subscription with remaining questions, go to TeamCategoriesView
-              initialRoute = Routes.teamCategories;
-              initialArguments = {'limit': user.subscription!.limit ?? 4};
-              print('🎯 Navigation: TeamCategoriesView - فئات الفريق الأول with limit ${user.subscription!.limit ?? 4}');
-              print('   📋 المستخدم مشترك ولديه أسئلة متبقية: $remaining سؤال');
-              print('   📋 Subscription status: ${user.subscription!.status}');
-              print('   📋 Subscription remaining: $remaining');
-            } else {
-              // User has active subscription but no remaining questions, go to packages to purchase more
-              initialRoute = Routes.packages;
-              print('🎯 Navigation: Packages (no remaining questions) - انتهت الأسئلة، عرض الباقات لشراء المزيد');
-              print('   📋 المستخدم مشترك لكن انتهت الأسئلة، المتبقي: $remaining');
-              print('   📋 Subscription status: ${user.subscription!.status}');
-              print('   📋 Subscription used: ${user.subscription!.used}');
-              print('   📋 Subscription limit: ${user.subscription!.limit}');
-            }
-          }
-
-          // Update GlobalStorage for consistency
-          GlobalStorage.subscription = user.subscription;
-          await GlobalStorage.saveSubscription(user.subscription);
-          print('   💾 تم تحديث GlobalStorage والـ cache بالاشتراك');
-        } else {
-          // User logged in but no subscription, go to packages page to purchase
-          initialRoute = Routes.packages;
-          print('🎯 Navigation: Packages (no subscription) - عرض الباقات للشراء');
+          print('   📊 Subscription info: status=${user.subscription!.status}, used=${user.subscription!.used}, limit=${user.subscription!.limit}, remaining=$remaining');
         }
       } else {
         // Profile loading failed, go to packages page as fallback
@@ -204,19 +208,29 @@ void main() async {
         GlobalStorage.lastRoute != Routes.emailLogin &&
         GlobalStorage.lastRoute != Routes.register) {
 
-      // Rebuild arguments with essential data
+      // Allow restoring navigation state for all users (logged in or not)
+      // This enables the app to resume from where the user left off
       final restoredArgs = _rebuildArgumentsForRoute(GlobalStorage.lastRoute, GlobalStorage.lastRouteArguments);
 
-      // Ensure we have the required data for the restored route
       if (_hasRequiredDataForRoute(GlobalStorage.lastRoute, restoredArgs)) {
+        // Valid saved state exists - restore it
         initialRoute = GlobalStorage.lastRoute;
         initialArguments = restoredArgs;
-        print('🎯 Navigation: Restored from saved state - $initialRoute');
+        print('🎯 Navigation: Restoring last navigation state');
+        print('🏁 Restored route: $initialRoute with args: $initialArguments');
       } else {
-        // Clear invalid navigation state and go to default
-        GlobalStorage.clearNavigationState();
-        print('⚠️ Navigation: Invalid saved state data, going to default route');
-        print('🏁 Final navigation: $initialRoute with args: $initialArguments');
+        // Restore other pages (game pages, etc.)
+        final restoredArgs = _rebuildArgumentsForRoute(GlobalStorage.lastRoute, GlobalStorage.lastRouteArguments);
+
+        if (_hasRequiredDataForRoute(GlobalStorage.lastRoute, restoredArgs)) {
+          initialRoute = GlobalStorage.lastRoute;
+          initialArguments = restoredArgs;
+          print('🎯 Navigation: Restored from saved state - $initialRoute');
+        } else {
+          GlobalStorage.clearNavigationState();
+          print('⚠️ Navigation: Invalid saved state data, going to default route');
+          print('🏁 Final navigation: $initialRoute with args: $initialArguments');
+        }
       }
     } else {
       print('🏁 Navigation: Skipping restore of initial page - ${GlobalStorage.lastRoute}');

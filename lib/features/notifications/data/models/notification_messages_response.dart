@@ -1,12 +1,12 @@
-/// Response model for game terms API
-class GameTermsResponse {
+/// Response model for notification messages API
+class NotificationMessagesResponse {
   final bool success;
   final String message;
   final int code;
-  final GameTermsData data;
+  final NotificationMessagesData data;
   final List<dynamic> metaData;
 
-  GameTermsResponse({
+  NotificationMessagesResponse({
     required this.success,
     required this.message,
     required this.code,
@@ -14,12 +14,12 @@ class GameTermsResponse {
     required this.metaData,
   });
 
-  factory GameTermsResponse.fromJson(Map<String, dynamic> json) {
-    return GameTermsResponse(
+  factory NotificationMessagesResponse.fromJson(Map<String, dynamic> json) {
+    return NotificationMessagesResponse(
       success: json['success'] as bool? ?? false,
       message: json['message'] as String? ?? '',
       code: json['code'] as int? ?? 0,
-      data: GameTermsData.fromJson(json['data'] as Map<String, dynamic>),
+      data: NotificationMessagesData.fromJson(json['data'] as Map<String, dynamic>),
       metaData: json['meta_data'] as List<dynamic>? ?? [],
     );
   }
@@ -35,16 +35,19 @@ class GameTermsResponse {
   }
 }
 
-/// Data model for game terms
-class GameTermsData {
+/// Data model for notification messages
+class NotificationMessagesData {
+  final String notSubscribedMessage;
   final List<String> gameTerms;
 
-  GameTermsData({
+  NotificationMessagesData({
+    required this.notSubscribedMessage,
     required this.gameTerms,
   });
 
-  factory GameTermsData.fromJson(Map<String, dynamic> json) {
-    return GameTermsData(
+  factory NotificationMessagesData.fromJson(Map<String, dynamic> json) {
+    return NotificationMessagesData(
+      notSubscribedMessage: json['not_subscribed_message'] as String? ?? '',
       gameTerms: (json['game_terms'] as List<dynamic>?)
           ?.map((term) => term as String)
           .toList() ?? [],
@@ -53,8 +56,8 @@ class GameTermsData {
 
   Map<String, dynamic> toJson() {
     return {
+      'not_subscribed_message': notSubscribedMessage,
       'game_terms': gameTerms,
     };
   }
 }
-

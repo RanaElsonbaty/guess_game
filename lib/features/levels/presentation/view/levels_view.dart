@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:guess_game/core/helper_functions/global_storage.dart';
+import 'package:guess_game/core/routing/routes.dart';
 import 'package:guess_game/core/theming/colors.dart';
 import 'package:guess_game/core/theming/icons.dart';
 import 'package:guess_game/core/theming/styles.dart';
@@ -10,6 +11,7 @@ import 'package:guess_game/core/widgets/subscription_alert_dialog.dart';
 import 'package:guess_game/features/levels/presentation/cubit/categories_cubit.dart';
 import 'package:guess_game/features/levels/presentation/view/widgets/category_card.dart';
 import 'package:guess_game/features/levels/presentation/view/widgets/header_shape_painter.dart';
+import 'package:guess_game/features/notifications/presentation/cubit/notification_cubit.dart';
 import 'package:shimmer/shimmer.dart';
 
 class LevelsView extends StatefulWidget {
@@ -22,11 +24,16 @@ class LevelsView extends StatefulWidget {
 class _LevelsViewState extends State<LevelsView> {
 
   void _showSubscriptionDialog() {
+    print('🔒 LevelsView: Showing subscription dialog (subscription is null)');
+    final notificationCubit = context.read<NotificationCubit>();
     showDialog(
       context: context,
       barrierDismissible: false, // لا يغلق إلا بأيقونة الإلغاء
-      builder: (BuildContext context) {
-        return const SubscriptionAlertDialog();
+      builder: (BuildContext dialogContext) {
+        return BlocProvider.value(
+          value: notificationCubit,
+          child: const SubscriptionAlertDialog(),
+        );
       },
     );
   }
@@ -136,7 +143,8 @@ class _LevelsViewState extends State<LevelsView> {
                               ),
                             );
                           } else {
-                            final isSubscriptionLocked = GlobalStorage.subscription == null;
+                            final isSubscriptionLocked = GlobalStorage.subscription == null; // إذا كان الاشتراك null، الكروت تكون مقفلة
+                            print('🔒 LevelsView: isSubscriptionLocked = $isSubscriptionLocked (subscription: ${GlobalStorage.subscription})');
                             return ListView.builder(
                               scrollDirection: Axis.horizontal,
                               physics: const BouncingScrollPhysics(),
@@ -156,7 +164,24 @@ class _LevelsViewState extends State<LevelsView> {
                                     onPressed: isSubscriptionLocked
                                         ? _showSubscriptionDialog
                                         : () {
-                                            // TODO: Handle category selection
+                                            // Handle category selection - navigate to team categories
+                                            final subscription = GlobalStorage.subscription;
+                                            if (subscription != null) {
+                                              final remaining = (subscription.limit ?? 0) - (subscription.used ?? 0);
+                                              if (subscription.status == 'active' && remaining > 0) {
+                                                // Active subscription with remaining questions - go to team categories
+                                                Navigator.of(context).pushNamed(
+                                                  Routes.teamCategories,
+                                                  arguments: {'limit': subscription.limit ?? 4},
+                                                );
+                                              } else {
+                                                // Show subscription dialog if subscription is not active or no questions left
+                                                _showSubscriptionDialog();
+                                              }
+                                            } else {
+                                              // Should not happen since isSubscriptionLocked is false, but fallback
+                                              _showSubscriptionDialog();
+                                            }
                                           },
                                   ),
                                 );

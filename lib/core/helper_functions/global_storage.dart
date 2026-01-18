@@ -121,6 +121,13 @@ class GlobalStorage {
     // It will be available during the app session
   }
 
+  static Future<void> updateGameStartResponse(dynamic response) async {
+    gameStartResponse = response;
+    // Update response without resetting round index (used when returning to existing game)
+    // Note: We're not saving to cache since it's a complex object
+    // It will be available during the app session
+  }
+
   static int getCurrentRoundId() {
     if (gameStartResponse == null || gameStartResponse.data.rounds == null) {
       return 0;

@@ -37,8 +37,8 @@ class _TeamCategoriesFirstTeamViewState extends State<TeamCategoriesFirstTeamVie
     // تحميل الفئات المحفوظة سابقاً
     _loadSavedCategories();
 
-    // كل فريق يمكنه اختيار حتى limit/2، مع مراعاة المجموع الكلي
-    maxSelectableCategories = (widget.limit / 2).ceil();
+    // كل فريق يمكنه اختيار حتى limit فئة
+    maxSelectableCategories = widget.limit;
 
     // تحميل الفئات من API إذا لم تكن محملة
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -61,15 +61,7 @@ class _TeamCategoriesFirstTeamViewState extends State<TeamCategoriesFirstTeamVie
         selectedCategoriesForFirstTeam.remove(categoryId);
         print('❌ إلغاء اختيار الفئة ID: $categoryId');
       } else {
-        // التحقق من أن المجموع الكلي للفئات لا يتجاوز الlimit
-        int totalCategories = selectedCategoriesForFirstTeam.length;
-        if (totalCategories >= widget.limit) {
-          print('⚠️ لا يمكن اختيار المزيد - المجموع الكلي سيصل ${widget.limit} فئة');
-          _showTotalLimitReachedAlert();
-          return;
-        }
-
-        // التحقق من الحد الأقصى للفريق الأول
+        // التحقق من الحد الأقصى للفريق الأول (حتى limit فئة)
         if (selectedCategoriesForFirstTeam.length >= maxSelectableCategories) {
           // لا نظهر أي تنبيه
           return;
@@ -78,8 +70,7 @@ class _TeamCategoriesFirstTeamViewState extends State<TeamCategoriesFirstTeamVie
         // اختيار الفئة
         selectedCategoriesForFirstTeam.add(categoryId);
         print('✅ اختيار الفئة ID: $categoryId');
-        print('📊 التقدم: ${selectedCategoriesForFirstTeam.length}/$maxSelectableCategories');
-        print('📊 المجموع الكلي: ${selectedCategoriesForFirstTeam.length}/${widget.limit} فئة');
+        print('📊 التقدم: ${selectedCategoriesForFirstTeam.length}/$maxSelectableCategories فئة');
 
         // لا نحتاج لإظهار alert في الفريق الأول
       }

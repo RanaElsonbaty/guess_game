@@ -346,21 +346,8 @@ class _LoginEmailViewState extends State<LoginEmailView> {
     // Reload data from storage
     await GlobalStorage.loadData();
 
-    // Check subscription status and navigate accordingly
-    if (GlobalStorage.subscription != null) {
-      if (GlobalStorage.subscription!.status == 'active') {
-        print('🎯 Navigation after login: TeamCategoriesView (اشتراك نشط)');
-        context.pushReplacementNamed(
-          Routes.teamCategories,
-          argument: {'limit': GlobalStorage.subscription!.limit ?? 4},
-        );
-      } else {
-        print('🎯 Navigation after login: Packages (اشتراك غير نشط)');
-        context.pushReplacementNamed(Routes.packages);
-      }
-    } else {
-      print('🎯 Navigation after login: Packages (لا يوجد اشتراك)');
-      context.pushReplacementNamed(Routes.packages);
-    }
+    // Always navigate to LevelsView after successful login
+    print('🎯 Navigation after login: LevelsView (دائماً بعد تسجيل الدخول بنجاح)');
+    context.pushReplacementNamed(Routes.level);
   }
 }

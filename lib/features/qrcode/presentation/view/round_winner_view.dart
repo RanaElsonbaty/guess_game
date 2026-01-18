@@ -105,21 +105,28 @@ class _RoundWinnerViewState extends State<RoundWinnerView> {
       return;
     }
 
-    // Get base round_id from GlobalStorage based on current round index
-    final baseRoundId = GlobalStorage.getCurrentRoundId();
-
-    // زيادة round_id بناءً على رقم الجولة الحالية
+    // Get round ID for the round that just finished
     final currentRoundIndex = GlobalStorage.currentRoundIndex;
-    final roundId = baseRoundId + currentRoundIndex;
+    final roundIndexForWinner = currentRoundIndex; // Current round that just finished
+    final gameId = _gameStartResponse!.data.id;
+
+    int roundId = 0;
+    if (_gameStartResponse!.data.rounds.length > roundIndexForWinner && roundIndexForWinner >= 0) {
+      roundId = _gameStartResponse!.data.rounds[roundIndexForWinner].id;
+    }
 
     if (kDebugMode) {
-      print('🎯 RoundWinnerView: Base round ID from GlobalStorage: $baseRoundId');
+      print('🎯 RoundWinnerView: ===== ASSIGN WINNER REQUEST =====');
+      print('🎯 RoundWinnerView: Base round ID from GlobalStorage: ${GlobalStorage.getCurrentRoundId()}');
       print('🎯 RoundWinnerView: Current round index: $currentRoundIndex');
-      print('🎯 RoundWinnerView: Updated round ID for AssignWinnerRequest: $roundId');
+      print('🎯 RoundWinnerView: Round index for winner: $roundIndexForWinner');
+      print('🎯 RoundWinnerView: Final round ID: $roundId');
+      print('🎯 RoundWinnerView: Game ID: $gameId');
     }
+
     if (roundId == 0) {
       if (kDebugMode) {
-        print('🎯 RoundWinnerView: Invalid round ID from GlobalStorage');
+        print('🎯 RoundWinnerView: Invalid round ID - no round found at index $roundIndexForWinner');
       }
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('خطأ في تحديد رقم الجولة')),
@@ -127,25 +134,18 @@ class _RoundWinnerViewState extends State<RoundWinnerView> {
       return;
     }
 
-    // Get game_id from GameStartResponse
-    final gameId = _gameStartResponse!.data.id;
-
     final request = AssignWinnerRequest(
-      gameId: gameId,
+      gameId: _gameStartResponse!.data.id,
       roundId: roundId,
       teamId: teamId,
     );
 
     if (kDebugMode) {
-      print('🎯 RoundWinnerView: ===== ASSIGN WINNER REQUEST =====');
-      print('🎯 RoundWinnerView: Base round ID: $baseRoundId');
-      print('🎯 RoundWinnerView: Round index increment: $currentRoundIndex');
-      print('🎯 RoundWinnerView: Final round ID: $roundId');
       print('🎯 RoundWinnerView: AssignWinnerRequest JSON:');
       print(request.toJson());
       print('🎯 RoundWinnerView: AssignWinnerRequest details:');
       print('  - gameId: $gameId');
-      print('  - roundId: $roundId (+$currentRoundIndex from base)');
+      print('  - roundId: $roundId (from round index $roundIndexForWinner)');
       print('  - teamId: $teamId');
       print('🎯 RoundWinnerView: ==============================');
     }
@@ -337,7 +337,14 @@ class _RoundWinnerViewState extends State<RoundWinnerView> {
                             height: 38,
                             onTap: () {
                               // للتعادل، ننتقل مباشرة إلى صفحة النتائج بدون استدعاء API
-                              Navigator.of(context).pushNamed(Routes.scoreView);
+                              Navigator.of(context).pushNamed(
+                                Routes.scoreView,
+                                arguments: {
+                                  'assignWinnerResponse': null, // No winner assigned for draw
+                                  'updateScoreResponse': _updateScoreResponse,
+                                  'gameStartResponse': _gameStartResponse,
+                                },
+                              );
                             },
                             child: Text(
                               'تعادل',

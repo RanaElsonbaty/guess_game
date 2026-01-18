@@ -87,12 +87,9 @@ class _PackagesViewState extends State<PackagesView> with WidgetsBindingObserver
             print('🎯 الاشتراك منتهي الصلاحية - البقاء في صفحة الباقات');
             // البقاء في packages_view
           } else if (remaining > 0) {
-            print('🎯 الاشتراك نشط ولديه أسئلة متبقية - الانتقال إلى TeamCategoriesFirstTeamView');
+            print('🎯 الاشتراك نشط ولديه أسئلة متبقية - الانتقال إلى LevelsView');
             if (mounted) {
-              Navigator.of(context).pushReplacementNamed(
-                Routes.teamCategories,
-                arguments: {'limit': user.subscription!.limit ?? 4},
-              );
+              Navigator.of(context).pushReplacementNamed(Routes.level);
             }
           } else {
             print('🎯 الاشتراك نشط لكن انتهت الأسئلة - البقاء في صفحة الباقات');
@@ -285,9 +282,6 @@ class _PackagesViewState extends State<PackagesView> with WidgetsBindingObserver
                               itemCount: packages.length,
                               itemBuilder: (context, index) {
                                 final package = packages[index];
-                                // التحقق من وجود اشتراك نشط
-                                final hasActiveSubscription = GlobalStorage.subscription != null &&
-                                    GlobalStorage.subscription!.status == 'active';
 
                                 return Padding(
                                   padding: EdgeInsets.symmetric(
@@ -296,7 +290,7 @@ class _PackagesViewState extends State<PackagesView> with WidgetsBindingObserver
                                   ),
                                   child: PackageCard(
                                     package: package,
-                                    isSubscriptionLocked: !hasActiveSubscription,
+                                    isSubscriptionLocked: false, // الكروت في صفحة الباقات دائماً مفتوحة - مطلوب من المستخدم
                                     onPressed: () => _subscribeToPackage(package),
                                   ),
                                 );

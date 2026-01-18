@@ -12,6 +12,7 @@ import 'package:guess_game/features/game/presentation/cubit/game_cubit.dart';
 import 'package:guess_game/features/game_level/presentation/view/widgets/game_level_card.dart';
 import 'package:guess_game/core/widgets/subscription_alert_dialog.dart';
 import 'package:guess_game/features/terms/presentation/cubit/terms_cubit.dart';
+import 'package:guess_game/features/notifications/presentation/cubit/notification_cubit.dart';
 import 'package:guess_game/guess_game.dart';
 
 class GameLevelView extends StatefulWidget {
@@ -34,6 +35,9 @@ class GameLevelViewWithProvider extends StatelessWidget {
         BlocProvider<TermsCubit>(
           create: (context) => getIt<TermsCubit>()..loadGameTerms(),
         ),
+        BlocProvider<NotificationCubit>(
+          create: (context) => getIt<NotificationCubit>(),
+        ),
       ],
       child: const GameLevelView(),
     );
@@ -41,6 +45,22 @@ class GameLevelViewWithProvider extends StatelessWidget {
 }
 
 class _GameLevelViewState extends State<GameLevelView> {
+  String _getTermsText(BuildContext context) {
+    final termsCubit = context.read<TermsCubit>();
+    final termsText = termsCubit.formattedTermsText;
+
+    print('📋 Terms status - isLoaded: ${termsCubit.isLoaded}, isLoading: ${termsCubit.isLoading}, hasError: ${termsCubit.hasError}');
+    print('📋 Terms text length: ${termsText.length}');
+
+    // If terms text is empty, provide fallback
+    if (termsText.isEmpty) {
+      print('📋 Using fallback terms text');
+      return 'كل واحد بيختار الفئات وبيحدد مستوي الصعوبه\n\nلو اخترت صعب هتكسب 400 نقطه ولي قدامك هيخسر 100 نقطه وليك 30 سؤال و 3 اجابات\n\nلو اخترت سهل هتكسب 200 ولي قادمك هيخسر 50 وليك 20 سؤال و اجابتين';
+    }
+
+    print('📋 Using loaded terms text');
+    return termsText;
+  }
   String? team1Level;
   String? team2Level;
   String team1Name = 'فريق 01';
@@ -51,6 +71,35 @@ class _GameLevelViewState extends State<GameLevelView> {
   int _convertLevelToPoints(String level) {
     return level == 'سهل' ? 200 : 400;
   }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    print('🎯 GameLevelView: didChangeDependencies - دخول الدالة');
+    print('🎯 GameLevelView: currentRoundIndex الحالي = ${GlobalStorage.currentRoundIndex}');
+    // تحديث currentRoundIndex عند العودة من صفحات أخرى
+    if (gameStartResponse != null) {
+      // التأكد من أن currentRoundIndex لا يتجاوز عدد الجولات المتاحة
+      if (GlobalStorage.currentRoundIndex >= gameStartResponse!.data.rounds.length) {
+        GlobalStorage.currentRoundIndex = gameStartResponse!.data.rounds.length - 1;
+      }
+
+      print('🎯 GameLevelView: didChangeDependencies - currentRoundIndex: ${GlobalStorage.currentRoundIndex}');
+
+      // طباعة round id للجولة التالية من rounds array (الدور عليهم)
+      if (gameStartResponse != null) {
+        final nextRoundIndex = GlobalStorage.currentRoundIndex + 1;
+        if (nextRoundIndex < gameStartResponse!.data.rounds.length) {
+          final nextRound = gameStartResponse!.data.rounds[nextRoundIndex];
+          print('🎯 GameLevelView: الدور عليهم - Round ID للجولة التالية:');
+          print('🎯 GameLevelView:   Round ${nextRoundIndex + 1}: id = ${nextRound.id} (round_number: ${nextRound.roundNumber})');
+        } else {
+          print('🎯 GameLevelView: الدور عليهم - انتهت جميع الجولات');
+        }
+      }
+    }
+  }
+
 
   @override
   void initState() {
@@ -74,7 +123,7 @@ class _GameLevelViewState extends State<GameLevelView> {
 
         // حفظ gameStartResponse في GlobalStorage كـ backup
         if (gameStartResponse != null) {
-          GlobalStorage.saveGameStartResponse(gameStartResponse);
+          GlobalStorage.updateGameStartResponse(gameStartResponse);
 
           // طباعة IDs الخاصة بـ rounds
           print('🎯 GameLevelView: ===== ROUNDS IDs =====');
@@ -199,11 +248,10 @@ class _GameLevelViewState extends State<GameLevelView> {
                       final gameId = gameStartResponse!.data.id;
                       final currentRoundIndex = GlobalStorage.currentRoundIndex;
 
-                      // طباعة معلومات تحديث rounds بناءً على رقم round_number
+                      // طباعة معلومات rounds
                       print('🎯 GameLevelView: ===== ROUND NUMBER UPDATES =====');
                       for (final round in gameStartResponse!.data.rounds) {
-                        final updatedRoundNumber = round.roundNumber + currentRoundIndex;
-                        print('🎯 GameLevelView: Round ${round.id}: base round_number ${round.roundNumber} -> updated $updatedRoundNumber');
+                        print('🎯 GameLevelView: Round ${round.id}: round_number ${round.roundNumber}');
                       }
                       print('🎯 GameLevelView: ===============================');
 
@@ -226,6 +274,16 @@ class _GameLevelViewState extends State<GameLevelView> {
                       print('🎯 GameLevelView: team1RoundDataId = $team1RoundDataId (from roundData[${currentRoundIndex}])');
                       print('🎯 GameLevelView: team2RoundDataId = $team2RoundDataId (from roundData[${currentRoundIndex}])');
                       print('🎯 GameLevelView: Last used IDs - team1: ${GlobalStorage.lastTeam1RoundDataId}, team2: ${GlobalStorage.lastTeam2RoundDataId}');
+
+                      // طباعة قيم pointEarned الحالية لفهم حالة الجولة
+                      print('🎯 GameLevelView: Current pointEarned values:');
+                      for (int i = 0; i < gameStartResponse!.data.teams.length; i++) {
+                        final team = gameStartResponse!.data.teams[i];
+                        if (team.roundData.length > currentRoundIndex) {
+                          final roundData = team.roundData[currentRoundIndex];
+                          print('  Team ${i + 1} roundData[${currentRoundIndex}]: pointEarned = ${roundData.pointEarned}');
+                        }
+                      }
                       print('🎯 GameLevelView: Round IDs from GameStartResponse.rounds:');
                       for (int i = 0; i < gameStartResponse!.data.rounds.length; i++) {
                         final round = gameStartResponse!.data.rounds[i];
@@ -250,6 +308,12 @@ class _GameLevelViewState extends State<GameLevelView> {
                       print('📤   {round_data_id: $team1RoundDataId, point_plan: $team1PointPlan},');
                       print('📤   {round_data_id: $team2RoundDataId, point_plan: $team2PointPlan}');
                       print('📤 ]');
+
+                      // طباعة roundDataId من UpdatePointPlanRequest
+                      print('🎯 GameLevelView: ===== UpdatePointPlanRequest roundDataId =====');
+                      print('🎯 GameLevelView: team1RoundDataId = $team1RoundDataId');
+                      print('🎯 GameLevelView: team2RoundDataId = $team2RoundDataId');
+                      print('🎯 GameLevelView: ============================================');
 
                       // إنشاء request لتحديث point_plan
                       final request = UpdatePointPlanRequest(
@@ -327,9 +391,10 @@ class _GameLevelViewState extends State<GameLevelView> {
   }
 
   void _showGameInstructionsDialog(BuildContext context, gameStartResponse) {
+
     // الحصول على UpdatePointPlanResponse من GameCubit قبل عرض الـ dialog
     final gameCubit = context.read<GameCubit>();
-    final termsCubit = context.read<TermsCubit>();
+    final notificationCubit = context.read<NotificationCubit>();
     final updatePointPlanResponse = gameCubit.updatePointPlanResponse;
 
     // حفظ الـ context الأصلي لاستخدامه في التنقل
@@ -339,16 +404,13 @@ class _GameLevelViewState extends State<GameLevelView> {
       context: context,
       barrierDismissible: false,
       builder: (BuildContext dialogContext) {
-        return BlocProvider.value(
-          value: termsCubit,
-          child: BlocBuilder<TermsCubit, TermsState>(
-            builder: (context, termsState) {
-              final currentTermsCubit = context.read<TermsCubit>();
-              return SubscriptionAlertDialog(
-                title: 'تعليمات',
-                content: currentTermsCubit.formattedTermsText,
-                buttonText: 'حسنا',
-                onButtonPressed: () async {
+                return BlocProvider.value(
+          value: notificationCubit,
+          child: SubscriptionAlertDialog(
+            title: 'تعليمات',
+            content: _getTermsText(context),
+            buttonText: 'حسنا',
+            onButtonPressed: () async {
                   // إغلاق dialog التعليمات باستخدام dialog context
                   Navigator.of(dialogContext).pop();
 
@@ -358,7 +420,9 @@ class _GameLevelViewState extends State<GameLevelView> {
                   // التحقق من رقم الجولة الحالية
                   final currentRoundIndex = GlobalStorage.currentRoundIndex;
                   final isFirstRound = currentRoundIndex == 0;
-                  final shouldSkipToScore = currentRoundIndex > 1; // تخطي للجولات الأحدث من الثانية
+                  // الانتقال إلى scoreView فقط إذا كانت هذه الجولة الأخيرة
+                  final totalRounds = gameStartResponse?.data.rounds.length ?? 0;
+                  final shouldSkipToScore = (currentRoundIndex + 1) >= totalRounds;
 
                   if (kDebugMode) {
                     print('🎯 GameLevelView: currentRoundIndex: $currentRoundIndex');
@@ -367,38 +431,20 @@ class _GameLevelViewState extends State<GameLevelView> {
                   }
 
                   if (navigationContext.mounted) {
-                    if (shouldSkipToScore) {
-                      // جولات أحدث من الثانية - انتقل مباشرة إلى ScoreView
-                      if (kDebugMode) {
-                        print('🎯 GameLevelView: Navigating directly to scoreView (rounds > 1)');
-                      }
-                      Navigator.of(navigationContext).pushNamed(
-                        Routes.scoreView,
-                        arguments: {
-                          'updatePointPlanResponse': updatePointPlanResponse,
-                          'updateScoreResponse': null, // سيتم الحصول عليه من cubit أو GlobalStorage
-                          'gameStartResponse': gameStartResponse,
-                          'assignWinnerResponse': null, // سيتم الحصول عليه من cubit
-                        },
-                      );
-                    } else {
-                      // الجولة الأولى والثانية - انتقل إلى qrcodeView لعرض UpdatePointPlanResponse
-                      if (kDebugMode) {
-                        print('🎯 GameLevelView: Navigating to qrcodeView (round 0 or 1)');
-                      }
-                      Navigator.of(navigationContext).pushNamed(
-                        Routes.qrcodeView,
-                        arguments: {
-                          'updatePointPlanResponse': updatePointPlanResponse,
-                          'gameStartResponse': gameStartResponse,
-                        },
-                      );
+                    // دائماً انتقل إلى qrcodeView أولاً، ثم يستمر الفلو الطبيعي
+                    if (kDebugMode) {
+                      print('🎯 GameLevelView: Navigating to qrcodeView (all rounds)');
                     }
+                    Navigator.of(navigationContext).pushNamed(
+                      Routes.qrcodeView,
+                      arguments: {
+                        'updatePointPlanResponse': updatePointPlanResponse,
+                        'gameStartResponse': gameStartResponse,
+                      },
+                    );
                   }
                 },
-              );
-            },
-          ),
+              ),
         );
       },
     );

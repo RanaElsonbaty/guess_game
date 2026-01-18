@@ -35,6 +35,7 @@ class NavigationObserver extends NavigatorObserver {
       // Serialize arguments to avoid JSON encoding issues with complex objects
       final safeArguments = _serializeArguments(arguments);
       GlobalStorage.saveNavigationState(routeName, safeArguments);
+      print('💾 NavigationObserver: تم حفظ الصفحة - $routeName مع arguments: $safeArguments');
     }
   }
 

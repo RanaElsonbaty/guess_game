@@ -27,6 +27,7 @@ import 'package:guess_game/features/qrcode/presentation/view/qrcode_view.dart';
 import 'package:guess_game/features/qrcode/presentation/view/qr_image_view.dart';
 import 'package:guess_game/features/qrcode/presentation/view/round_winner_view.dart';
 import 'package:guess_game/features/qrcode/presentation/view/score_view.dart';
+import 'package:guess_game/features/notifications/presentation/cubit/notification_cubit.dart';
 import 'package:guess_game/guess_game.dart';
 
 class AppRoutes {
@@ -68,8 +69,15 @@ class AppRoutes {
         return _createSmoothPageRoute(AboutView(), settings: routeSettings);
       case Routes.level:
         return _createSmoothPageRoute(
-          BlocProvider<CategoriesCubit>(
-            create: (context) => getIt<CategoriesCubit>()..loadCategories(),
+          MultiBlocProvider(
+            providers: [
+              BlocProvider<CategoriesCubit>(
+                create: (context) => getIt<CategoriesCubit>()..loadCategories(),
+              ),
+              BlocProvider<NotificationCubit>(
+                create: (context) => getIt<NotificationCubit>(),
+              ),
+            ],
             child: LevelsView(),
           ),
           settings: routeSettings,
@@ -95,29 +103,31 @@ class AppRoutes {
         print('📋 routeSettings.arguments: ${routeSettings.arguments}');
         print('📋 GuessGame.globalInitialArguments: ${GuessGame.globalInitialArguments}');
 
-        // دعم كلا الطريقتين: int (من main.dart) أو Map (من pushNamed أو globalInitialArguments)
+        // حساب limit من subscription remaining (عدد الفئات المسموح لكل فريق)
         int limit;
+        final userSubscription = GlobalStorage.subscription;
+        final remaining = userSubscription != null && userSubscription.status == 'active'
+            ? (userSubscription.limit ?? 0) - (userSubscription.used ?? 0)
+            : 0;
+
+        // limit لكل فريق = remaining
+        limit = remaining;
+
+        // استخدم limit المحسوب، أو اقرأ من arguments كـ fallback
         if (routeSettings.arguments is Map<String, dynamic>) {
           final args = routeSettings.arguments as Map<String, dynamic>;
-          limit = args['limit'] as int? ?? 0;
-          print('📋 تم قراءة limit من routeSettings Map: $limit');
+          limit = args['limit'] as int? ?? limit;
+          print('📋 تم قراءة limit من routeSettings Map: $limit (remaining: $remaining)');
         } else if (GuessGame.globalInitialArguments is Map<String, dynamic>) {
           final args = GuessGame.globalInitialArguments as Map<String, dynamic>;
-          limit = args['limit'] as int? ?? 0;
-          print('📋 تم قراءة limit من globalInitialArguments Map: $limit');
+          limit = args['limit'] as int? ?? limit;
+          print('📋 تم قراءة limit من globalInitialArguments Map: $limit (remaining: $remaining)');
         } else {
-          limit = routeSettings.arguments as int? ?? 0;
-          print('📋 تم قراءة limit من int: $limit');
+          limit = routeSettings.arguments as int? ?? limit;
+          print('📋 تم قراءة limit من int: $limit (remaining: $remaining)');
         }
 
-        // حساب وحساب remaining من GlobalStorage subscription
-        final userSubscription = GlobalStorage.subscription;
-        if (userSubscription != null) {
-          final remaining = (userSubscription.limit ?? 0) - (userSubscription.used ?? 0);
-          print('📋 Subscription remaining: $remaining');
-        } else {
-          print('📋 Subscription remaining: N/A (no subscription data)');
-        }
+        print('📋 Subscription remaining (limit per team): $remaining');
 
         return _createSmoothPageRoute(
           BlocProvider<CategoriesCubit>(
@@ -133,11 +143,17 @@ class AppRoutes {
         int limit = 0;
         List<int> team1Categories = [];
 
+        // حساب limit من subscription remaining (عدد الفئات المسموح لكل فريق)
+        final userSubscription = GlobalStorage.subscription;
+        final remaining = userSubscription != null && userSubscription.status == 'active'
+            ? (userSubscription.limit ?? 0) - (userSubscription.used ?? 0)
+            : 0;
+
         // التحقق من نوع البيانات المرسلة
         if (routeSettings.arguments is Map<String, dynamic>) {
           // البيانات تأتي من TeamCategoriesFirstTeamView (Map)
           final args = routeSettings.arguments as Map<String, dynamic>;
-          limit = args['limit'] as int? ?? 0;
+          limit = args['limit'] as int? ?? remaining;
           team1Categories = args['team1Categories'] as List<int>? ?? [];
         } else if (routeSettings.arguments is int) {
           // البيانات تأتي من team_categories_first_team_view.dart (int فقط)

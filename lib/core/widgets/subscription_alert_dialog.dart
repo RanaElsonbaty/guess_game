@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:guess_game/core/routing/routes.dart';
@@ -6,24 +7,48 @@ import 'package:guess_game/core/theming/colors.dart';
 import 'package:guess_game/core/theming/icons.dart';
 import 'package:guess_game/core/theming/images.dart';
 import 'package:guess_game/core/theming/styles.dart';
+import 'package:guess_game/features/notifications/presentation/cubit/notification_cubit.dart';
+import 'package:guess_game/features/notifications/presentation/cubit/notification_state.dart';
 
-class SubscriptionAlertDialog extends StatelessWidget {
+class SubscriptionAlertDialog extends StatefulWidget {
   final String title;
-  final String content;
+  final String? content; // Make content optional
   final String buttonText;
   final VoidCallback? onButtonPressed;
 
   const SubscriptionAlertDialog({
     super.key,
     this.title = 'اشعار',
-    this.content = 'يجب اختيار احد الباقات لدينا لكي يتم البدء اللعبه',
+    this.content, // Optional content parameter
     this.buttonText = 'شراء الان',
     this.onButtonPressed,
   });
 
   @override
+  State<SubscriptionAlertDialog> createState() => _SubscriptionAlertDialogState();
+}
+
+class _SubscriptionAlertDialogState extends State<SubscriptionAlertDialog> {
+  @override
+  void initState() {
+    super.initState();
+    // Load notification messages when dialog opens
+    context.read<NotificationCubit>().getNotificationMessages();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Dialog(
+    return BlocBuilder<NotificationCubit, NotificationState>(
+      builder: (context, state) {
+        // Use provided content if available, otherwise use default/API content
+        String content = widget.content ?? 'يجب اختيار احد الباقات لدينا لكي يتم البدء اللعبه';
+
+        // Use dynamic content from API if no content provided and loaded successfully
+        if (widget.content == null && state is NotificationLoaded) {
+          content = state.notificationMessages.data.notSubscribedMessage;
+        }
+
+        return Dialog(
       backgroundColor: Colors.transparent, // خلفية شفافة تماماً
       child: Container(
         width: 400.w,
@@ -65,7 +90,7 @@ class SubscriptionAlertDialog extends StatelessWidget {
                   ),
                   // كلمة في الوسط
                   Text(
-                    title,
+                    widget.title,
                     style: TextStyles.font24Secondary700Weight,
                     textAlign: TextAlign.center,
                   ),
@@ -97,7 +122,7 @@ class SubscriptionAlertDialog extends StatelessWidget {
 
                   // الزر الأخضر
                   GestureDetector(
-                    onTap: onButtonPressed ?? () {
+                    onTap: widget.onButtonPressed ?? () {
                       // إغلاق الحوار أولاً
                       Navigator.of(context).pop();
                       // ثم الانتقال إلى صفحة الباقات عبر routes
@@ -181,7 +206,7 @@ class SubscriptionAlertDialog extends StatelessWidget {
                             ),
                             alignment: Alignment.center,
                             child: Text(
-                              buttonText,
+                              widget.buttonText,
                               style: TextStyles.font10Secondary700Weight.copyWith(
                                 color: Colors.white,
                                 fontSize: 12.sp,
@@ -198,6 +223,8 @@ class SubscriptionAlertDialog extends StatelessWidget {
           ],
         ),
       ),
+    );
+      },
     );
   }
 }

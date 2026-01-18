@@ -21,6 +21,10 @@ class CategoryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final shouldShowLock = isLocked || isSubscriptionLocked;
+    if (shouldShowLock) {
+      print('🔒 CategoryCard: Showing lock for "$title" (isLocked: $isLocked, isSubscriptionLocked: $isSubscriptionLocked)');
+    }
     return GestureDetector(
       onTap: onPressed,
       child: Stack(
@@ -69,8 +73,8 @@ class CategoryCard extends StatelessWidget {
                         fit: BoxFit.cover,
                       ),
 
-                      // Lock overlay if locked
-                      if (isLocked) ...[
+                      // Lock overlay if locked (by category status or subscription)
+                      if (isLocked || isSubscriptionLocked) ...[
                         // Blur effect
                         Positioned.fill(
                           child: Container(

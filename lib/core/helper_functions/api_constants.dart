@@ -16,6 +16,7 @@ class ApiConstants {
   static const String gamesRoundDataUpdatePointPlan = '/games/round/data/update-point-plan';
   static const String gamesRoundDataUpdateScore = '/games/round/data/update-score';
   static const String gamesRoundAssignWinner = '/games/round/assign-winner';
+  static String gamesStatistics(int gameId) => '/games/$gameId/statistics';
 
   // Settings
   static const String gameTerms = '/settings/game-terms';

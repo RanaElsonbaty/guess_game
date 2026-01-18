@@ -336,11 +336,11 @@ class _RoundWinnerViewState extends State<RoundWinnerView> {
                             width: 90,
                             height: 38,
                             onTap: () {
-                              // للتعادل، ننتقل مباشرة إلى صفحة النتائج بدون استدعاء API
+                              // For draw, navigate to ScoreView without assigning a winner.
                               Navigator.of(context).pushNamed(
                                 Routes.scoreView,
                                 arguments: {
-                                  'assignWinnerResponse': null, // No winner assigned for draw
+                                  'assignWinnerResponse': null,
                                   'updateScoreResponse': _updateScoreResponse,
                                   'gameStartResponse': _gameStartResponse,
                                 },
@@ -353,7 +353,7 @@ class _RoundWinnerViewState extends State<RoundWinnerView> {
                             ),
                           ),
                         ],
-                        )
+                      ),
                     ],
                   ),
                 ),

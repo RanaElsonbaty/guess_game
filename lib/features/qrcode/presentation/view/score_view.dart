@@ -149,8 +149,17 @@ class _ScoreViewState extends State<ScoreView> {
                         text: _isLastRound ? 'إنهاء الجيم' : 'الانتقال للجوله ${GlobalStorage.getNextRoundNumber()}',
                         onTap: () {
                           if (_isLastRound) {
-                            // إنهاء اللعبة - العودة للخلف أو الانتقال لصفحة النهاية
-                            Navigator.of(context).pop();
+                            // إنهاء اللعبة - الانتقال لصفحة الفائز النهائي
+                            print('🏆 إنهاء اللعبة - الانتقال لصفحة الفائز النهائي');
+                            Navigator.of(context).pushNamed(
+                              Routes.gameWinnerView,
+                              arguments: {
+                                'updatePointPlanResponse': _pointPlanResponse,
+                                'updateScoreResponse': _scoreResponse,
+                                'assignWinnerResponse': _assignWinnerResponse,
+                                'gameStartResponse': _gameStartResponse,
+                              },
+                            );
                           } else {
                             // الانتقال للجولة التالية
                             print('🔄 الانتقال للجولة التالية - IDs من round_data في /games/start response:');

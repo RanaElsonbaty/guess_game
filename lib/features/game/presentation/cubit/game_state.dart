@@ -60,4 +60,18 @@ class WinnerAssignError extends GameState {
   WinnerAssignError(this.message);
 }
 
+class GameStatisticsLoading extends GameState {}
+
+class GameStatisticsLoaded extends GameState {
+  final GameStatisticsResponse response;
+
+  GameStatisticsLoaded(this.response);
+}
+
+class GameStatisticsError extends GameState {
+  final String message;
+
+  GameStatisticsError(this.message);
+}
+
 

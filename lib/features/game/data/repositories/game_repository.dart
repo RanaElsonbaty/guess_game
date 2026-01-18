@@ -4,6 +4,7 @@ import 'package:guess_game/core/network/api_failure.dart';
 import 'package:guess_game/core/network/api_service.dart';
 import 'package:guess_game/features/game/data/models/assign_winner_request.dart';
 import 'package:guess_game/features/game/data/models/assign_winner_response.dart';
+import 'package:guess_game/features/game/data/models/game_statistics_response.dart';
 import 'package:guess_game/features/game/data/models/game_start_request.dart';
 import 'package:guess_game/features/game/data/models/game_start_response.dart';
 import 'package:guess_game/features/game/data/models/update_point_plan_request.dart';
@@ -16,6 +17,7 @@ abstract class GameRepository {
   Future<Either<ApiFailure, UpdatePointPlanResponse>> updatePointPlan(UpdatePointPlanRequest request);
   Future<Either<ApiFailure, UpdateScoreResponse>> updateScore(UpdateScoreRequest request);
   Future<Either<ApiFailure, AssignWinnerResponse>> assignWinner(AssignWinnerRequest request);
+  Future<Either<ApiFailure, GameStatisticsResponse>> gameStatistics(int gameId);
 }
 
 class GameRepositoryImpl implements GameRepository {
@@ -110,6 +112,28 @@ class GameRepositoryImpl implements GameRepository {
       );
     } catch (e) {
       return Left(ApiFailure('حدث خطأ أثناء تعيين الفائز: $e'));
+    }
+  }
+
+  @override
+  Future<Either<ApiFailure, GameStatisticsResponse>> gameStatistics(int gameId) async {
+    try {
+      final response = await _apiService.get(ApiConstants.gamesStatistics(gameId));
+
+      return response.fold(
+        (failure) => Left(failure),
+        (success) {
+          if (success.statusCode == 200) {
+            final statsResponse =
+                GameStatisticsResponse.fromJson(success.data as Map<String, dynamic>);
+            return Right(statsResponse);
+          } else {
+            return Left(ApiFailure('فشل في جلب إحصائيات اللعبة'));
+          }
+        },
+      );
+    } catch (e) {
+      return Left(ApiFailure('حدث خطأ أثناء جلب إحصائيات اللعبة: $e'));
     }
   }
 }

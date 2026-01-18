@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:guess_game/features/game/data/models/assign_winner_request.dart';
 import 'package:guess_game/features/game/data/models/assign_winner_response.dart';
+import 'package:guess_game/features/game/data/models/game_statistics_response.dart';
 import 'package:guess_game/features/game/data/models/game_start_request.dart';
 import 'package:guess_game/features/game/data/models/game_start_response.dart';
 import 'package:guess_game/features/game/data/models/update_point_plan_request.dart';
@@ -19,6 +20,7 @@ class GameCubit extends Cubit<GameState> {
   GameStartResponse? gameStartResponse;
   UpdatePointPlanResponse? updatePointPlanResponse;
   UpdateScoreResponse? updateScoreResponse;
+  GameStatisticsResponse? gameStatisticsResponse;
 
   GameCubit(this._gameRepository) : super(GameInitial());
 
@@ -95,6 +97,22 @@ class GameCubit extends Cubit<GameState> {
           print('🎯 GameCubit: assignWinner success');
         }
         emit(WinnerAssigned(response));
+        return response;
+      },
+    );
+  }
+
+  Future<GameStatisticsResponse?> getGameStatistics(int gameId) async {
+    emit(GameStatisticsLoading());
+    final result = await _gameRepository.gameStatistics(gameId);
+    return result.fold(
+      (failure) {
+        emit(GameStatisticsError(failure.message));
+        return null;
+      },
+      (response) {
+        gameStatisticsResponse = response;
+        emit(GameStatisticsLoaded(response));
         return response;
       },
     );

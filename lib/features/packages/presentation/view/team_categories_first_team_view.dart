@@ -7,6 +7,7 @@ import 'package:guess_game/core/routing/routes.dart';
 import 'package:guess_game/core/theming/colors.dart';
 import 'package:guess_game/core/theming/icons.dart';
 import 'package:guess_game/core/theming/styles.dart';
+import 'package:guess_game/core/widgets/subscription_alert_dialog.dart';
 import 'package:guess_game/features/levels/presentation/cubit/categories_cubit.dart';
 import 'package:guess_game/features/levels/presentation/view/widgets/category_card.dart';
 import 'package:guess_game/features/levels/presentation/view/widgets/header_shape_painter.dart';
@@ -14,10 +15,12 @@ import 'package:shimmer/shimmer.dart';
 
 class TeamCategoriesFirstTeamView extends StatefulWidget {
   final int limit;
+  final bool isAddOneCategory;
 
   const TeamCategoriesFirstTeamView({
     super.key,
     required this.limit,
+    this.isAddOneCategory = false,
   });
 
   @override
@@ -27,6 +30,23 @@ class TeamCategoriesFirstTeamView extends StatefulWidget {
 class _TeamCategoriesFirstTeamViewState extends State<TeamCategoriesFirstTeamView> {
   late List<int> selectedCategoriesForFirstTeam;
   int maxSelectableCategories = 0;
+  bool _didReadArgs = false;
+  int _gameId = 0;
+  int _team1Id = 0;
+  int _team2Id = 0;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_didReadArgs) return;
+    _didReadArgs = true;
+    final args = ModalRoute.of(context)?.settings.arguments;
+    if (args is Map<String, dynamic>) {
+      _gameId = args['gameId'] as int? ?? 0;
+      _team1Id = args['team1Id'] as int? ?? 0;
+      _team2Id = args['team2Id'] as int? ?? 0;
+    }
+  }
 
   @override
   void initState() {
@@ -37,8 +57,8 @@ class _TeamCategoriesFirstTeamViewState extends State<TeamCategoriesFirstTeamVie
     // تحميل الفئات المحفوظة سابقاً
     _loadSavedCategories();
 
-    // كل فريق يمكنه اختيار حتى limit فئة
-    maxSelectableCategories = widget.limit;
+    // كل فريق يمكنه اختيار حتى limit فئة (في add-one: فئة واحدة فقط)
+    maxSelectableCategories = widget.isAddOneCategory ? 1 : widget.limit;
 
     // تحميل الفئات من API إذا لم تكن محملة
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -63,7 +83,9 @@ class _TeamCategoriesFirstTeamViewState extends State<TeamCategoriesFirstTeamVie
       } else {
         // التحقق من الحد الأقصى للفريق الأول (حتى limit فئة)
         if (selectedCategoriesForFirstTeam.length >= maxSelectableCategories) {
-          // لا نظهر أي تنبيه
+          if (widget.isAddOneCategory) {
+            _showOneCategoryOnlyDialog();
+          }
           return;
         }
 
@@ -78,6 +100,21 @@ class _TeamCategoriesFirstTeamViewState extends State<TeamCategoriesFirstTeamVie
       // حفظ التغييرات
       _saveCategories();
     });
+  }
+
+  void _showOneCategoryOnlyDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        return SubscriptionAlertDialog(
+          title: 'تنبيه',
+          content: 'مسموح لكل فريق إضافة فئة واحدة فقط',
+          buttonText: 'حسناً',
+          onButtonPressed: () => Navigator.of(dialogContext).pop(),
+        );
+      },
+    );
   }
 
   void _loadSavedCategories() {
@@ -120,17 +157,6 @@ class _TeamCategoriesFirstTeamViewState extends State<TeamCategoriesFirstTeamVie
     );
     print('💾 تم حفظ فئات الفريق الأول: $selectedCategoriesForFirstTeam');
   }
-
-  void _showTotalLimitReachedAlert() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('لا يمكن اختيار المزيد. المجموع الكلي للفئات وصل للحد الأقصى (${widget.limit})'),
-        backgroundColor: Colors.red,
-        duration: Duration(seconds: 3),
-      ),
-    );
-  }
-
 
   @override
   Widget build(BuildContext context) {
@@ -305,6 +331,7 @@ class _TeamCategoriesFirstTeamViewState extends State<TeamCategoriesFirstTeamVie
                                       children: [
                                         CategoryCard(
                                           title: category.name,
+                                          imageUrl: category.image,
                                           isLocked: !category.status,
                                           isSubscriptionLocked: false, // غير مقفل في صفحة الفريق الأول
                                           onPressed: null, // إزالة onPressed من CategoryCard
@@ -357,6 +384,11 @@ class _TeamCategoriesFirstTeamViewState extends State<TeamCategoriesFirstTeamVie
                   return;
                 }
 
+                if (widget.isAddOneCategory && team1Count != 1) {
+                  _showOneCategoryOnlyDialog();
+                  return;
+                }
+
                 // منطق الانتقال لصفحة الفريق الثاني
                 print('🚀 الضغط على زر التالي - الانتقال لفئات الفريق الثاني');
                 print('📋 الفئات المختارة للفريق الأول: $selectedCategoriesForFirstTeam ($team1Count فئة)');
@@ -369,6 +401,10 @@ class _TeamCategoriesFirstTeamViewState extends State<TeamCategoriesFirstTeamVie
                   arguments: {
                     'limit': widget.limit,
                     'team1Categories': selectedCategoriesForFirstTeam,
+                    'isAddOneCategory': widget.isAddOneCategory,
+                    'gameId': _gameId,
+                    'team1Id': _team1Id,
+                    'team2Id': _team2Id,
                   },
                 );
               },

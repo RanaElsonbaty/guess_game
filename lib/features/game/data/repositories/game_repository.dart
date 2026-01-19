@@ -1,9 +1,11 @@
 import 'package:dartz/dartz.dart';
+import 'package:flutter/foundation.dart';
 import 'package:guess_game/core/helper_functions/api_constants.dart';
 import 'package:guess_game/core/network/api_failure.dart';
 import 'package:guess_game/core/network/api_service.dart';
 import 'package:guess_game/features/game/data/models/assign_winner_request.dart';
 import 'package:guess_game/features/game/data/models/assign_winner_response.dart';
+import 'package:guess_game/features/game/data/models/add_rounds_request.dart';
 import 'package:guess_game/features/game/data/models/game_statistics_response.dart';
 import 'package:guess_game/features/game/data/models/game_start_request.dart';
 import 'package:guess_game/features/game/data/models/game_start_response.dart';
@@ -18,6 +20,7 @@ abstract class GameRepository {
   Future<Either<ApiFailure, UpdateScoreResponse>> updateScore(UpdateScoreRequest request);
   Future<Either<ApiFailure, AssignWinnerResponse>> assignWinner(AssignWinnerRequest request);
   Future<Either<ApiFailure, GameStatisticsResponse>> gameStatistics(int gameId);
+  Future<Either<ApiFailure, GameStartResponse>> addRounds(AddRoundsRequest request);
 }
 
 class GameRepositoryImpl implements GameRepository {
@@ -134,6 +137,31 @@ class GameRepositoryImpl implements GameRepository {
       );
     } catch (e) {
       return Left(ApiFailure('حدث خطأ أثناء جلب إحصائيات اللعبة: $e'));
+    }
+  }
+
+  @override
+  Future<Either<ApiFailure, GameStartResponse>> addRounds(AddRoundsRequest request) async {
+    try {
+      final response = await _apiService.post(ApiConstants.gamesAddRounds, data: request.toJson());
+
+      return response.fold(
+        (failure) => Left(failure),
+        (success) {
+          if (success.statusCode == 200) {
+            if (kDebugMode) {
+              print('🧩 /games/add-rounds response (raw):');
+              print(success.data);
+            }
+            final gameResponse = GameStartResponse.fromJson(success.data);
+            return Right(gameResponse);
+          } else {
+            return Left(ApiFailure('فشل في إضافة جولات جديدة'));
+          }
+        },
+      );
+    } catch (e) {
+      return Left(ApiFailure('حدث خطأ أثناء إضافة جولات جديدة: $e'));
     }
   }
 }

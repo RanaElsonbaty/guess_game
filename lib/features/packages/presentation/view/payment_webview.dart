@@ -2,7 +2,10 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
+import 'package:guess_game/core/helper_functions/global_storage.dart';
+import 'package:guess_game/core/injection/service_locator.dart';
 import 'package:guess_game/core/routing/routes.dart';
+import 'package:guess_game/features/auth/login/presentation/cubit/auth_cubit.dart';
 
 class PaymentWebView extends StatefulWidget {
   final String url;
@@ -60,7 +63,7 @@ class _PaymentWebViewState extends State<PaymentWebView> {
     }
   }
 
-  void _showSuccessAndNavigate() {
+  void _showSuccessAndNavigate() async {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -70,17 +73,75 @@ class _PaymentWebViewState extends State<PaymentWebView> {
         ),
       );
 
-      // انتظار 3 ثوانٍ ثم الانتقال مباشرة إلى TeamCategoriesFirstTeamView
-      Future.delayed(const Duration(seconds: 3), () {
-        if (mounted) {
-          // الانتقال مباشرة إلى صفحة اختيار الفئات
-          Navigator.of(context).pushNamedAndRemoveUntil(
-            Routes.teamCategories,
-            (route) => false, // إزالة جميع الصفحات السابقة من stack
-            arguments: {'limit': 20}, // قيمة افتراضية، سيتم تحديثها من API لاحقاً
-          );
+      try {
+        // تحديث بيانات المستخدم من API بعد الدفع الناجح
+        final authCubit = getIt<AuthCubit>();
+        await authCubit.getProfile();
+
+        await Future.delayed(const Duration(milliseconds: 100));
+
+        final authState = authCubit.state;
+        if (authState is ProfileLoaded) {
+          final user = authState.user;
+
+          // تحديث GlobalStorage بالبيانات الجديدة
+          GlobalStorage.user = user;
+          GlobalStorage.subscription = user.subscription;
+
+          // حفظ البيانات في التخزين المحلي
+          await GlobalStorage.saveUserData(user);
+          await GlobalStorage.saveSubscription(user.subscription);
+
+          print('✅ تم تحديث بيانات المستخدم بعد الدفع:');
+          print('  - User: ${user.name}');
+          print('  - Subscription: ${user.subscription}');
+
+          final limit = user.subscription?.limit ?? 4;
+
+          if (user.subscription != null) {
+            print('  - Status: ${user.subscription!.status}');
+            print('  - Used: ${user.subscription!.used}');
+            print('  - Limit: $limit');
+          }
+
+          // انتظار ثم الانتقال باستخدام الـ limit المحدث
+          Future.delayed(const Duration(seconds: 3), () {
+            if (mounted) {
+              Navigator.of(context).pushNamedAndRemoveUntil(
+                Routes.teamCategories,
+                (route) => false,
+                arguments: {'limit': limit},
+              );
+            }
+          });
+        } else {
+          print('❌ فشل في تحديث بيانات المستخدم، سيتم استخدام القيمة الافتراضية');
+
+          // في حالة فشل تحديث البيانات، استخدم القيمة الافتراضية
+          Future.delayed(const Duration(seconds: 3), () {
+            if (mounted) {
+              Navigator.of(context).pushNamedAndRemoveUntil(
+                Routes.teamCategories,
+                (route) => false,
+                arguments: {'limit': 4}, // قيمة افتراضية أفضل من 20
+              );
+            }
+          });
         }
-      });
+      } catch (e) {
+        print('❌ خطأ في تحديث بيانات المستخدم: $e');
+
+        // في حالة الخطأ، استخدم القيمة الافتراضية
+        Future.delayed(const Duration(seconds: 3), () {
+          if (mounted) {
+            Navigator.of(context).pushNamedAndRemoveUntil(
+              Routes.teamCategories,
+              (route) => false,
+              arguments: {'limit': 4}, // قيمة افتراضية أفضل من 20
+            );
+          }
+        });
+      }
     }
   }
 

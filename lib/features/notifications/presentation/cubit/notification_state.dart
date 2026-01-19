@@ -22,3 +22,5 @@ class NotificationError extends NotificationState {
 
   NotificationError(this.message);
 }
+
+

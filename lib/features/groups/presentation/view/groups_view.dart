@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:guess_game/core/helper_functions/global_storage.dart';
 import 'package:guess_game/core/injection/service_locator.dart';
 import 'package:guess_game/core/routing/routes.dart';
 import 'package:guess_game/core/theming/colors.dart';
 import 'package:guess_game/core/theming/styles.dart';
 import 'package:guess_game/features/game/data/models/game_start_request.dart';
+import 'package:guess_game/features/game/data/models/game_start_response.dart';
+import 'package:guess_game/features/game/presentation/cubit/add_one_round_cubit.dart';
 import 'package:guess_game/features/game/presentation/cubit/game_cubit.dart';
 import 'package:guess_game/core/widgets/group_card.dart';
 
@@ -24,6 +27,10 @@ class _GroupsViewState extends State<GroupsView> {
   List<int> _team1Categories = [];
   List<int> _team2Categories = [];
   bool _isStartingGame = false;
+  bool _isAddOneFlow = false;
+  int _addOneGameId = 0;
+  int _addOneTeam1Id = 0;
+  int _addOneTeam2Id = 0;
 
   @override
   void dispose() {
@@ -110,6 +117,7 @@ class _GroupsViewState extends State<GroupsView> {
           );
           // حفظ gameStartResponse في GlobalStorage للاستعادة
           GlobalStorage.lastGameStartResponse = gameState.response;
+          await GlobalStorage.saveGameStartResponse(gameState.response);
 
           Navigator.of(context).pushReplacementNamed(
             Routes.gameLevel,
@@ -148,6 +156,75 @@ class _GroupsViewState extends State<GroupsView> {
         );
       }
     }
+  }
+
+  GameStartResponse? _resolveCurrentGameStart() {
+    final gs = GlobalStorage.gameStartResponse;
+    if (gs is GameStartResponse) return gs;
+    final last = GlobalStorage.lastGameStartResponse;
+    if (last is GameStartResponse) return last;
+    return null;
+  }
+
+  Future<void> _addOneRoundAndStartCycle() async {
+    setState(() {
+      _isStartingGame = true;
+    });
+
+    if (GlobalStorage.team1Categories.length != 1 || GlobalStorage.team2Categories.length != 1) {
+      if (!mounted) return;
+      setState(() => _isStartingGame = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('مسموح لكل فريق إضافة فئة واحدة فقط'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    // Prefer IDs passed from GameWinnerView -> OptionsView -> Categories -> Groups.
+    // Fallback to in-session gameStartResponse if needed.
+    int gameId = _addOneGameId;
+    int team1Id = _addOneTeam1Id;
+    int team2Id = _addOneTeam2Id;
+
+    if (gameId == 0 || team1Id == 0 || team2Id == 0) {
+      final gameStart = _resolveCurrentGameStart();
+      if (gameStart != null) {
+        gameId = gameStart.data.id;
+        final team1 = gameStart.data.teams.firstWhere(
+          (t) => t.teamNumber == 1,
+          orElse: () => gameStart.data.teams[0],
+        );
+        final team2 = gameStart.data.teams.firstWhere(
+          (t) => t.teamNumber == 2,
+          orElse: () => gameStart.data.teams.length > 1 ? gameStart.data.teams[1] : gameStart.data.teams[0],
+        );
+        team1Id = team1.id;
+        team2Id = team2.id;
+      }
+    }
+
+    if (gameId == 0 || team1Id == 0 || team2Id == 0) {
+      if (!mounted) return;
+      setState(() => _isStartingGame = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('لا يمكن تحديد بيانات اللعبة لإضافة جولة جديدة'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    await context.read<AddOneRoundCubit>().addRounds(
+          gameId: gameId,
+          team1Id: team1Id,
+          team2Id: team2Id,
+          team1CategoryId: GlobalStorage.team1Categories.first,
+          team2CategoryId: GlobalStorage.team2Categories.first,
+        );
   }
 
   @override
@@ -201,9 +278,44 @@ class _GroupsViewState extends State<GroupsView> {
     if (args != null && mounted) {
       _team1Categories = args['team1Categories'] ?? [];
       _team2Categories = args['team2Categories'] ?? [];
+      _isAddOneFlow = args['isAddOneCategory'] == true;
+      _addOneGameId = args['gameId'] as int? ?? _addOneGameId;
+      _addOneTeam1Id = args['team1Id'] as int? ?? _addOneTeam1Id;
+      _addOneTeam2Id = args['team2Id'] as int? ?? _addOneTeam2Id;
     }
 
-    return Scaffold(
+    return BlocListener<AddOneRoundCubit, AddOneRoundState>(
+      listener: (context, state) {
+        if (state is AddOneRoundSuccess) {
+          if (!mounted) return;
+          setState(() => _isStartingGame = false);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('✅ ${state.response.message}'),
+              backgroundColor: Colors.green,
+              duration: const Duration(seconds: 2),
+            ),
+          );
+          Navigator.of(context).pushReplacementNamed(
+            Routes.gameLevel,
+            arguments: {
+              'team1Name': GlobalStorage.team1Name,
+              'team2Name': GlobalStorage.team2Name,
+              'gameStartResponse': state.response,
+            },
+          );
+        } else if (state is AddOneRoundError) {
+          if (!mounted) return;
+          setState(() => _isStartingGame = false);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(state.message),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      },
+      child: Scaffold(
             backgroundColor: Colors.white,
             body: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 60),
@@ -281,7 +393,11 @@ class _GroupsViewState extends State<GroupsView> {
                   GlobalStorage.team2Name = _team2Controller.text.trim();
 
                   // بدء اللعبة مباشرة
-                  _startGame();
+                  if (_isAddOneFlow) {
+                    _addOneRoundAndStartCycle();
+                  } else {
+                    _startGame();
+                  }
                 },
                       child: Stack(
                         alignment: Alignment.center,
@@ -337,6 +453,7 @@ class _GroupsViewState extends State<GroupsView> {
                 ],
               ),
             ),
-          );
+          ),
+    );
   }
 }

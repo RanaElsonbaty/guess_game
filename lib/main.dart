@@ -64,6 +64,13 @@ bool _hasRequiredDataForRoute(String route, Map<String, dynamic> arguments) {
       return arguments['updateScoreResponse'] != null ||
              arguments['assignWinnerResponse'] != null;
 
+    case Routes.groups:
+      // Requires selected categories for both teams to restore correctly.
+      return arguments['team1Categories'] != null &&
+             arguments['team2Categories'] != null &&
+             (arguments['team1Categories'] as List?)?.isNotEmpty == true &&
+             (arguments['team2Categories'] as List?)?.isNotEmpty == true;
+
     default:
       return true; // Other routes don't have strict requirements
   }

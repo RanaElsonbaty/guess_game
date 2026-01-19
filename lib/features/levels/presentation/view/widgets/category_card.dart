@@ -7,6 +7,7 @@ import 'package:guess_game/core/theming/styles.dart';
 
 class CategoryCard extends StatelessWidget {
   final String title;
+  final String? imageUrl; // Dynamic image from API
   final bool isLocked;
   final bool isSubscriptionLocked;
   final VoidCallback? onPressed;
@@ -14,6 +15,7 @@ class CategoryCard extends StatelessWidget {
   const CategoryCard({
     super.key,
     required this.title,
+    this.imageUrl, // Optional parameter for dynamic image
     this.isLocked = false,
     this.isSubscriptionLocked = false,
     this.onPressed,
@@ -65,13 +67,29 @@ class CategoryCard extends StatelessWidget {
                   child: Stack(
                     alignment: Alignment.center,
                     children: [
-                      // Ball Image
-                      Image.asset(
-                        AppImages.ball,
-                        width: 72,
-                        height: 72,
-                        fit: BoxFit.cover,
-                      ),
+                      // Dynamic Image from API or fallback to static ball image
+                      imageUrl != null && imageUrl!.isNotEmpty
+                        ? Image.network(
+                            imageUrl!,
+                            width: 72,
+                            height: 72,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              // Fallback to static image if network image fails
+                              return Image.asset(
+                                AppImages.ball,
+                                width: 72,
+                                height: 72,
+                                fit: BoxFit.cover,
+                              );
+                            },
+                          )
+                        : Image.asset(
+                            AppImages.ball,
+                            width: 72,
+                            height: 72,
+                            fit: BoxFit.cover,
+                          ),
 
                       // Lock overlay if locked (by category status or subscription)
                       if (isLocked || isSubscriptionLocked) ...[

@@ -8,12 +8,14 @@ import 'package:guess_game/core/widgets/file_shape_clipper.dart';
 class GameLevelCard extends StatefulWidget {
   final String teamName;
   final String teamTitle;
+  final String? imageUrl; // Dynamic image from API
   final Function(String) onLevelSelected;
 
   const GameLevelCard({
     super.key,
     required this.teamName,
     required this.teamTitle,
+    this.imageUrl, // Optional parameter for dynamic image
     required this.onLevelSelected,
   });
 
@@ -51,8 +53,27 @@ class _GameLevelCardState extends State<GameLevelCard> {
                 style: TextStyles.font14Secondary700Weight,
               ),
               SizedBox(height: 25.h),
-              // Ball Icon
-              Image.asset(AppImages.ball,height: 50.h,width: 50.w,),
+              // Dynamic Image from API or fallback to static ball image
+              widget.imageUrl != null && widget.imageUrl!.isNotEmpty
+                ? Image.network(
+                    widget.imageUrl!,
+                    height: 50.h,
+                    width: 50.w,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      // Fallback to static image if network image fails
+                      return Image.asset(
+                        AppImages.ball,
+                        height: 50.h,
+                        width: 50.w,
+                      );
+                    },
+                  )
+                : Image.asset(
+                    AppImages.ball,
+                    height: 50.h,
+                    width: 50.w,
+                  ),
               SizedBox(height: 25.h),
               // Level Options (Small Cards)
               Row(

@@ -7,6 +7,7 @@ import 'package:guess_game/core/routing/routes.dart';
 import 'package:guess_game/core/theming/colors.dart';
 import 'package:guess_game/core/theming/icons.dart';
 import 'package:guess_game/core/theming/styles.dart';
+import 'package:guess_game/core/widgets/subscription_alert_dialog.dart';
 import 'package:guess_game/features/levels/presentation/cubit/categories_cubit.dart';
 import 'package:guess_game/features/levels/presentation/view/widgets/category_card.dart';
 import 'package:guess_game/features/levels/presentation/view/widgets/header_shape_painter.dart';
@@ -15,11 +16,13 @@ import 'package:shimmer/shimmer.dart';
 class TeamCategoriesSecondTeamView extends StatefulWidget {
   final int limit;
   final List<int> team1Categories;
+  final bool isAddOneCategory;
 
   const TeamCategoriesSecondTeamView({
     super.key,
     required this.limit,
     required this.team1Categories,
+    this.isAddOneCategory = false,
   });
 
   @override
@@ -31,6 +34,23 @@ class _TeamCategoriesSecondTeamViewState extends State<TeamCategoriesSecondTeamV
   int maxSelectableCategories = 0;
   int userLimit = 0;
   List<int> team1Categories = [];
+  bool _didReadArgs = false;
+  int _gameId = 0;
+  int _team1Id = 0;
+  int _team2Id = 0;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_didReadArgs) return;
+    _didReadArgs = true;
+    final args = ModalRoute.of(context)?.settings.arguments;
+    if (args is Map<String, dynamic>) {
+      _gameId = args['gameId'] as int? ?? 0;
+      _team1Id = args['team1Id'] as int? ?? 0;
+      _team2Id = args['team2Id'] as int? ?? 0;
+    }
+  }
 
   @override
   void initState() {
@@ -51,8 +71,8 @@ class _TeamCategoriesSecondTeamViewState extends State<TeamCategoriesSecondTeamV
 
     // تخزين الـ limit المرسل من الصفحة السابقة
     userLimit = widget.limit;
-    // كل فريق يمكنه اختيار حتى limit فئة
-    maxSelectableCategories = userLimit;
+    // كل فريق يمكنه اختيار حتى limit فئة (في add-one: فئة واحدة فقط)
+    maxSelectableCategories = widget.isAddOneCategory ? 1 : userLimit;
     print('📋 widget.limit: ${widget.limit}');
     print('📋 userLimit: $userLimit');
     print('📋 team1Categories.length: ${team1Categories.length}');
@@ -68,7 +88,9 @@ class _TeamCategoriesSecondTeamViewState extends State<TeamCategoriesSecondTeamV
       } else {
         // التحقق من الحد الأقصى للفريق الثاني (حتى limit فئة)
         if (selectedCategoriesForSecondTeam.length >= maxSelectableCategories) {
-          // لا نظهر أي تنبيه
+          if (widget.isAddOneCategory) {
+            _showOneCategoryOnlyDialog();
+          }
           return;
         }
 
@@ -83,6 +105,21 @@ class _TeamCategoriesSecondTeamViewState extends State<TeamCategoriesSecondTeamV
       // حفظ التغييرات
       _saveCategories();
     });
+  }
+
+  void _showOneCategoryOnlyDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        return SubscriptionAlertDialog(
+          title: 'تنبيه',
+          content: 'مسموح لكل فريق إضافة فئة واحدة فقط',
+          buttonText: 'حسناً',
+          onButtonPressed: () => Navigator.of(dialogContext).pop(),
+        );
+      },
+    );
   }
 
 
@@ -104,16 +141,6 @@ class _TeamCategoriesSecondTeamViewState extends State<TeamCategoriesSecondTeamV
       t2Name: GlobalStorage.team2Name,
     );
     print('💾 تم حفظ فئات الفريق الثاني: $selectedCategoriesForSecondTeam');
-  }
-
-  void _showTotalLimitReachedAlert() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('لا يمكن اختيار المزيد. المجموع الكلي للفئات وصل للحد الأقصى ($userLimit)'),
-        backgroundColor: Colors.red,
-        duration: Duration(seconds: 3),
-      ),
-    );
   }
 
   @override
@@ -281,6 +308,7 @@ class _TeamCategoriesSecondTeamViewState extends State<TeamCategoriesSecondTeamV
                                         children: [
                                           CategoryCard(
                                             title: category.name,
+                                            imageUrl: category.image,
                                             isLocked: !category.status,
                                             isSubscriptionLocked: false, // غير مقفل في صفحة الفريق الثاني
                                             onPressed: null, // إزالة onPressed من CategoryCard
@@ -322,7 +350,6 @@ class _TeamCategoriesSecondTeamViewState extends State<TeamCategoriesSecondTeamV
                 // منطق التحقق من الاختيارات
                 final team1Count = team1Categories.length;
                 final team2Count = selectedCategoriesForSecondTeam.length;
-                final totalCount = team1Count + team2Count;
 
                 // التحقق من أن كل فريق اختار فئة واحدة على الأقل
                 if (team2Count == 0) {
@@ -335,34 +362,42 @@ class _TeamCategoriesSecondTeamViewState extends State<TeamCategoriesSecondTeamV
                   return;
                 }
 
-                // التحقق من أن عدد الفئات متساوي و زوجي
-                if (team1Count != team2Count) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('يجب أن يكون عدد الفئات متساوياً بين الفريقين (الفريق الأول: $team1Count، الفريق الثاني: $team2Count)'),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
-                  return;
-                }
+                if (widget.isAddOneCategory) {
+                  // In add-one mode: exactly 1 category per team.
+                  if (team1Count != 1 || team2Count != 1) {
+                    _showOneCategoryOnlyDialog();
+                    return;
+                  }
+                } else {
+                  // Normal mode: equal & even categories count
+                  if (team1Count != team2Count) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('يجب أن يكون عدد الفئات متساوياً بين الفريقين (الفريق الأول: $team1Count، الفريق الثاني: $team2Count)'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                    return;
+                  }
 
-                // التحقق من أن العدد زوجي
-                if (team1Count % 2 != 0 || team2Count % 2 != 0) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('يجب أن يكون عدد الفئات زوجياً (الفريق الأول: $team1Count، الفريق الثاني: $team2Count)'),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
-                  return;
+                  if (team1Count % 2 != 0 || team2Count % 2 != 0) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('يجب أن يكون عدد الفئات زوجياً (الفريق الأول: $team1Count، الفريق الثاني: $team2Count)'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                    return;
+                  }
                 }
 
                 // حفظ البيانات في GlobalStorage قبل الانتقال
                 await GlobalStorage.saveGameData(
                   team1Cats: team1Categories,
                   team2Cats: selectedCategoriesForSecondTeam,
-                  t1Name: '', // سيتم تعبئتها لاحقاً في GroupsView
-                  t2Name: '', // سيتم تعبئتها لاحقاً في GroupsView
+                  // Preserve names (in add-one flow they must stay prefilled).
+                  t1Name: GlobalStorage.team1Name,
+                  t2Name: GlobalStorage.team2Name,
                 );
 
                 // منطق الانتقال لصفحة GroupsView
@@ -375,6 +410,10 @@ class _TeamCategoriesSecondTeamViewState extends State<TeamCategoriesSecondTeamV
                   arguments: {
                     'team1Categories': team1Categories,
                     'team2Categories': selectedCategoriesForSecondTeam,
+                    'isAddOneCategory': widget.isAddOneCategory,
+                    'gameId': _gameId,
+                    'team1Id': _team1Id,
+                    'team2Id': _team2Id,
                   },
                 );
               },

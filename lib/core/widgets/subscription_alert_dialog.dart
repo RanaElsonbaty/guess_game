@@ -3,18 +3,20 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:guess_game/core/routing/routes.dart';
-import 'package:guess_game/core/theming/colors.dart';
 import 'package:guess_game/core/theming/icons.dart';
 import 'package:guess_game/core/theming/images.dart';
 import 'package:guess_game/core/theming/styles.dart';
 import 'package:guess_game/features/notifications/presentation/cubit/notification_cubit.dart';
 import 'package:guess_game/features/notifications/presentation/cubit/notification_state.dart';
+import 'package:guess_game/features/qrcode/presentation/view/widgets/green_pill_button.dart';
 
 class SubscriptionAlertDialog extends StatefulWidget {
   final String title;
   final String? content; // Make content optional
   final String buttonText;
   final VoidCallback? onButtonPressed;
+  final String? secondaryButtonText;
+  final VoidCallback? onSecondaryButtonPressed;
 
   const SubscriptionAlertDialog({
     super.key,
@@ -22,6 +24,8 @@ class SubscriptionAlertDialog extends StatefulWidget {
     this.content, // Optional content parameter
     this.buttonText = 'شراء الان',
     this.onButtonPressed,
+    this.secondaryButtonText,
+    this.onSecondaryButtonPressed,
   });
 
   @override
@@ -29,26 +33,35 @@ class SubscriptionAlertDialog extends StatefulWidget {
 }
 
 class _SubscriptionAlertDialogState extends State<SubscriptionAlertDialog> {
-  @override
-  void initState() {
-    super.initState();
-    // Load notification messages when dialog opens
-    context.read<NotificationCubit>().getNotificationMessages();
+  NotificationCubit? _maybeNotificationCubit(BuildContext context) {
+    try {
+      return BlocProvider.of<NotificationCubit>(context, listen: false);
+    } catch (_) {
+      return null;
+    }
   }
 
   @override
-  Widget build(BuildContext context) {
-    return BlocBuilder<NotificationCubit, NotificationState>(
-      builder: (context, state) {
-        // Use provided content if available, otherwise use default/API content
-        String content = widget.content ?? 'يجب اختيار احد الباقات لدينا لكي يتم البدء اللعبه';
+  void initState() {
+    super.initState();
+    // Load notification messages only when needed (and only if NotificationCubit exists).
+    if (widget.content == null) {
+      final notificationCubit = _maybeNotificationCubit(context);
+      notificationCubit?.getNotificationMessages();
+    }
+  }
 
-        // Use dynamic content from API if no content provided and loaded successfully
-        if (widget.content == null && state is NotificationLoaded) {
-          content = state.notificationMessages.data.notSubscribedMessage;
-        }
+  void _defaultPrimaryAction() {
+    // إغلاق الحوار أولاً
+    Navigator.of(context).pop();
+    // ثم الانتقال إلى صفحة الباقات عبر routes
+    Navigator.of(context).pushNamed(Routes.packages);
+  }
 
-        return Dialog(
+  Widget _buildDialogBody({required String content}) {
+    final primaryAction = widget.onButtonPressed ?? _defaultPrimaryAction;
+
+    return Dialog(
       backgroundColor: Colors.transparent, // خلفية شفافة تماماً
       child: Container(
         width: 400.w,
@@ -56,9 +69,9 @@ class _SubscriptionAlertDialogState extends State<SubscriptionAlertDialog> {
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: [
-              Color(0xFF79899f).withOpacity(0.3), // خفيف جداً
-              Color(0xFF8b929b).withOpacity(0.3), // خفيف جداً
-              Color(0xFF79899f).withOpacity(0.3), // خفيف جداً
+              const Color(0xFF79899f).withOpacity(0.3), // خفيف جداً
+              const Color(0xFF8b929b).withOpacity(0.3), // خفيف جداً
+              const Color(0xFF79899f).withOpacity(0.3), // خفيف جداً
             ],
           ),
         ),
@@ -96,7 +109,6 @@ class _SubscriptionAlertDialogState extends State<SubscriptionAlertDialog> {
                   ),
                   // مساحة فارغة على اليسار
                   SizedBox(width: 40.w),
-
                 ],
               ),
             ),
@@ -110,113 +122,57 @@ class _SubscriptionAlertDialogState extends State<SubscriptionAlertDialog> {
               child: Column(
                 children: [
                   SizedBox(height: 20.h),
-
-                  // النص الرئيسي
                   Text(
                     content,
                     style: TextStyles.font16Secondary700Weight,
                     textAlign: TextAlign.center,
                   ),
-
                   SizedBox(height: 20.h),
 
-                  // الزر الأخضر
-                  GestureDetector(
-                    onTap: widget.onButtonPressed ?? () {
-                      // إغلاق الحوار أولاً
-                      Navigator.of(context).pop();
-                      // ثم الانتقال إلى صفحة الباقات عبر routes
-                      Navigator.of(context).pushNamed(Routes.packages);
-                    },
-                    child: SizedBox(
-                      height: 40.h,
-                      width: 104.w,
-                      child: Stack(
-                        alignment: Alignment.bottomCenter,
-                        children: [
-                          /// 🌫️ Bottom Gradient Shadow
-                          Positioned(
-                            bottom: 0,
-                            left: 8.w,
-                            right: 8.w,
-                            child: Container(
-                              height: 8.h,
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.vertical(
-                                  bottom: Radius.circular(15.r),
-                                ),
-                                gradient: LinearGradient(
-                                  begin: Alignment.topCenter,
-                                  end: Alignment.bottomCenter,
-                                  colors: [
-                                    AppColors.greenButtonDark.withOpacity(0.8),
-                                    AppColors.greenButtonDark,
-                                    Colors.black,
-                                  ],
-                                ),
-                              ),
+                  if (widget.secondaryButtonText != null)
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        GreenPillButton(
+                          width: 104,
+                          height: 40,
+                          onTap: widget.onSecondaryButtonPressed ?? () => Navigator.of(context).pop(),
+                          child: Text(
+                            widget.secondaryButtonText!,
+                            style: TextStyles.font10Secondary700Weight.copyWith(
+                              color: Colors.white,
+                              fontSize: 12.sp,
                             ),
                           ),
-
-                          /// 🔻 External Bottom Border
-                          Positioned(
-                            bottom: 0,
-                            left: 0,
-                            right: 0,
-                            child: Container(
-                              height: 6.h,
-                              decoration: BoxDecoration(
-                                color: AppColors.greenButtonDark,
-                                borderRadius: BorderRadius.vertical(
-                                  bottom: Radius.circular(13.r),
-                                ),
-                              ),
+                        ),
+                        SizedBox(width: 16.w),
+                        GreenPillButton(
+                          width: 104,
+                          height: 40,
+                          onTap: primaryAction,
+                          child: Text(
+                            widget.buttonText,
+                            style: TextStyles.font10Secondary700Weight.copyWith(
+                              color: Colors.white,
+                              fontSize: 12.sp,
                             ),
                           ),
-
-                          /// 🔻 Inner Bottom Border
-                          Positioned(
-                            bottom: 2.h,
-                            left: 4.w,
-                            right: 4.w,
-                            child: Container(
-                              height: 4.h,
-                              decoration: BoxDecoration(
-                                color: AppColors.greenButtonLight.withOpacity(0.7),
-                                borderRadius: BorderRadius.vertical(
-                                  bottom: Radius.circular(10.r),
-                                ),
-                              ),
-                            ),
-                          ),
-
-                          /// 🔸 Main Button Body
-                          Container(
-                            height: 32.h,
-                            decoration: BoxDecoration(
-                              color: AppColors.greenButtonLight,
-                              borderRadius: BorderRadius.circular(12.r),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: AppColors.greenButtonDark,
-                                  offset: const Offset(0, 3),
-                                  blurRadius: 0,
-                                ),
-                              ],
-                            ),
-                            alignment: Alignment.center,
-                            child: Text(
-                              widget.buttonText,
-                              style: TextStyles.font10Secondary700Weight.copyWith(
-                                color: Colors.white,
-                                fontSize: 12.sp,
-                              ),
-                            ),
-                          ),
-                        ],
+                        ),
+                      ],
+                    )
+                  else
+                    GreenPillButton(
+                      width: 104,
+                      height: 40,
+                      onTap: primaryAction,
+                      child: Text(
+                        widget.buttonText,
+                        style: TextStyles.font10Secondary700Weight.copyWith(
+                          color: Colors.white,
+                          fontSize: 12.sp,
+                        ),
                       ),
                     ),
-                  ),
                 ],
               ),
             ),
@@ -224,6 +180,28 @@ class _SubscriptionAlertDialogState extends State<SubscriptionAlertDialog> {
         ),
       ),
     );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // If content is provided, we don't depend on NotificationCubit at all.
+    if (widget.content != null) {
+      return _buildDialogBody(content: widget.content!);
+    }
+
+    // Otherwise, try to read content from NotificationCubit if available.
+    final notificationCubit = _maybeNotificationCubit(context);
+    if (notificationCubit == null) {
+      return _buildDialogBody(content: 'يجب اختيار احد الباقات لدينا لكي يتم البدء اللعبه');
+    }
+
+    return BlocBuilder<NotificationCubit, NotificationState>(
+      builder: (context, state) {
+        String content = 'يجب اختيار احد الباقات لدينا لكي يتم البدء اللعبه';
+        if (state is NotificationLoaded) {
+          content = state.notificationMessages.data.notSubscribedMessage;
+        }
+        return _buildDialogBody(content: content);
       },
     );
   }

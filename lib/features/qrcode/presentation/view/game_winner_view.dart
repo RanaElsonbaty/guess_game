@@ -15,6 +15,8 @@ import 'package:guess_game/features/game/data/models/update_score_response.dart'
 import 'package:guess_game/features/game/presentation/cubit/game_cubit.dart';
 import 'package:guess_game/features/levels/presentation/view/widgets/header_shape_painter.dart';
 import 'package:guess_game/features/qrcode/presentation/view/widgets/score_medal_box.dart';
+import 'package:guess_game/features/qrcode/presentation/view/widgets/game_bottom_right_button.dart';
+import 'package:guess_game/features/qrcode/presentation/view/widgets/game_drawer_icon.dart';
 import 'package:guess_game/guess_game.dart';
 
 class GameWinnerView extends StatefulWidget {
@@ -108,6 +110,36 @@ class _GameWinnerViewState extends State<GameWinnerView> {
     return 0;
   }
 
+  ({int team1Id, int team2Id}) _resolveTeamIdsFromStatsOrFallback(GameStatisticsResponse? stats) {
+    if (stats != null && stats.data.teams.isNotEmpty) {
+      final t1 = stats.data.teams.where((t) => t.teamNumber == 1).toList();
+      final t2 = stats.data.teams.where((t) => t.teamNumber == 2).toList();
+      final team1Id = t1.isNotEmpty ? t1.first.teamId : 0;
+      final team2Id = t2.isNotEmpty ? t2.first.teamId : 0;
+      return (team1Id: team1Id, team2Id: team2Id);
+    }
+
+    // Fallback 1: AssignWinnerResponse has teamNumber + teamId.
+    final roundData = _assignWinnerResponse?.data.roundData ?? const [];
+    if (roundData.isNotEmpty) {
+      int team1Id = 0;
+      int team2Id = 0;
+      for (final rd in roundData) {
+        if (rd.team.teamNumber == 1) team1Id = rd.teamId;
+        if (rd.team.teamNumber == 2) team2Id = rd.teamId;
+      }
+      return (team1Id: team1Id, team2Id: team2Id);
+    }
+
+    // Fallback 2: UpdateScoreResponse keeps API order (0 = Team 01, 1 = Team 02).
+    final scoreData = _scoreResponse?.data ?? const [];
+    if (scoreData.length >= 2) {
+      return (team1Id: scoreData[0].teamId, team2Id: scoreData[1].teamId);
+    }
+
+    return (team1Id: 0, team2Id: 0);
+  }
+
   ({String winnerName, int winnerScore, bool isWinner}) _winnerFromStatistics(
     GameStatisticsResponse stats,
   ) {
@@ -173,26 +205,26 @@ class _GameWinnerViewState extends State<GameWinnerView> {
             final winnerName = fromStats?.winnerName ?? fallbackWinnerName;
             final winnerScore = fromStats?.winnerScore ?? fallbackWinnerScore;
             final isWinner = fromStats?.isWinner ?? fallbackIsWinner;
+            final gameIdFromStats = stats?.data.game.id ?? 0;
+            final gameIdToUse = gameIdFromStats != 0 ? gameIdFromStats : _resolveGameId();
+            final teamIds = _resolveTeamIdsFromStatsOrFallback(stats);
 
             return Stack(
               children: [
-            // Main centered card, with reserved space for drawer (top) and next button (bottom)
-            Positioned.fill(
-              child: Padding(
-                padding: EdgeInsets.only(
-                  top: 90.h,
-                  bottom: 75.h,
-                  left: 24.w,
-                  right: 24.w,
-                ),
-                child: Center(
-                  child: Container(
-                  width: 740.w,
-                  height: 280.h,
-                  decoration: const BoxDecoration(color: Colors.white),
-                  child: Stack(
-                    clipBehavior: Clip.none,
-                    children: [
+            // Main card: narrower, taller, and starts right under the drawer icon.
+            Positioned(
+              // Drawer icon: top = 6.h, height = 36.h  => bottom = 42.h
+              // Make the card start exactly at the drawer's bottom.
+              top: 75.h,
+              left: 70.w,
+              right: 70.w,
+              // Reduce bottom padding so the whole design goes down a bit.
+              bottom: 50.h,
+              child: Container(
+                decoration: const BoxDecoration(color: Colors.white),
+                child: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
                       /// Background gradient (same as RoundWinnerView)
                       Container(
                         decoration: BoxDecoration(
@@ -254,13 +286,13 @@ class _GameWinnerViewState extends State<GameWinnerView> {
                             children: [
                               Text(
                                 'الفريق الفائز',
-                                style: TextStyles.font16Secondary700Weight,
+                                style: TextStyles.font32Secondary700Weight,
                                 textAlign: TextAlign.center,
                               ),
                               SizedBox(height: 10.h),
                               Text(
                                 winnerName,
-                                style: TextStyles.font20Secondary700Weight,
+                                style: TextStyles.font14Secondary700Weight,
                                 textAlign: TextAlign.center,
                               ),
                               SizedBox(height: 12.h),
@@ -273,9 +305,7 @@ class _GameWinnerViewState extends State<GameWinnerView> {
                           ),
                         ),
                       ),
-                    ],
-                  ),
-                  ),
+                  ],
                 ),
               ),
             ),
@@ -284,75 +314,31 @@ class _GameWinnerViewState extends State<GameWinnerView> {
             Positioned(
               top: 6.h,
               left: 6.w,
-              child: Builder(
-                builder: (context) {
-                  return InkWell(
-                    onTap: () => Scaffold.of(context).openDrawer(),
-                    child: Container(
-                      width: 64.w,
-                      height: 44.h,
-                      decoration: BoxDecoration(
-                        color: AppColors.darkBlue,
-                        border: Border.all(color: Colors.black, width: 1),
-                      ),
-                      alignment: Alignment.center,
-                      child: SvgPicture.asset(
-                        AppIcons.list,
-                        height: 24.h,
-                        width: 36.w,
-                      ),
-                    ),
-                  );
-                },
-              ),
+              child: GameDrawerIcon(),
             ),
 
             // Next button (bottom right)
             Positioned(
-              bottom: 40,
-              right: 40,
-              child: GestureDetector(
+              // Slightly closer to the main card, and aligned under the card's right edge.
+              bottom: 24,
+              right: 70.w,
+              child: GameBottomRightButton(
+                text: 'التالي',
                 onTap: () {
                   Navigator.of(context).pushNamedAndRemoveUntil(
-                    Routes.level,
+                    Routes.optionsView,
                     (route) => false,
+                    arguments: {
+                      // Needed for "+1 category" flow to call /games/add-rounds later.
+                      'gameId': gameIdToUse,
+                      'team1Id': teamIds.team1Id,
+                      'team2Id': teamIds.team2Id,
+                      // Preserve names for prefilled GroupsView
+                      'team1Name': GlobalStorage.team1Name,
+                      'team2Name': GlobalStorage.team2Name,
+                    },
                   );
                 },
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    Container(
-                      height: 36,
-                      width: 90,
-                      decoration: const BoxDecoration(
-                        color: AppColors.buttonYellow,
-                      ),
-                      alignment: Alignment.center,
-                      child: Text(
-                        'التالي',
-                        style: TextStyles.font10Secondary700Weight,
-                      ),
-                    ),
-                    Positioned(
-                      right: 0,
-                      top: 0,
-                      bottom: 0,
-                      child: Container(
-                        width: 2,
-                        color: AppColors.buttonBorderOrange,
-                      ),
-                    ),
-                    Positioned(
-                      bottom: 0,
-                      left: 0,
-                      right: 0,
-                      child: Container(
-                        height: 2,
-                        color: AppColors.buttonBorderOrange,
-                      ),
-                    ),
-                  ],
-                ),
               ),
             ),
               ],

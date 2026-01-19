@@ -29,12 +29,12 @@ class ScoreMedalBox extends StatelessWidget {
         children: [
           // Medal icon in top right corner.
           Positioned(
-            top: 0,
-            right: 0,
+            top: -1,
+            right: 3,
             child: SvgPicture.asset(
               isWinner ? AppIcons.goldMedal : AppIcons.silverMedal,
               width: 33.5.w,
-              height: 54.5.w,
+              height: 42.w,
             ),
           ),
           // Score display in center (just the number).

@@ -159,6 +159,7 @@ class _LevelsViewState extends State<LevelsView> {
                                   ),
                                   child: CategoryCard(
                                     title: category.name,
+                                    imageUrl: category.image,
                                     isLocked: !category.status,
                                     isSubscriptionLocked: isSubscriptionLocked,
                                     onPressed: isSubscriptionLocked

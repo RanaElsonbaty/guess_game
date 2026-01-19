@@ -4,6 +4,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'dart:ui' as ui;
 import 'package:guess_game/core/helper_functions/global_storage.dart';
 import 'package:guess_game/core/routing/app_routing.dart';
+import 'package:guess_game/core/routing/routes.dart';
 
 class NavigationObserver extends NavigatorObserver {
   @override
@@ -34,6 +35,14 @@ class NavigationObserver extends NavigatorObserver {
     if (routeName != null && routeName.isNotEmpty) {
       // Serialize arguments to avoid JSON encoding issues with complex objects
       final safeArguments = _serializeArguments(arguments);
+
+      // Guard: don't persist broken state (e.g., GroupsView opened without required args).
+      if (routeName == Routes.groups && safeArguments == null) {
+        GlobalStorage.clearNavigationState();
+        print('🧹 NavigationObserver: تم مسح navigation_state لأن groups كانت بدون arguments');
+        return;
+      }
+
       GlobalStorage.saveNavigationState(routeName, safeArguments);
       print('💾 NavigationObserver: تم حفظ الصفحة - $routeName مع arguments: $safeArguments');
     }

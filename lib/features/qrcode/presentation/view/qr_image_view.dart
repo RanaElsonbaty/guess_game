@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'dart:math' as math;
 import 'package:guess_game/core/theming/colors.dart';
 import 'package:guess_game/core/theming/icons.dart';
 import 'package:guess_game/features/game/data/models/game_start_response.dart';
@@ -9,7 +10,7 @@ import 'package:guess_game/features/game/data/models/update_point_plan_response.
 import 'package:guess_game/features/game/data/models/update_score_response.dart';
 import 'package:guess_game/core/routing/routes.dart';
 import 'package:guess_game/features/qrcode/presentation/view/widgets/folder_team_image_card.dart';
-import 'package:guess_game/features/qrcode/presentation/view/widgets/small_yellow_corner_button.dart';
+import 'package:guess_game/features/qrcode/presentation/view/widgets/game_bottom_right_button.dart';
 import 'package:guess_game/guess_game.dart';
 
 class QrImageView extends StatefulWidget {
@@ -92,64 +93,46 @@ class _QrImageViewState extends State<QrImageView> {
     final team01Image = images['team01'] ?? '';
     final team02Image = images['team02'] ?? '';
 
+    // Match QrcodeView positioning (same cards width/gap, and button aligned under the row's right edge).
+    const double cardW = 255;
+    const double cardH = 280;
+    const double gapW = 92;
+    final double contentW = MediaQuery.sizeOf(context).width - (48.w); // 24.w * 2
+    final double rowW = (cardW * 2 + gapW).w;
+    final double rightAlignedToRow = 24.w + math.max(0, (contentW - rowW) / 2);
+
     return Scaffold(
       backgroundColor: Colors.white,
       drawer: const Drawer(),
       body: SafeArea(
         child: Stack(
           children: [
-            Align(
-              alignment: Alignment.topCenter,
+            Positioned.fill(
               child: Padding(
-                padding: EdgeInsets.only(top: 52.h, left: 24.w, right: 24.w),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      textDirection: TextDirection.ltr,
-                      children: [
-                        FolderTeamImageCard(
-                          teamTitle: 'الفريق 02',
-                          imageUrl: team02Image,
-                          width: 237,
-                          height: 240,
-                          imageBoxSize: 145,
-                        ),
-                        SizedBox(width: 48.w),
-                        FolderTeamImageCard(
-                          teamTitle: 'الفريق 01',
-                          imageUrl: team01Image,
-                          width: 237,
-                          height: 240,
-                          imageBoxSize: 145,
-                        ),
-                      ],
-                    ),
-                    SizedBox(height: 16.h),
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: SmallYellowCornerButton(
-                        text: 'التالي',
-                        onTap: () {
-                          // الانتقال إلى صفحة تحديد الفائز
-                          // تمرير البيانات المطلوبة
-                          if (kDebugMode) {
-                            print('🎯 QrImageView: Navigating to RoundWinnerView');
-                            print('🎯 QrImageView: _scoreResponse: ${_scoreResponse != null}');
-                            print('🎯 QrImageView: _gameStartResponse: ${_gameStartResponse != null}');
-                          }
-                          Navigator.of(context).pushNamed(
-                            Routes.roundWinnerView,
-                            arguments: {
-                              'updateScoreResponse': _scoreResponse,
-                              'gameStartResponse': _gameStartResponse,
-                            },
-                          );
-                        },
+                padding: EdgeInsets.only(top: 52.h, bottom: 70.h, left: 24.w, right: 24.w),
+                child: Align(
+                  alignment: Alignment.topCenter,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    textDirection: TextDirection.ltr,
+                    children: [
+                      FolderTeamImageCard(
+                        teamTitle: 'الفريق 02',
+                        imageUrl: team02Image,
+                        width: cardW,
+                        height: cardH,
+                        imageBoxSize: 145,
                       ),
-                    ),
-                  ],
+                      SizedBox(width: gapW.w),
+                      FolderTeamImageCard(
+                        teamTitle: 'الفريق 01',
+                        imageUrl: team01Image,
+                        width: cardW,
+                        height: cardH,
+                        imageBoxSize: 145,
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -161,8 +144,8 @@ class _QrImageViewState extends State<QrImageView> {
                   return InkWell(
                     onTap: () => Scaffold.of(context).openDrawer(),
                     child: Container(
-                      width: 64.w,
-                      height: 44.h,
+                      width: 60.w,
+                      height: 36.h,
                       decoration: BoxDecoration(
                         color: AppColors.darkBlue,
                         border: Border.all(color: Colors.black, width: 1),
@@ -170,10 +153,30 @@ class _QrImageViewState extends State<QrImageView> {
                       alignment: Alignment.center,
                       child: SvgPicture.asset(
                         AppIcons.list,
-                        height: 24.h,
-                        width: 36.w,
+                        height: 18.h,
+                        width: 26.w,
                       ),
                     ),
+                  );
+                },
+              ),
+            ),
+
+            Positioned(
+              bottom: 24,
+              right: rightAlignedToRow,
+              child: GameBottomRightButton(
+                text: 'التالي',
+                onTap: () {
+                  if (kDebugMode) {
+                    print('🎯 QrImageView: Navigating to RoundWinnerView');
+                  }
+                  Navigator.of(context).pushNamed(
+                    Routes.roundWinnerView,
+                    arguments: {
+                      'updateScoreResponse': _scoreResponse,
+                      'gameStartResponse': _gameStartResponse,
+                    },
                   );
                 },
               ),

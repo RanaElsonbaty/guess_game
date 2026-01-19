@@ -11,6 +11,7 @@ import 'package:guess_game/features/auth/choose_login_type/presentation/view/cho
 import 'package:guess_game/features/auth/login/presentation/view/login_email_view.dart';
 import 'package:guess_game/features/auth/login/presentation/view/login_view.dart';
 import 'package:guess_game/features/auth/login/presentation/cubit/login_otp_cubit.dart';
+import 'package:guess_game/features/auth/login/presentation/cubit/logout_cubit.dart';
 import 'package:guess_game/features/auth/otp/presentation/view/otp_verify_view.dart';
 import 'package:guess_game/features/auth/otp/presentation/cubit/otp_cubit.dart';
 import 'package:guess_game/features/about/presentation/view/about_view.dart';
@@ -22,12 +23,14 @@ import 'package:guess_game/features/packages/presentation/view/packages_view.dar
 import 'package:guess_game/features/packages/presentation/view/team_categories_second_team_view.dart';
 import 'package:guess_game/features/packages/presentation/view/team_categories_first_team_view.dart';
 import 'package:guess_game/features/game/presentation/cubit/game_cubit.dart';
+import 'package:guess_game/features/game/presentation/cubit/add_one_round_cubit.dart';
 import 'package:guess_game/features/game_level/presentation/view/game_level_view.dart';
 import 'package:guess_game/features/qrcode/presentation/view/qrcode_view.dart';
 import 'package:guess_game/features/qrcode/presentation/view/qr_image_view.dart';
 import 'package:guess_game/features/qrcode/presentation/view/round_winner_view.dart';
 import 'package:guess_game/features/qrcode/presentation/view/score_view.dart';
 import 'package:guess_game/features/qrcode/presentation/view/game_winner_view.dart';
+import 'package:guess_game/features/qrcode/presentation/view/options_view.dart';
 import 'package:guess_game/features/notifications/presentation/cubit/notification_cubit.dart';
 import 'package:guess_game/guess_game.dart';
 
@@ -85,9 +88,16 @@ class AppRoutes {
         );
       case Routes.groups:
         return _createSmoothPageRoute(
-          BlocProvider<GameCubit>(
-            create: (context) => getIt<GameCubit>(),
-            child: GroupsView(),
+          MultiBlocProvider(
+            providers: [
+              BlocProvider<GameCubit>(
+                create: (context) => getIt<GameCubit>(),
+              ),
+              BlocProvider<AddOneRoundCubit>(
+                create: (context) => getIt<AddOneRoundCubit>(),
+              ),
+            ],
+            child: const GroupsView(),
           ),
           settings: routeSettings,
         );
@@ -114,6 +124,11 @@ class AppRoutes {
         // limit لكل فريق = remaining
         limit = remaining;
 
+        final bool isAddOneCategory = routeSettings.arguments is Map<String, dynamic> &&
+                (routeSettings.arguments as Map<String, dynamic>)['isAddOneCategory'] == true ||
+            GuessGame.globalInitialArguments is Map<String, dynamic> &&
+                (GuessGame.globalInitialArguments as Map<String, dynamic>)['isAddOneCategory'] == true;
+
         // استخدم limit المحسوب، أو اقرأ من arguments كـ fallback
         if (routeSettings.arguments is Map<String, dynamic>) {
           final args = routeSettings.arguments as Map<String, dynamic>;
@@ -133,7 +148,10 @@ class AppRoutes {
         return _createSmoothPageRoute(
           BlocProvider<CategoriesCubit>(
             create: (context) => getIt<CategoriesCubit>()..loadCategories(),
-            child: TeamCategoriesFirstTeamView(limit: limit),
+            child: TeamCategoriesFirstTeamView(
+              limit: limit,
+              isAddOneCategory: isAddOneCategory,
+            ),
           ),
           settings: routeSettings,
         );
@@ -143,6 +161,7 @@ class AppRoutes {
 
         int limit = 0;
         List<int> team1Categories = [];
+        bool isAddOneCategorySecond = false;
 
         // حساب limit من subscription remaining (عدد الفئات المسموح لكل فريق)
         final userSubscription = GlobalStorage.subscription;
@@ -156,6 +175,7 @@ class AppRoutes {
           final args = routeSettings.arguments as Map<String, dynamic>;
           limit = args['limit'] as int? ?? remaining;
           team1Categories = args['team1Categories'] as List<int>? ?? [];
+          isAddOneCategorySecond = args['isAddOneCategory'] == true;
         } else if (routeSettings.arguments is int) {
           // البيانات تأتي من team_categories_first_team_view.dart (int فقط)
           limit = routeSettings.arguments as int;
@@ -178,6 +198,7 @@ class AppRoutes {
             child: TeamCategoriesSecondTeamView(
               limit: limit,
               team1Categories: team1Categories,
+              isAddOneCategory: isAddOneCategorySecond,
             ),
           ),
           settings: routeSettings,
@@ -244,6 +265,17 @@ class AppRoutes {
 
         return _createSmoothPageRoute(
           const GameWinnerView(),
+          settings: routeSettings,
+        );
+      case Routes.optionsView:
+        print('🧩 AppRoutes: تم استدعاء optionsView');
+        print('🧩 routeSettings.arguments: ${routeSettings.arguments}');
+
+        return _createSmoothPageRoute(
+          BlocProvider<LogoutCubit>(
+            create: (context) => getIt<LogoutCubit>(),
+            child: const OptionsView(),
+          ),
           settings: routeSettings,
         );
       default:

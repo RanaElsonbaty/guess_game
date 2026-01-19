@@ -28,8 +28,8 @@ class FolderTeamQrCard extends StatefulWidget {
     required this.answersCount,
     this.maxQuestions = 20,
     this.maxAnswers = 2,
-    this.width = 237,
-    this.height = 240,
+    this.width = 300,
+    this.height = 280,
     this.qrBoxSize = 150,
     this.canUpdateQuestions = true,
     this.canUpdateAnswers = true,
@@ -105,7 +105,7 @@ class _FolderTeamQrCardState extends State<FolderTeamQrCard> {
           ),
         ),
         child: Padding(
-          padding: EdgeInsets.only(left: 10.w, right: 10.w, top: 35.h, bottom: 12.h),
+          padding: EdgeInsets.only(left: 10.w, right: 10.w, top: 32.h, bottom: 14.h),
           child: Padding(
             padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 10.h),
             child: Column(
@@ -125,7 +125,7 @@ class _FolderTeamQrCardState extends State<FolderTeamQrCard> {
                   ),
                 ),
 
-                SizedBox(height: 12.h),
+                SizedBox(height: 14.h),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -137,7 +137,7 @@ class _FolderTeamQrCardState extends State<FolderTeamQrCard> {
                       canInc: widget.canUpdateQuestions && _questions < widget.maxQuestions,
                       canDec: widget.canUpdateQuestions && _questions > 0,
                     ),
-                    SizedBox(width: 25.w),
+                    SizedBox(width: 28.w),
                     _QrStatTile(
                       label: 'اجوبه',
                       value: _answers,
@@ -178,7 +178,7 @@ class _QrStatTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final title = '$label\\$value';
     return SizedBox(
-      width: 84.w,
+      width: 90.w,
       child: Column(
         children: [
           Text(
@@ -189,8 +189,8 @@ class _QrStatTile extends StatelessWidget {
           ),
           SizedBox(height: 8.h),
           GreenPillButton(
-            width: 74,
-            height: 26,
+            width: 94,
+            height: 30,
             onTap: null,
             child: _PillArrowsRow(
               onInc: onInc,

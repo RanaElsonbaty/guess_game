@@ -18,5 +18,6 @@ class Routes {
   static const String roundWinnerView = 'round_winner_view';
   static const String scoreView = 'score_view';
   static const String gameWinnerView = 'game_winner_view';
+  static const String optionsView = 'options_view';
   static const String about = 'about';
 }

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'dart:convert';
+import 'dart:math' as math;
 import 'package:guess_game/core/theming/colors.dart';
 import 'package:guess_game/core/theming/icons.dart';
 import 'package:guess_game/core/helper_functions/global_storage.dart';
@@ -12,7 +13,7 @@ import 'package:guess_game/features/game/data/models/update_point_plan_response.
 import 'package:guess_game/features/game/data/models/update_score_request.dart';
 import 'package:guess_game/features/game/presentation/cubit/game_cubit.dart';
 import 'package:guess_game/features/qrcode/presentation/view/widgets/folder_team_qr_card.dart';
-import 'package:guess_game/features/qrcode/presentation/view/widgets/small_yellow_corner_button.dart';
+import 'package:guess_game/features/qrcode/presentation/view/widgets/game_bottom_right_button.dart';
 import 'package:guess_game/guess_game.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -102,6 +103,13 @@ class _QrcodeViewState extends State<QrcodeView> {
 
   @override
   Widget build(BuildContext context) {
+    // Tuned to match the reference image: slightly narrower cards with a larger gap.
+    const double cardW = 255;
+    const double gapW = 92;
+    final double contentW = MediaQuery.sizeOf(context).width - (48.w); // padding left+right = 24.w * 2
+    final double rowW = (cardW * 2 + gapW).w;
+    final double rightAlignedToRow = 24.w + math.max(0, (contentW - rowW) / 2);
+
     final roundDataList = updatePointPlanResponse?.data.roundData ?? const <UpdatedRoundData>[];
     // Keep API order: first item = Team 01, second item = Team 02.
     final orderedUniqueTeams = _pickTwoTeamsRoundData(roundDataList).toList();
@@ -114,70 +122,53 @@ class _QrcodeViewState extends State<QrcodeView> {
       body: SafeArea(
         child: Stack(
           children: [
-            // Content (cards + next button) centered like the reference.
-            Align(
-              alignment: Alignment.topCenter,
+            // Layout tuned to match the reference screenshot (cards sit higher, with bottom space for the yellow button).
+            Positioned.fill(
               child: Padding(
-                padding: EdgeInsets.only(top: 52.h, left: 24.w, right: 24.w),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      textDirection: TextDirection.ltr,
-                      children: [
-                        FolderTeamQrCard(
-                          teamTitle: 'الفريق 02',
-                          qrCode: team02RoundData?.qrCode ?? '',
-                          questionsCount: team02RoundData?.questionNumber,
-                          answersCount: team02RoundData?.answerNumber,
-                          maxQuestions: team02RoundData?.maxQuestions ?? 20,
-                          maxAnswers: team02RoundData?.maxAnswers ?? 2,
-                          width: 237,
-                          height: 240,
-                          qrBoxSize: 160,
-                          canUpdateQuestions: team02RoundData?.canUpdateQuestions ?? true,
-                          canUpdateAnswers: team02RoundData?.canUpdateAnswers ?? true,
-                          onScoreChanged: (q, a) {
-                            _team02Questions = q;
-                            _team02Answers = a;
-                          },
-                        ),
-                        SizedBox(width: 48.w),
-                        FolderTeamQrCard(
-                          teamTitle: 'الفريق 01',
-                          qrCode: team01RoundData?.qrCode ?? '',
-                          questionsCount: team01RoundData?.questionNumber,
-                          answersCount: team01RoundData?.answerNumber,
-                          maxQuestions: team01RoundData?.maxQuestions ?? 20,
-                          maxAnswers: team01RoundData?.maxAnswers ?? 2,
-                          width: 237,
-                          height: 240,
-                          qrBoxSize: 160,
-                          canUpdateQuestions: team01RoundData?.canUpdateQuestions ?? true,
-                          canUpdateAnswers: team01RoundData?.canUpdateAnswers ?? true,
-                          onScoreChanged: (q, a) {
-                            _team01Questions = q;
-                            _team01Answers = a;
-                          },
-                        ),
-                      ],
-                    ),
-                    SizedBox(height: 16.h),
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: SmallYellowCornerButton(
-                        text: 'التالي',
-                        onTap: _isSubmitting
-                            ? null
-                            : () => _submitScoreAndNavigate(
-                                  context,
-                                  team01RoundData: team01RoundData,
-                                  team02RoundData: team02RoundData,
-                                ),
+                padding: EdgeInsets.only(top: 52.h, bottom: 70.h, left: 24.w, right: 24.w),
+                child: Align(
+                  alignment: Alignment.topCenter,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    textDirection: TextDirection.ltr,
+                    children: [
+                      FolderTeamQrCard(
+                        teamTitle: 'الفريق 02',
+                        qrCode: team02RoundData?.qrCode ?? '',
+                        questionsCount: team02RoundData?.questionNumber,
+                        answersCount: team02RoundData?.answerNumber,
+                        maxQuestions: team02RoundData?.maxQuestions ?? 20,
+                        maxAnswers: team02RoundData?.maxAnswers ?? 2,
+                        width: cardW,
+                        height: 280,
+                        qrBoxSize: 150,
+                        canUpdateQuestions: team02RoundData?.canUpdateQuestions ?? true,
+                        canUpdateAnswers: team02RoundData?.canUpdateAnswers ?? true,
+                        onScoreChanged: (q, a) {
+                          _team02Questions = q;
+                          _team02Answers = a;
+                        },
                       ),
-                    ),
-                  ],
+                      SizedBox(width: gapW.w),
+                      FolderTeamQrCard(
+                        teamTitle: 'الفريق 01',
+                        qrCode: team01RoundData?.qrCode ?? '',
+                        questionsCount: team01RoundData?.questionNumber,
+                        answersCount: team01RoundData?.answerNumber,
+                        maxQuestions: team01RoundData?.maxQuestions ?? 20,
+                        maxAnswers: team01RoundData?.maxAnswers ?? 2,
+                        width: cardW,
+                        height: 280,
+                        qrBoxSize: 150,
+                        canUpdateQuestions: team01RoundData?.canUpdateQuestions ?? true,
+                        canUpdateAnswers: team01RoundData?.canUpdateAnswers ?? true,
+                        onScoreChanged: (q, a) {
+                          _team01Questions = q;
+                          _team01Answers = a;
+                        },
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -189,18 +180,37 @@ class _QrcodeViewState extends State<QrcodeView> {
                   return InkWell(
                     onTap: () => Scaffold.of(context).openDrawer(),
                     child: Container(
-                      width: 64.w,
-                      height: 44.h,
+                      width: 60.w,
+                      height: 36.h,
                       decoration: BoxDecoration(
                         color: AppColors.darkBlue,
                         border: Border.all(color: Colors.black, width: 1),
                       ),
                       alignment: Alignment.center,
-                      child: SvgPicture.asset(AppIcons.list,
-                      height: 24.h,width: 36.w,),
+                      child: SvgPicture.asset(
+                        AppIcons.list,
+                        height: 18.h,
+                        width: 26.w,
+                      ),
                     ),
                   );
                 },
+              ),
+            ),
+
+            Positioned(
+              bottom: 24,
+              // Align the button under the content row's right edge (matches the reference layout).
+              right: rightAlignedToRow,
+              child: GameBottomRightButton(
+                text: 'التالي',
+                onTap: _isSubmitting
+                    ? null
+                    : () => _submitScoreAndNavigate(
+                          context,
+                          team01RoundData: team01RoundData,
+                          team02RoundData: team02RoundData,
+                        ),
               ),
             ),
           ],
@@ -280,8 +290,8 @@ class _QrcodeViewState extends State<QrcodeView> {
 
       if (kDebugMode) {
         print('🎯 QrcodeView: Navigating to QrImageView');
-        print('🎯 QrcodeView: scoreResponse: ${scoreResponse != null}');
-        print('🎯 QrcodeView: updateResp: ${updateResp != null}');
+        print('🎯 QrcodeView: scoreResponse: true');
+        print('🎯 QrcodeView: updateResp: true');
         print('🎯 QrcodeView: gameStartResponse: ${gameStartResponse != null}');
       }
 

@@ -12,6 +12,7 @@ class FolderTeamScoreCard extends StatelessWidget {
   final bool isLoser;
   final double width;
   final double height;
+  final double scoreBoxSize;
 
   const FolderTeamScoreCard({
     super.key,
@@ -21,6 +22,7 @@ class FolderTeamScoreCard extends StatelessWidget {
     this.isLoser = false,
     this.width = 237,
     this.height = 240,
+    this.scoreBoxSize = 120,
   });
 
   @override
@@ -51,7 +53,11 @@ class FolderTeamScoreCard extends StatelessWidget {
                 SizedBox(height: 10.h),
                 Expanded(
                   child: Center(
-                    child: ScoreMedalBox(score: score, isWinner: isWinner),
+                    child: ScoreMedalBox(
+                      score: score,
+                      isWinner: isWinner,
+                      size: scoreBoxSize,
+                    ),
                   ),
                 ),
               ],

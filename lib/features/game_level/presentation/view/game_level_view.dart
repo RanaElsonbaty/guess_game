@@ -1,11 +1,14 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'dart:math' as math;
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:guess_game/core/helper_functions/global_storage.dart';
 import 'package:guess_game/core/injection/service_locator.dart';
 import 'package:guess_game/core/routing/routes.dart';
 import 'package:guess_game/core/theming/colors.dart';
-import 'package:guess_game/core/theming/styles.dart';
+import 'package:guess_game/core/theming/icons.dart';
 import 'package:guess_game/features/game/data/models/game_start_response.dart';
 import 'package:guess_game/features/game/data/models/update_point_plan_request.dart';
 import 'package:guess_game/features/game/presentation/cubit/game_cubit.dart';
@@ -13,6 +16,9 @@ import 'package:guess_game/features/game_level/presentation/view/widgets/game_le
 import 'package:guess_game/core/widgets/subscription_alert_dialog.dart';
 import 'package:guess_game/features/terms/presentation/cubit/terms_cubit.dart';
 import 'package:guess_game/features/notifications/presentation/cubit/notification_cubit.dart';
+import 'package:guess_game/features/qrcode/presentation/view/widgets/game_bottom_right_button.dart';
+import 'package:guess_game/features/levels/presentation/cubit/categories_cubit.dart';
+import 'package:guess_game/features/levels/presentation/data/models/category.dart' as category_model;
 import 'package:guess_game/guess_game.dart';
 
 class GameLevelView extends StatefulWidget {
@@ -37,6 +43,9 @@ class GameLevelViewWithProvider extends StatelessWidget {
         ),
         BlocProvider<NotificationCubit>(
           create: (context) => getIt<NotificationCubit>(),
+        ),
+        BlocProvider<CategoriesCubit>(
+          create: (context) => getIt<CategoriesCubit>(),
         ),
       ],
       child: const GameLevelView(),
@@ -70,6 +79,39 @@ class _GameLevelViewState extends State<GameLevelView> {
   // تحويل مستوى اللعبة إلى نقاط
   int _convertLevelToPoints(String level) {
     return level == 'سهل' ? 200 : 400;
+  }
+
+  // الحصول على صورة الفئة الحالية لفريق معين
+  String? _getCurrentCategoryImageForTeam(int teamIndex) {
+    if (gameStartResponse == null) return null;
+    if (gameStartResponse!.data.teams.length <= teamIndex) return null;
+
+    final team = gameStartResponse!.data.teams[teamIndex];
+    final currentRoundIndex = GlobalStorage.currentRoundIndex;
+
+    // التحقق من أن currentRoundIndex صحيح
+    if (currentRoundIndex < 0 || currentRoundIndex >= team.roundData.length) {
+      return null;
+    }
+
+    final categoryId = team.roundData[currentRoundIndex].categoryId;
+
+    // الحصول على الفئة من CategoriesCubit
+    final categoriesCubit = context.read<CategoriesCubit>();
+    final category = categoriesCubit.categories.firstWhere(
+      (cat) => cat.id == categoryId,
+      orElse: () => category_model.Category(
+        id: 0,
+        name: '',
+        description: '',
+        image: '',
+        status: false,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      ),
+    );
+
+    return category.id != 0 ? category.image : null;
   }
 
   @override
@@ -145,249 +187,259 @@ class _GameLevelViewState extends State<GameLevelView> {
   Widget build(BuildContext context) {
     final gameCubit = context.read<GameCubit>();
 
-    return BlocProvider.value(
-      value: gameCubit,
-      child: BlocListener<GameCubit, GameState>(
-        listener: (context, state) {
-          print('🎯 GameLevelView: استلام state: ${state.runtimeType}');
-          print('🎯 GameLevelView: gameStartResponse in listener: ${gameStartResponse != null}');
-          if (state is PointPlanUpdated) {
-            print('✅ تم استلام PointPlanUpdated - عرض dialog التعليمات');
-            // عرض dialog التعليمات عند نجاح PATCH
-            _showGameInstructionsDialog(context, null);
-          } else if (state is PointPlanUpdateError) {
-            print('❌ تم استلام PointPlanUpdateError: ${state.message}');
-            // عرض رسالة خطأ
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(state.message),
-                backgroundColor: Colors.red,
-              ),
-            );
-          } else if (state is PointPlanUpdating) {
-            print('🔄 تم استلام PointPlanUpdating - جاري التحديث');
+    return BlocListener<GameCubit, GameState>(
+      listener: (context, state) {
+        print('🎯 GameLevelView: استلام state: ${state.runtimeType}');
+        print('🎯 GameLevelView: gameStartResponse in listener: ${gameStartResponse != null}');
+        if (state is PointPlanUpdated) {
+          print('✅ تم استلام PointPlanUpdated - عرض dialog التعليمات');
+          // عرض dialog التعليمات عند نجاح PATCH
+          _showGameInstructionsDialog(context, gameStartResponse);
+        } else if (state is PointPlanUpdateError) {
+          print('❌ تم استلام PointPlanUpdateError: ${state.message}');
+          // عرض رسالة خطأ
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(state.message),
+              backgroundColor: Colors.red,
+            ),
+          );
+        } else if (state is PointPlanUpdating) {
+          print('🔄 تم استلام PointPlanUpdating - جاري التحديث');
+        }
+      },
+      child: BlocBuilder<CategoriesCubit, CategoriesState>(
+        builder: (context, categoriesState) {
+          // التأكد من تحميل الفئات
+          if (categoriesState is CategoriesInitial && gameStartResponse != null) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              final categoriesCubit = context.read<CategoriesCubit>();
+              if (!categoriesCubit.isLoaded) {
+                categoriesCubit.loadCategories();
+              }
+            });
           }
-        },
-        child: Scaffold(
-          backgroundColor: Colors.white,
-          body: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 60),
-          child: Column(
-            children: [
-              // كاردات الفرق
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                textDirection: TextDirection.ltr,
-                children: [
-                  GameLevelCard(
-                    teamName: team2Name,
-                    teamTitle: 'فريق 02',
-                    onLevelSelected: (level) {
-                      setState(() {
-                        team2Level = level;
-                      });
-                    },
-                  ),
-                  const SizedBox(width: 48),
-                  GameLevelCard(
-                    teamName: team1Name,
-                    teamTitle: 'فريق 01',
-                    onLevelSelected: (level) {
-                      setState(() {
-                        team1Level = level;
-                      });
-                    },
-                  ),
-                ],
-              ),
-              const Spacer(),
 
-              // زر البدء
-              Align(
-                alignment: Alignment.centerRight,
-                child: GestureDetector(
-                  onTap: () {
-                    // التحقق من اختيار المستوى لكلا الفريقين
-                    if (team1Level == null || team2Level == null) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('يرجى اختيار مستوى لكلا الفريقين'),
-                          backgroundColor: Colors.red,
-                        ),
-                      );
-                      return;
-                    }
-
-                    // طباعة البيانات الحقيقية
-                    print('🎯 الضغط على زر ابدأ');
-                    print('🏷️ اسم الفريق الأول: "$team1Name"');
-                    print('🏷️ اسم الفريق الثاني: "$team2Name"');
-                    print('🏷️ مستوى الفريق الأول: "$team1Level"');
-                    print('🏷️ مستوى الفريق الثاني: "$team2Level"');
-
-                    // طباعة فئات الفرق إذا كانت متوفرة
-                    if (gameStartResponse!.data.teams.length >= 2) {
-                      try {
-                        final team1Categories = gameStartResponse!.data.teams[0].roundData.map((rd) => rd.categoryId).toList();
-                        final team2Categories = gameStartResponse!.data.teams[1].roundData.map((rd) => rd.categoryId).toList();
-                        print('📋 فئات الفريق الأول: $team1Categories');
-                        print('📋 فئات الفريق الثاني: $team2Categories');
-                        final totalCategories = team1Categories.length + team2Categories.length;
-                        print('📊 المجموع الكلي للفئات: $totalCategories فئة');
-                      } catch (e) {
-                        print('❌ خطأ في طباعة فئات الفرق: $e');
-                      }
-                    } else {
-                      print('⚠️ لا توجد بيانات gameStartResponse متاحة');
-                    }
-
-                    print('🚀 بدء اللعب');
-
-                    if (gameStartResponse!.data.teams.length >= 2) {
-                      // استخراج البيانات من gameStartResponse
-                      final gameId = gameStartResponse!.data.id;
-                      final currentRoundIndex = GlobalStorage.currentRoundIndex;
-
-                      // طباعة معلومات rounds
-                      print('🎯 GameLevelView: ===== ROUND NUMBER UPDATES =====');
-                      for (final round in gameStartResponse!.data.rounds) {
-                        print('🎯 GameLevelView: Round ${round.id}: round_number ${round.roundNumber}');
-                      }
-                      print('🎯 GameLevelView: ===============================');
-
-                      // الحصول على round_data المناسب للجولة الحالية
-                      final baseTeam1RoundDataId = gameStartResponse!.data.teams[0].roundData.length > currentRoundIndex
-                          ? gameStartResponse!.data.teams[0].roundData[currentRoundIndex].id : 0;
-                      final baseTeam2RoundDataId = gameStartResponse!.data.teams[1].roundData.length > currentRoundIndex
-                          ? gameStartResponse!.data.teams[1].roundData[currentRoundIndex].id : 0;
-
-                      // تحديد round_data_id النهائي - استخدم دائما القيمة من GameStartResponse للجولة الحالية
-                      final team1RoundDataId = baseTeam1RoundDataId;
-                      final team2RoundDataId = baseTeam2RoundDataId;
-
-                      // حفظ القيم المستخدمة للجولة التالية
-                      GlobalStorage.updateLastRoundDataIds(team1RoundDataId, team2RoundDataId);
-
-                      // طباعة البيانات المستخدمة والمحدثة
-                      print('🎯 GameLevelView: ===== ROUND DATA FOR CURRENT ROUND =====');
-                      print('🎯 GameLevelView: currentRoundIndex = $currentRoundIndex');
-                      print('🎯 GameLevelView: team1RoundDataId = $team1RoundDataId (from roundData[${currentRoundIndex}])');
-                      print('🎯 GameLevelView: team2RoundDataId = $team2RoundDataId (from roundData[${currentRoundIndex}])');
-                      print('🎯 GameLevelView: Last used IDs - team1: ${GlobalStorage.lastTeam1RoundDataId}, team2: ${GlobalStorage.lastTeam2RoundDataId}');
-
-                      // طباعة قيم pointEarned الحالية لفهم حالة الجولة
-                      print('🎯 GameLevelView: Current pointEarned values:');
-                      for (int i = 0; i < gameStartResponse!.data.teams.length; i++) {
-                        final team = gameStartResponse!.data.teams[i];
-                        if (team.roundData.length > currentRoundIndex) {
-                          final roundData = team.roundData[currentRoundIndex];
-                          print('  Team ${i + 1} roundData[${currentRoundIndex}]: pointEarned = ${roundData.pointEarned}');
-                        }
-                      }
-                      print('🎯 GameLevelView: Round IDs from GameStartResponse.rounds:');
-                      for (int i = 0; i < gameStartResponse!.data.rounds.length; i++) {
-                        final round = gameStartResponse!.data.rounds[i];
-                        print('🎯 GameLevelView:   Round ${i + 1}: id = ${round.id}, round_number = ${round.roundNumber}');
-                      }
-                      print('🎯 GameLevelView: Current round data from teams:');
-                      for (int i = 0; i < gameStartResponse!.data.teams.length; i++) {
-                        final team = gameStartResponse!.data.teams[i];
-                        if (team.roundData.length > currentRoundIndex) {
-                          final roundData = team.roundData[currentRoundIndex];
-                          print('🎯 GameLevelView:   Team ${i + 1} roundData[${currentRoundIndex}]: id = ${roundData.id}');
-                        }
-                      }
-                      print('🎯 GameLevelView: ================================');
-                      final team1PointPlan = _convertLevelToPoints(team1Level!);
-                      final team2PointPlan = _convertLevelToPoints(team2Level!);
-
-                      // طباعة البيانات المرسلة للـ API
-                      print('📤 إرسال PATCH request إلى /games/round/data/update-point-plan');
-                      print('📤 game_id: $gameId');
-                      print('📤 rounds_data: [');
-                      print('📤   {round_data_id: $team1RoundDataId, point_plan: $team1PointPlan},');
-                      print('📤   {round_data_id: $team2RoundDataId, point_plan: $team2PointPlan}');
-                      print('📤 ]');
-
-                      // طباعة roundDataId من UpdatePointPlanRequest
-                      print('🎯 GameLevelView: ===== UpdatePointPlanRequest roundDataId =====');
-                      print('🎯 GameLevelView: team1RoundDataId = $team1RoundDataId');
-                      print('🎯 GameLevelView: team2RoundDataId = $team2RoundDataId');
-                      print('🎯 GameLevelView: ============================================');
-
-                      // إنشاء request لتحديث point_plan
-                      final request = UpdatePointPlanRequest(
-                        gameId: gameId,
-                        roundsData: [
-                          RoundDataUpdate(
-                            roundDataId: team1RoundDataId,
-                            pointPlan: team1PointPlan,
+          return Scaffold(
+            backgroundColor: Colors.white,
+            drawer: const Drawer(),
+            body: SafeArea(
+            child: Stack(
+              children: [
+                // Compute the same bottom-right alignment as QrcodeView (under the row's right edge).
+                // Kept here (inside build) to avoid nested Builders and keep braces simple.
+                // Match QrcodeView positioning: cards aligned high, bottom button aligned to row.
+                Positioned.fill(
+                  child: Padding(
+                    padding: EdgeInsets.only(top: 52.h, bottom: 70.h, left: 24.w, right: 24.w),
+                    child: Align(
+                      alignment: Alignment.topCenter,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        textDirection: TextDirection.ltr,
+                        children: [
+                          GameLevelCard(
+                            teamName: team2Name,
+                            teamTitle: 'فريق 02',
+                            imageUrl: _getCurrentCategoryImageForTeam(1), // Team 2 (index 1)
+                            onLevelSelected: (level) {
+                              setState(() {
+                                team2Level = level;
+                              });
+                            },
                           ),
-                          RoundDataUpdate(
-                            roundDataId: team2RoundDataId,
-                            pointPlan: team2PointPlan,
+                          SizedBox(width: 92.w),
+                          GameLevelCard(
+                            teamName: team1Name,
+                            teamTitle: 'فريق 01',
+                            imageUrl: _getCurrentCategoryImageForTeam(0), // Team 1 (index 0)
+                            onLevelSelected: (level) {
+                              setState(() {
+                                team1Level = level;
+                              });
+                            },
                           ),
                         ],
-                      );
-
-                      // استدعاء updatePointPlan
-                      print('🔄 استدعاء updatePointPlan...');
-                      try {
-                        gameCubit.updatePointPlan(request);
-                        print('✅ تم استدعاء updatePointPlan بنجاح');
-                      } catch (e) {
-                        print('❌ خطأ في استدعاء updatePointPlan: $e');
-                      }
-                    }
-                  },
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      /// 🔸 Main Button Body
-                      Container(
-                        height: 36,
-                        width: 90,
-                        decoration: BoxDecoration(
-                          color: AppColors.buttonYellow,
-                        ),
-                        alignment: Alignment.center,
-                        child: Text(
-                          'ابدأ',
-                          style: TextStyles.font10Secondary700Weight,
-                        ),
                       ),
-
-                      /// Right Border
-                      Positioned(
-                        right: 0,
-                        top: 0,
-                        bottom: 0,
-                        child: Container(
-                          width: 2,
-                          color: AppColors.buttonBorderOrange,
-                        ),
-                      ),
-
-                      /// Bottom Border
-                      Positioned(
-                        bottom: 0,
-                        left: 0,
-                        right: 0,
-                        child: Container(
-                          height: 2,
-                          color: AppColors.buttonBorderOrange,
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
                 ),
-              ),
-            ],
-          ),
+
+                // Drawer icon (same as QrcodeView)
+                Positioned(
+                  top: 6.h,
+                  left: 6.w,
+                  child: Builder(
+                    builder: (context) {
+                      return InkWell(
+                        onTap: () => Scaffold.of(context).openDrawer(),
+                        child: Container(
+                          width: 60.w,
+                          height: 36.h,
+                          decoration: BoxDecoration(
+                            color: AppColors.darkBlue,
+                            border: Border.all(color: Colors.black, width: 1),
+                          ),
+                          alignment: Alignment.center,
+                          child: SvgPicture.asset(
+                            AppIcons.list,
+                            height: 18.h,
+                            width: 26.w,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+
+                // Start button aligned under the cards row (same as QrcodeView)
+                Positioned(
+                  bottom: 24,
+                  right: 24.w + math.max(0, ((MediaQuery.sizeOf(context).width - (48.w)) - ((237 * 2 + 92).w)) / 2),
+                  child: GameBottomRightButton(
+                    text: 'ابدأ',
+                    onTap: () {
+                      // التحقق من اختيار المستوى لكلا الفريقين
+                      if (team1Level == null || team2Level == null) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('يرجى اختيار مستوى لكلا الفريقين'),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                        return;
+                      }
+
+                      // طباعة البيانات الحقيقية
+                      print('🎯 الضغط على زر ابدأ');
+                      print('🏷️ اسم الفريق الأول: "$team1Name"');
+                      print('🏷️ اسم الفريق الثاني: "$team2Name"');
+                      print('🏷️ مستوى الفريق الأول: "$team1Level"');
+                      print('🏷️ مستوى الفريق الثاني: "$team2Level"');
+
+                      // طباعة فئات الفرق إذا كانت متوفرة
+                      if (gameStartResponse!.data.teams.length >= 2) {
+                        try {
+                          final team1Categories = gameStartResponse!.data.teams[0].roundData.map((rd) => rd.categoryId).toList();
+                          final team2Categories = gameStartResponse!.data.teams[1].roundData.map((rd) => rd.categoryId).toList();
+                          print('📋 فئات الفريق الأول: $team1Categories');
+                          print('📋 فئات الفريق الثاني: $team2Categories');
+                          final totalCategories = team1Categories.length + team2Categories.length;
+                          print('📊 المجموع الكلي للفئات: $totalCategories فئة');
+                        } catch (e) {
+                          print('❌ خطأ في طباعة فئات الفرق: $e');
+                        }
+                      } else {
+                        print('⚠️ لا توجد بيانات gameStartResponse متاحة');
+                      }
+
+                      print('🚀 بدء اللعب');
+
+                      if (gameStartResponse!.data.teams.length >= 2) {
+                        // استخراج البيانات من gameStartResponse
+                        final gameId = gameStartResponse!.data.id;
+                        final currentRoundIndex = GlobalStorage.currentRoundIndex;
+
+                        // طباعة معلومات rounds
+                        print('🎯 GameLevelView: ===== ROUND NUMBER UPDATES =====');
+                        for (final round in gameStartResponse!.data.rounds) {
+                          print('🎯 GameLevelView: Round ${round.id}: round_number ${round.roundNumber}');
+                        }
+                        print('🎯 GameLevelView: ===============================');
+
+                        // الحصول على round_data المناسب للجولة الحالية
+                        final baseTeam1RoundDataId = gameStartResponse!.data.teams[0].roundData.length > currentRoundIndex
+                            ? gameStartResponse!.data.teams[0].roundData[currentRoundIndex].id : 0;
+                        final baseTeam2RoundDataId = gameStartResponse!.data.teams[1].roundData.length > currentRoundIndex
+                            ? gameStartResponse!.data.teams[1].roundData[currentRoundIndex].id : 0;
+
+                        // تحديد round_data_id النهائي - استخدم دائما القيمة من GameStartResponse للجولة الحالية
+                        final team1RoundDataId = baseTeam1RoundDataId;
+                        final team2RoundDataId = baseTeam2RoundDataId;
+
+                        // حفظ القيم المستخدمة للجولة التالية
+                        GlobalStorage.updateLastRoundDataIds(team1RoundDataId, team2RoundDataId);
+
+                        // طباعة البيانات المستخدمة والمحدثة
+                        print('🎯 GameLevelView: ===== ROUND DATA FOR CURRENT ROUND =====');
+                        print('🎯 GameLevelView: currentRoundIndex = $currentRoundIndex');
+                        print('🎯 GameLevelView: team1RoundDataId = $team1RoundDataId (from roundData[${currentRoundIndex}])');
+                        print('🎯 GameLevelView: team2RoundDataId = $team2RoundDataId (from roundData[${currentRoundIndex}])');
+                        print('🎯 GameLevelView: Last used IDs - team1: ${GlobalStorage.lastTeam1RoundDataId}, team2: ${GlobalStorage.lastTeam2RoundDataId}');
+
+                        // طباعة قيم pointEarned الحالية لفهم حالة الجولة
+                        print('🎯 GameLevelView: Current pointEarned values:');
+                        for (int i = 0; i < gameStartResponse!.data.teams.length; i++) {
+                          final team = gameStartResponse!.data.teams[i];
+                          if (team.roundData.length > currentRoundIndex) {
+                            final roundData = team.roundData[currentRoundIndex];
+                            print('  Team ${i + 1} roundData[${currentRoundIndex}]: pointEarned = ${roundData.pointEarned}');
+                          }
+                        }
+                        print('🎯 GameLevelView: Round IDs from GameStartResponse.rounds:');
+                        for (int i = 0; i < gameStartResponse!.data.rounds.length; i++) {
+                          final round = gameStartResponse!.data.rounds[i];
+                          print('🎯 GameLevelView:   Round ${i + 1}: id = ${round.id}, round_number = ${round.roundNumber}');
+                        }
+                        print('🎯 GameLevelView: Current round data from teams:');
+                        for (int i = 0; i < gameStartResponse!.data.teams.length; i++) {
+                          final team = gameStartResponse!.data.teams[i];
+                          if (team.roundData.length > currentRoundIndex) {
+                            final roundData = team.roundData[currentRoundIndex];
+                            print('🎯 GameLevelView:   Team ${i + 1} roundData[${currentRoundIndex}]: id = ${roundData.id}');
+                          }
+                        }
+                        print('🎯 GameLevelView: ================================');
+                        final team1PointPlan = _convertLevelToPoints(team1Level!);
+                        final team2PointPlan = _convertLevelToPoints(team2Level!);
+
+                        // طباعة البيانات المرسلة للـ API
+                        print('📤 إرسال PATCH request إلى /games/round/data/update-point-plan');
+                        print('📤 game_id: $gameId');
+                        print('📤 rounds_data: [');
+                        print('📤   {round_data_id: $team1RoundDataId, point_plan: $team1PointPlan},');
+                        print('📤   {round_data_id: $team2RoundDataId, point_plan: $team2PointPlan}');
+                        print('📤 ]');
+
+                        // طباعة roundDataId من UpdatePointPlanRequest
+                        print('🎯 GameLevelView: ===== UpdatePointPlanRequest roundDataId =====');
+                        print('🎯 GameLevelView: team1RoundDataId = $team1RoundDataId');
+                        print('🎯 GameLevelView: team2RoundDataId = $team2RoundDataId');
+                        print('🎯 GameLevelView: ============================================');
+
+                        // إنشاء request لتحديث point_plan
+                        final request = UpdatePointPlanRequest(
+                          gameId: gameId,
+                          roundsData: [
+                            RoundDataUpdate(
+                              roundDataId: team1RoundDataId,
+                              pointPlan: team1PointPlan,
+                            ),
+                            RoundDataUpdate(
+                              roundDataId: team2RoundDataId,
+                              pointPlan: team2PointPlan,
+                            ),
+                          ],
+                        );
+
+                        // استدعاء updatePointPlan
+                        print('🔄 استدعاء updatePointPlan...');
+                        try {
+                          gameCubit.updatePointPlan(request);
+                          print('✅ تم استدعاء updatePointPlan بنجاح');
+                        } catch (e) {
+                          print('❌ خطأ في استدعاء updatePointPlan: $e');
+                        }
+                      }
+                    },
+                  ),
+                ),
+              ],
+            ),
         ),
-      ),
-    ),
-  );
+      );
+      },
+    ) );
   }
 
   void _showGameInstructionsDialog(BuildContext context, gameStartResponse) {

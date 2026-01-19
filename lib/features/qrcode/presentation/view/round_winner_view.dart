@@ -224,145 +224,176 @@ class _RoundWinnerViewState extends State<RoundWinnerView> {
 
         // Return main UI
         return Scaffold(
-      backgroundColor: Colors.white,
-      body: Center(
-        child: Container(
-          width: 740.w,
-          height: 280.h, // زيادة الارتفاع قليلاً لاستيعاب المحتوى
-          decoration: BoxDecoration(
-            color: Colors.white,
-          ),
-          child: Stack(
-            clipBehavior: Clip.none,
-            children: [
-              /// Background gradient
-              Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Color(0XFF8e8e8e),
-                      AppColors.black.withOpacity(.2),
-                      Colors.white.withOpacity(.5),
-                    ],
-                  ),
-                ),
-              ),
-              /// Header (painted) INSIDE main container
-              Positioned(
-                top: -23,
-                left: 0,
-                child: SizedBox(
-                  width: 285.w,
-                  height: 80.h,
-                  child: CustomPaint(
-                    painter: HeaderShapePainter(),
-                  ),
-                ),
-              ),
-              Positioned(
-                top: -13,
-                left: 25,
-                child: Text(
-                  'الفائز؟',
-                  style: TextStyles.font14Secondary700Weight,
-                ),
-              ),
-              /// Close button (top right of main container)
-              Positioned(
-                top: -15,
-                right: -15,
-                child: GestureDetector(
-                  onTap: () => Navigator.of(context).pop(),
-                  child: SvgPicture.asset(AppIcons.cancel),
-                ),
-              ),
-              /// Content container
-              Positioned(
-                top: 18.h,
-                left: 10.w,
-                right: 10.w,
-                bottom: 20.h,
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: const Color(0XFF231F20).withOpacity(.3),
-                  ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      // النص الرئيسي
-                      Text(
-                        'الفريق الفائز',
-                        style: TextStyles.font16Secondary700Weight,
-                        textAlign: TextAlign.center,
+          backgroundColor: Colors.white,
+          drawer: const Drawer(),
+          body: SafeArea(
+            child: Stack(
+              children: [
+                // Match QrcodeView positioning: content sits under the drawer icon with fixed top/bottom spacing.
+                Positioned.fill(
+                  child: Padding(
+                    padding: EdgeInsets.only(top: 70.h, bottom: 52.h, left: 0, right: 24.w),
+                    child: Align(
+                      alignment: Alignment.topCenter,
+                      child: SizedBox(
+                        // Use the same visual width as the QrcodeView cards row (2 cards + gap).
+                        width: (255 * 2 + 92).w,
+                        height: 280.h,
+                        child: Container(
+                          decoration: const BoxDecoration(color: Colors.white),
+                          child: Stack(
+                            clipBehavior: Clip.none,
+                            children: [
+                              /// Background gradient
+                              Container(
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    begin: Alignment.topCenter,
+                                    end: Alignment.bottomCenter,
+                                    colors: [
+                                      const Color(0XFF8e8e8e),
+                                      AppColors.black.withOpacity(.2),
+                                      Colors.white.withOpacity(.5),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              /// Header (painted) INSIDE main container
+                              Positioned(
+                                top: -23,
+                                left: 0,
+                                child: SizedBox(
+                                  width: 285.w,
+                                  height: 80.h,
+                                  child: CustomPaint(
+                                    painter: HeaderShapePainter(),
+                                  ),
+                                ),
+                              ),
+                              Positioned(
+                                top: -13,
+                                left: 25,
+                                child: Text(
+                                  'الفائز؟',
+                                  style: TextStyles.font14Secondary700Weight,
+                                ),
+                              ),
+                              /// Close button (top right of main container)
+                              Positioned(
+                                top: -15,
+                                right: -15,
+                                child: GestureDetector(
+                                  onTap: () => Navigator.of(context).pop(),
+                                  child: SvgPicture.asset(AppIcons.cancel),
+                                ),
+                              ),
+                              /// Content container
+                              Positioned(
+                                top: 18.h,
+                                left: 10.w,
+                                right: 10.w,
+                                bottom: 20.h,
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    color: const Color(0XFF231F20).withOpacity(.3),
+                                  ),
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Text(
+                                        'الفريق الفائز',
+                                        style: TextStyles.font16Secondary700Weight,
+                                        textAlign: TextAlign.center,
+                                      ),
+                                      SizedBox(height: 30.h),
+                                      Row(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          YellowPillButton(
+                                            width: 90,
+                                            height: 38,
+                                            onTap: () => _assignWinner(0),
+                                            child: Text(
+                                              team1Name,
+                                              style: TextStyles.font20Secondary700Weight,
+                                              textAlign: TextAlign.center,
+                                            ),
+                                          ),
+                                          SizedBox(width: 12.w),
+                                          YellowPillButton(
+                                            width: 90,
+                                            height: 38,
+                                            onTap: () => _assignWinner(1),
+                                            child: Text(
+                                              team2Name,
+                                              style: TextStyles.font20Secondary700Weight,
+                                              textAlign: TextAlign.center,
+                                            ),
+                                          ),
+                                          SizedBox(width: 12.w),
+                                          YellowPillButton(
+                                            width: 90,
+                                            height: 38,
+                                            onTap: () {
+                                              Navigator.of(context).pushNamed(
+                                                Routes.scoreView,
+                                                arguments: {
+                                                  'assignWinnerResponse': null,
+                                                  'updateScoreResponse': _updateScoreResponse,
+                                                  'gameStartResponse': _gameStartResponse,
+                                                },
+                                              );
+                                            },
+                                            child: Text(
+                                              'تعادل',
+                                              style: TextStyles.font20Secondary700Weight,
+                                              textAlign: TextAlign.center,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
-                      SizedBox(height: 30.h),
-
-                      // الأزرار الثلاثة
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          // زر الفريق الأول (على اليمين)
-                          YellowPillButton(
-                            width: 90,
-                            height: 38,
-                            onTap: () => _assignWinner(0), // team 1 (index 0)
-                            child: Text(
-                              team1Name,
-                              style: TextStyles.font20Secondary700Weight,
-                              textAlign: TextAlign.center,
-                            ),
-                          ),
-
-                          SizedBox(width: 12.w),
-
-                          // زر الفريق الثاني (في الوسط)
-                          YellowPillButton(
-                            width: 90,
-                            height: 38,
-                            onTap: () => _assignWinner(1), // team 2 (index 1)
-                            child: Text(
-                              team2Name,
-                              style: TextStyles.font20Secondary700Weight,
-                              textAlign: TextAlign.center,
-                            ),
-                          ),
-
-                          SizedBox(width: 12.w),
-
-                          // زر التعادل (على اليسار)
-                          YellowPillButton(
-                            width: 90,
-                            height: 38,
-                            onTap: () {
-                              // For draw, navigate to ScoreView without assigning a winner.
-                              Navigator.of(context).pushNamed(
-                                Routes.scoreView,
-                                arguments: {
-                                  'assignWinnerResponse': null,
-                                  'updateScoreResponse': _updateScoreResponse,
-                                  'gameStartResponse': _gameStartResponse,
-                                },
-                              );
-                            },
-                            child: Text(
-                              'تعادل',
-                              style: TextStyles.font20Secondary700Weight,
-                              textAlign: TextAlign.center,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
+                    ),
                   ),
                 ),
-              ),
-            ],
+
+                // Drawer icon (same as QrcodeView)
+                Positioned(
+                  top: 6.h,
+                  left: 6.w,
+                  child: Builder(
+                    builder: (context) {
+                      return InkWell(
+                        onTap: () => Scaffold.of(context).openDrawer(),
+                        child: Container(
+                          width: 60.w,
+                          height: 36.h,
+                          decoration: BoxDecoration(
+                            color: AppColors.darkBlue,
+                            border: Border.all(color: Colors.black, width: 1),
+                          ),
+                          alignment: Alignment.center,
+                          child: SvgPicture.asset(
+                            AppIcons.list,
+                            height: 18.h,
+                            width: 26.w,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
-      ),
-    );
+        );
         },
       );
   }

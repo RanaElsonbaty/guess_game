@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'dart:math' as math;
 import 'package:guess_game/core/helper_functions/global_storage.dart';
 import 'package:guess_game/core/routing/routes.dart';
 import 'package:guess_game/core/theming/colors.dart';
@@ -11,7 +12,7 @@ import 'package:guess_game/features/game/data/models/game_start_response.dart';
 import 'package:guess_game/features/game/data/models/update_point_plan_response.dart';
 import 'package:guess_game/features/game/data/models/update_score_response.dart';
 import 'package:guess_game/features/qrcode/presentation/view/widgets/folder_team_score_card.dart';
-import 'package:guess_game/features/qrcode/presentation/view/widgets/small_yellow_corner_button.dart';
+import 'package:guess_game/features/qrcode/presentation/view/widgets/game_bottom_right_button.dart';
 import 'package:guess_game/guess_game.dart';
 
 class ScoreView extends StatefulWidget {
@@ -92,6 +93,14 @@ class _ScoreViewState extends State<ScoreView> {
     final team01Score = teamScores['team01'] ?? 0;
     final team02Score = teamScores['team02'] ?? 0;
 
+    // Match QrcodeView sizing/spacing.
+    const double cardW = 235;
+    const double cardH = 280;
+    const double gapW = 110;
+    final double contentW = MediaQuery.sizeOf(context).width - (48.w); // padding left+right = 24.w * 2
+    final double rowW = (cardW * 2 + gapW).w;
+    final double rightAlignedToRow = 24.w + math.max(0, (contentW - rowW) / 2);
+
     // Determine winner: check AssignWinnerResponse first, then fallback to score comparison
     int winnerTeam = 0; // 0 = draw, 1 = team1, 2 = team2
     if (_assignWinnerResponse != null && _assignWinnerResponse!.data.roundData.isNotEmpty) {
@@ -112,79 +121,37 @@ class _ScoreViewState extends State<ScoreView> {
       body: SafeArea(
         child: Stack(
           children: [
-            Align(
-              alignment: Alignment.topCenter,
+            // Main content (center), with reserved top/bottom space like GameWinnerView
+            Positioned.fill(
               child: Padding(
-                padding: EdgeInsets.only(top: 52.h, left: 24.w, right: 24.w),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      textDirection: TextDirection.ltr,
-                      children: [
-                        FolderTeamScoreCard(
-                          teamTitle: 'الفريق 02',
-                          score: team02Score,
-                          isWinner: winnerTeam == 2,
-                          isLoser: winnerTeam == 1,
-                          width: 237,
-                          height: 240,
-                        ),
-                        SizedBox(width: 48.w),
-                        FolderTeamScoreCard(
-                          teamTitle: 'الفريق 01',
-                          score: team01Score,
-                          isWinner: winnerTeam == 1,
-                          isLoser: winnerTeam == 2,
-                          width: 237,
-                          height: 240,
-                        ),
-                      ],
-                    ),
-                    SizedBox(height: 16.h),
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: SmallYellowCornerButton(
-                        text: _isLastRound ? 'إنهاء الجيم' : 'الانتقال للجوله ${GlobalStorage.getNextRoundNumber()}',
-                        onTap: () {
-                          if (_isLastRound) {
-                            // إنهاء اللعبة - الانتقال لصفحة الفائز النهائي
-                            print('🏆 إنهاء اللعبة - الانتقال لصفحة الفائز النهائي');
-                            Navigator.of(context).pushNamed(
-                              Routes.gameWinnerView,
-                              arguments: {
-                                'updatePointPlanResponse': _pointPlanResponse,
-                                'updateScoreResponse': _scoreResponse,
-                                'assignWinnerResponse': _assignWinnerResponse,
-                                'gameStartResponse': _gameStartResponse,
-                              },
-                            );
-                          } else {
-                            // الانتقال للجولة التالية
-                            print('🔄 الانتقال للجولة التالية - IDs من round_data في /games/start response:');
-                            if (_gameStartResponse != null) {
-                              for (int i = 0; i < _gameStartResponse!.data.teams.length; i++) {
-                                final team = _gameStartResponse!.data.teams[i];
-                                print('  فريق ${i + 1}: ${team.roundData.map((rd) => 'id=${rd.id}').join(', ')}');
-                              }
-                            }
-
-                            GlobalStorage.moveToNextRound();
-                            print('🔄 بعد moveToNextRound: currentRoundIndex = ${GlobalStorage.currentRoundIndex}');
-                            Navigator.of(context).pushNamed(
-                              Routes.gameLevel,
-                              arguments: {
-                                'team1Name': GlobalStorage.team1Name.isNotEmpty ? GlobalStorage.team1Name : 'فريق 01',
-                                'team2Name': GlobalStorage.team2Name.isNotEmpty ? GlobalStorage.team2Name : 'فريق 02',
-                                'gameStartResponse': _gameStartResponse,
-                              },
-                            );
-                          }
-                        },
+                padding: EdgeInsets.only(top: 52.h, bottom: 70.h, left: 24.w, right: 24.w),
+                child: Align(
+                  alignment: Alignment.topCenter,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    textDirection: TextDirection.ltr,
+                    children: [
+                      FolderTeamScoreCard(
+                        teamTitle: 'الفريق 02',
+                        score: team02Score,
+                        isWinner: winnerTeam == 2,
+                        isLoser: winnerTeam == 1,
+                        width: cardW,
+                        height: cardH,
+                        scoreBoxSize: 85,
                       ),
-                    ),
-                  ],
+                      SizedBox(width: gapW.w),
+                      FolderTeamScoreCard(
+                        teamTitle: 'الفريق 01',
+                        score: team01Score,
+                        isWinner: winnerTeam == 1,
+                        isLoser: winnerTeam == 2,
+                        width: cardW,
+                        height: cardH,
+                        scoreBoxSize: 85,
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -196,8 +163,8 @@ class _ScoreViewState extends State<ScoreView> {
                   return InkWell(
                     onTap: () => Scaffold.of(context).openDrawer(),
                     child: Container(
-                      width: 64.w,
-                      height: 44.h,
+                      width: 60.w,
+                      height: 36.h,
                       decoration: BoxDecoration(
                         color: AppColors.darkBlue,
                         border: Border.all(color: Colors.black, width: 1),
@@ -205,11 +172,44 @@ class _ScoreViewState extends State<ScoreView> {
                       alignment: Alignment.center,
                       child: SvgPicture.asset(
                         AppIcons.list,
-                        height: 24.h,
-                        width: 36.w,
+                        height: 18.h,
+                        width: 26.w,
                       ),
                     ),
                   );
+                },
+              ),
+            ),
+
+            // Bottom-right button (same size/position style as GameWinnerView)
+            Positioned(
+              bottom: 24,
+              // Align under the score cards row right edge (same as QrcodeView)
+              right: rightAlignedToRow,
+              child: GameBottomRightButton(
+                text: _isLastRound ? 'إنهاء' : 'التالي',
+                onTap: () {
+                  if (_isLastRound) {
+                    Navigator.of(context).pushNamed(
+                      Routes.gameWinnerView,
+                      arguments: {
+                        'updatePointPlanResponse': _pointPlanResponse,
+                        'updateScoreResponse': _scoreResponse,
+                        'assignWinnerResponse': _assignWinnerResponse,
+                        'gameStartResponse': _gameStartResponse,
+                      },
+                    );
+                  } else {
+                    GlobalStorage.moveToNextRound();
+                    Navigator.of(context).pushNamed(
+                      Routes.gameLevel,
+                      arguments: {
+                        'team1Name': GlobalStorage.team1Name.isNotEmpty ? GlobalStorage.team1Name : 'فريق 01',
+                        'team2Name': GlobalStorage.team2Name.isNotEmpty ? GlobalStorage.team2Name : 'فريق 02',
+                        'gameStartResponse': _gameStartResponse,
+                      },
+                    );
+                  }
                 },
               ),
             ),

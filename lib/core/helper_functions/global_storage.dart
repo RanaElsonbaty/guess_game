@@ -232,6 +232,37 @@ class GlobalStorage {
     lastGameStartResponse = null;
   }
 
+  /// Clears the user session (token/user/subscription + game/navigation state) while preserving app language.
+  static Future<void> clearSession() async {
+    await CacheHelper.removeToken();
+    await CacheHelper.removeUserData();
+    await CacheHelper.removeSubscription();
+    await CacheHelper.removeGameData();
+    await CacheHelper.removeGameScore();
+    await CacheHelper.clearNavigationState();
+
+    token = "";
+    user = null;
+    subscription = null;
+    team1Categories = [];
+    team2Categories = [];
+    team1Name = "";
+    team2Name = "";
+    team1Questions = 0;
+    team1Answers = 0;
+    team2Questions = 0;
+    team2Answers = 0;
+    gameStartResponse = null;
+    currentRoundIndex = 0;
+    lastTeam1RoundDataId = 0;
+    lastTeam2RoundDataId = 0;
+    lastRoute = "";
+    lastRouteArguments = {};
+    lastLimit = null;
+    lastTeam1Categories = null;
+    lastGameStartResponse = null;
+  }
+
   /// Prints the current token to logs (debug only).
   /// Use [full] to log the entire token; otherwise it will be redacted.
   static void debugPrintToken({bool full = false}) {

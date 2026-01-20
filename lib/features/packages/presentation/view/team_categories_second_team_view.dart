@@ -86,20 +86,40 @@ class _TeamCategoriesSecondTeamViewState extends State<TeamCategoriesSecondTeamV
         selectedCategoriesForSecondTeam.remove(categoryId);
         print('❌ إلغاء اختيار الفئة ID: $categoryId');
       } else {
-        // التحقق من الحد الأقصى للفريق الثاني (حتى limit فئة)
-        if (selectedCategoriesForSecondTeam.length >= maxSelectableCategories) {
-          if (widget.isAddOneCategory) {
+        final team1Count = team1Categories.length;
+        final currentTeam2Count = selectedCategoriesForSecondTeam.length;
+        
+        if (widget.isAddOneCategory) {
+          // في حالة add-one: فئة واحدة فقط
+          if (currentTeam2Count >= 1) {
             _showOneCategoryOnlyDialog();
+            return;
           }
-          return;
+        } else {
+          // يجب أن يكون العدد مساوياً لعدد الفريق الأول
+          final newCount = currentTeam2Count + 1;
+          
+          // التحقق من أن العدد لن يتجاوز عدد الفريق الأول
+          if (newCount > team1Count) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('يجب أن يكون عدد الفئات مساوياً للفريق الأول ($team1Count فئة)'),
+                backgroundColor: Colors.orange,
+              ),
+            );
+            return;
+          }
+          
+          // التحقق من الحد الأقصى
+          if (newCount > maxSelectableCategories) {
+            return;
+          }
         }
 
         // اختيار الفئة
         selectedCategoriesForSecondTeam.add(categoryId);
         print('✅ اختيار الفئة ID: $categoryId');
-        print('📊 التقدم: ${selectedCategoriesForSecondTeam.length}/$maxSelectableCategories فئة');
-
-        // لا نحتاج لإظهار alert في الفريق الثاني
+        print('📊 التقدم: ${selectedCategoriesForSecondTeam.length} فئة (الفريق الأول: $team1Count)');
       }
 
       // حفظ التغييرات
@@ -350,8 +370,19 @@ class _TeamCategoriesSecondTeamViewState extends State<TeamCategoriesSecondTeamV
                 // منطق التحقق من الاختيارات
                 final team1Count = team1Categories.length;
                 final team2Count = selectedCategoriesForSecondTeam.length;
+                final totalCount = team1Count + team2Count;
 
                 // التحقق من أن كل فريق اختار فئة واحدة على الأقل
+                if (team1Count == 0) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('يجب على الفريق الأول اختيار فئة واحدة على الأقل'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                  return;
+                }
+
                 if (team2Count == 0) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
@@ -368,8 +399,11 @@ class _TeamCategoriesSecondTeamViewState extends State<TeamCategoriesSecondTeamV
                     _showOneCategoryOnlyDialog();
                     return;
                   }
+                  // المجموع = 2 (زوجي) ✓
                 } else {
-                  // Normal mode: equal & even categories count
+                  // Normal mode: يجب أن يكون العدد متساوياً، والمجموع زوجي
+                  
+                  // التحقق من أن العدد متساوي
                   if (team1Count != team2Count) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
@@ -380,10 +414,22 @@ class _TeamCategoriesSecondTeamViewState extends State<TeamCategoriesSecondTeamV
                     return;
                   }
 
-                  if (team1Count % 2 != 0 || team2Count % 2 != 0) {
+                  // التحقق من أن المجموع زوجي (إذا كان العدد متساوي، فالمجموع دائماً زوجي)
+                  if (totalCount % 2 != 0) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                        content: Text('يجب أن يكون عدد الفئات زوجياً (الفريق الأول: $team1Count، الفريق الثاني: $team2Count)'),
+                        content: Text('المجموع الكلي للفئات يجب أن يكون زوجياً (حالياً: $totalCount)'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                    return;
+                  }
+
+                  // التحقق من أن المجموع على الأقل 2
+                  if (totalCount < 2) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('المجموع الكلي للفئات يجب أن يكون على الأقل 2'),
                         backgroundColor: Colors.red,
                       ),
                     );
@@ -404,7 +450,7 @@ class _TeamCategoriesSecondTeamViewState extends State<TeamCategoriesSecondTeamV
                 print('🚀 الضغط على زر التالي - الانتقال لصفحة المجموعات');
                 print('📋 الفئات المختارة للفريق الأول: $team1Categories ($team1Count فئة)');
                 print('📋 الفئات المختارة للفريق الثاني: $selectedCategoriesForSecondTeam ($team2Count فئة)');
-                print('✅ تم التحقق من أن العدد زوجي ومتساوي ($team1Count = $team2Count)');
+                print('✅ تم التحقق: العدد متساوي ($team1Count = $team2Count)، المجموع زوجي ($totalCount)');
                 Navigator.of(context).pushNamed(
                   Routes.groups,
                   arguments: {

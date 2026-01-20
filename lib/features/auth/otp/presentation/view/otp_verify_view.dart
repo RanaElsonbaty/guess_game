@@ -1,8 +1,10 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:guess_game/core/helper_functions/extension.dart';
+import 'package:guess_game/core/helper_functions/shared_preferences.dart';
 import 'package:guess_game/core/routing/routes.dart';
 import 'package:guess_game/core/theming/colors.dart';
 import 'package:guess_game/core/theming/styles.dart';
@@ -31,18 +33,68 @@ class _OtpVerifyViewState extends State<OtpVerifyView> {
     6,
     (index) => FocusNode(),
   );
+  
+  Timer? _timer;
+  int _remainingSeconds = 60; // دقيقة واحدة = 60 ثانية
+  String _phoneNumber = ''; // حفظ رقم الهاتف محلياً
 
   @override
   void initState() {
     super.initState();
+    _initializePhoneNumber();
     // Auto focus on last field (reverse direction)
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _focusNodes[5].requestFocus();
+    });
+    // Start timer
+    _startTimer();
+  }
+
+  void _initializePhoneNumber() {
+    // محاولة استخدام رقم الهاتف من widget أولاً
+    if (widget.phone.isNotEmpty) {
+      _phoneNumber = widget.phone;
+      // حفظ رقم الهاتف (غير متزامن)
+      CacheHelper.saveOtpPhone(_phoneNumber).then((_) {
+        print('📱 OtpVerifyView: تم حفظ رقم الهاتف من widget: "$_phoneNumber"');
+      });
+      print('📱 OtpVerifyView: رقم الهاتف من widget: "$_phoneNumber"');
+    } else {
+      // إذا كان فارغاً، جلب الرقم المحفوظ
+      final savedPhone = CacheHelper.getOtpPhone();
+      if (savedPhone != null && savedPhone.isNotEmpty) {
+        _phoneNumber = savedPhone;
+        print('📱 OtpVerifyView: رقم الهاتف من الذاكرة: "$_phoneNumber"');
+        // تحديث الواجهة بعد تحميل الرقم
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            setState(() {});
+          }
+        });
+      } else {
+        _phoneNumber = '';
+        print('⚠️ OtpVerifyView: لم يتم العثور على رقم هاتف');
+      }
+    }
+  }
+
+  void _startTimer() {
+    _remainingSeconds = 60;
+    _timer?.cancel();
+    _timer = Timer.periodic(Duration(seconds: 1), (timer) {
+      if (_remainingSeconds > 0) {
+        setState(() {
+          _remainingSeconds--;
+        });
+      } else {
+        timer.cancel();
+      }
     });
   }
 
   @override
   void dispose() {
+    _timer?.cancel();
     for (var controller in _otpControllers) {
       controller.dispose();
     }
@@ -82,17 +134,39 @@ class _OtpVerifyViewState extends State<OtpVerifyView> {
 
   void _verifyOtp(String otp) {
     context.read<OtpCubit>().verifyOtp(
-      phone: widget.phone,
+      phone: _phoneNumber,
       otp: otp,
       takeType: 'login',
     );
   }
 
-  void _resendOtp() {
+  Future<void> _resendOtp() async {
+    // Ensure phone number is not empty
+    if (_phoneNumber.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('رقم الهاتف غير موجود'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+    
+    print('🔄 إعادة إرسال الرمز للرقم: $_phoneNumber');
+    // حفظ رقم الهاتف قبل الإرسال
+    await CacheHelper.saveOtpPhone(_phoneNumber);
     context.read<OtpCubit>().generateOtp(
-      phone: widget.phone,
+      phone: _phoneNumber,
       takeType: 'login',
     );
+    // Restart timer after resending
+    _startTimer();
+  }
+  
+  String _formatTime(int seconds) {
+    final minutes = seconds ~/ 60;
+    final secs = seconds % 60;
+    return '${minutes.toString().padLeft(2, '0')}:${secs.toString().padLeft(2, '0')}';
   }
 
   @override
@@ -123,12 +197,22 @@ class _OtpVerifyViewState extends State<OtpVerifyView> {
               child: BlocConsumer<OtpCubit, OtpState>(
                 listener: (context, state) {
                   if (state is OtpGenerateSuccess) {
+                    // Update phone number if provided
+                    if (state.phone.isNotEmpty) {
+                      _phoneNumber = state.phone;
+                      // حفظ رقم الهاتف بعد نجاح إعادة الإرسال
+                      CacheHelper.saveOtpPhone(_phoneNumber);
+                      print('📱 تم تحديث رقم الهاتف إلى: $_phoneNumber');
+                      setState(() {}); // تحديث الواجهة
+                    }
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text(state.response.message),
                         backgroundColor: AppColors.green,
                       ),
                     );
+                    // Restart timer after successful resend
+                    _startTimer();
                   } else if (state is OtpVerifySuccess) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
@@ -140,7 +224,7 @@ class _OtpVerifyViewState extends State<OtpVerifyView> {
                     Navigator.of(context).pushReplacementNamed(
                       Routes.login,
                       arguments: {
-                        'phone': widget.phone,
+                        'phone': _phoneNumber,
                         'otp': _getOtpString(),
                       },
                     );
@@ -193,7 +277,7 @@ class _OtpVerifyViewState extends State<OtpVerifyView> {
 
                             Positioned(
                               top: -13,
-                              left: 25,
+                              left: 16,
                               child: Text(
                                 'التحقق من الرمز',
                                 style: TextStyles.font14Secondary700Weight,
@@ -245,7 +329,7 @@ class _OtpVerifyViewState extends State<OtpVerifyView> {
                                   SizedBox(height: 8.h),
 
                                   Text(
-                                    widget.phone,
+                                    _phoneNumber,
                                     style: TextStyles.font14Secondary700Weight.copyWith(
                                       color: AppColors.secondaryColor,
                                       fontWeight: FontWeight.w600,
@@ -305,6 +389,47 @@ class _OtpVerifyViewState extends State<OtpVerifyView> {
 
                                   SizedBox(height: 25.h),
 
+                                  // Resend OTP section with timer
+                                  BlocBuilder<OtpCubit, OtpState>(
+                                    builder: (context, state) {
+                                      if (_remainingSeconds > 0) {
+                                        // Show timer
+                                        return Column(
+                                          children: [
+                                            Text(
+                                              'إعادة إرسال الرمز خلال',
+                                              style: TextStyles.font10Secondary700Weight.copyWith(
+                                                color: AppColors.secondaryColor.withOpacity(0.7),
+                                                decorationColor: AppColors.secondaryColor
+                                              ),
+                                            ),
+                                            SizedBox(height: 4.h),
+                                            Text(
+                                              _formatTime(_remainingSeconds),
+                                              style: TextStyles.font14Secondary700Weight.copyWith(
+                                                color: AppColors.secondaryColor,
+                                              ),
+                                            ),
+                                          ],
+                                        );
+                                      } else {
+                                        // Show clickable resend text
+                                        return GestureDetector(
+                                          onTap: state is OtpGenerateLoading ? null : _resendOtp,
+                                          child: Text(
+                                            'إعادة إرسال الكود',
+                                            style: TextStyles.font10Secondary700Weight.copyWith(
+                                              color: AppColors.secondaryColor,
+                                              decoration: TextDecoration.underline,
+                                            ),
+                                          ),
+                                        );
+                                      }
+                                    },
+                                  ),
+
+                                  SizedBox(height: 20.h),
+
                                   // Verify button
                                   BlocBuilder<OtpCubit, OtpState>(
                                     builder: (context, state) {
@@ -326,24 +451,6 @@ class _OtpVerifyViewState extends State<OtpVerifyView> {
                                                 ),
                                               )
                                             : null,
-                                      );
-                                    },
-                                  ),
-
-                                  SizedBox(height: 15.h),
-
-                                  // Resend OTP
-                                  BlocBuilder<OtpCubit, OtpState>(
-                                    builder: (context, state) {
-                                      return GestureDetector(
-                                        onTap: state is OtpGenerateLoading ? null : _resendOtp,
-                                        child: Text(
-                                          'إعادة إرسال الرمز',
-                                          style: TextStyles.font10Secondary700Weight.copyWith(
-                                            color: AppColors.secondaryColor,
-                                            decoration: TextDecoration.underline,
-                                          ),
-                                        ),
                                       );
                                     },
                                   ),

@@ -81,20 +81,23 @@ class _TeamCategoriesFirstTeamViewState extends State<TeamCategoriesFirstTeamVie
         selectedCategoriesForFirstTeam.remove(categoryId);
         print('❌ إلغاء اختيار الفئة ID: $categoryId');
       } else {
-        // التحقق من الحد الأقصى للفريق الأول (حتى limit فئة)
-        if (selectedCategoriesForFirstTeam.length >= maxSelectableCategories) {
-          if (widget.isAddOneCategory) {
+        // في حالة add-one: فئة واحدة فقط
+        if (widget.isAddOneCategory) {
+          if (selectedCategoriesForFirstTeam.length >= 1) {
             _showOneCategoryOnlyDialog();
+            return;
           }
-          return;
+        } else {
+          // التحقق من الحد الأقصى للفريق الأول (حتى limit فئة)
+          if (selectedCategoriesForFirstTeam.length >= maxSelectableCategories) {
+            return;
+          }
         }
 
         // اختيار الفئة
         selectedCategoriesForFirstTeam.add(categoryId);
         print('✅ اختيار الفئة ID: $categoryId');
-        print('📊 التقدم: ${selectedCategoriesForFirstTeam.length}/$maxSelectableCategories فئة');
-
-        // لا نحتاج لإظهار alert في الفريق الأول
+        print('📊 التقدم: ${selectedCategoriesForFirstTeam.length} فئة');
       }
 
       // حفظ التغييرات
@@ -384,9 +387,12 @@ class _TeamCategoriesFirstTeamViewState extends State<TeamCategoriesFirstTeamVie
                   return;
                 }
 
-                if (widget.isAddOneCategory && team1Count != 1) {
-                  _showOneCategoryOnlyDialog();
-                  return;
+                if (widget.isAddOneCategory) {
+                  // في حالة add-one: يجب أن تكون فئة واحدة بالضبط
+                  if (team1Count != 1) {
+                    _showOneCategoryOnlyDialog();
+                    return;
+                  }
                 }
 
                 // منطق الانتقال لصفحة الفريق الثاني

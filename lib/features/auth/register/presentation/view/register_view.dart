@@ -74,8 +74,8 @@ class _RegisterViewState extends State<RegisterView> {
                             backgroundColor: AppColors.green,
                           ),
                         );
-                        // Navigate to intro page after successful registration
-                        context.pushReplacementNamed(Routes.intro);
+                        // Navigate to choose login type page after successful registration
+                        context.pushReplacementNamed(Routes.chooseLoginType);
                       } else if (state is RegisterError) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(

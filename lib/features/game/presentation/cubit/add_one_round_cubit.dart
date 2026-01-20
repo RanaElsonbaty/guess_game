@@ -56,6 +56,39 @@ class AddOneRoundCubit extends Cubit<AddOneRoundState> {
       },
     );
   }
+
+  Future<void> addRoundsWithMultipleCategories({
+    required int gameId,
+    required int team1Id,
+    required int team2Id,
+    required List<int> team1CategoriesIds,
+    required List<int> team2CategoriesIds,
+  }) async {
+    emit(AddOneRoundLoading());
+
+    final request = AddRoundsRequest(
+      gameId: gameId,
+      rounds: [
+        AddRoundsTeamPayload(teamId: team1Id, categoriesIds: team1CategoriesIds),
+        AddRoundsTeamPayload(teamId: team2Id, categoriesIds: team2CategoriesIds),
+      ],
+    );
+
+    final result = await _gameRepository.addRounds(request);
+    await result.fold(
+      (failure) async {
+        emit(AddOneRoundError(failure.message));
+      },
+      (response) async {
+        // Update the in-session game response and jump to the newly added round (last round).
+        await GlobalStorage.updateGameStartResponse(response);
+        GlobalStorage.lastGameStartResponse = response;
+        GlobalStorage.currentRoundIndex = (response.data.rounds.isNotEmpty) ? response.data.rounds.length - 1 : 0;
+        emit(AddOneRoundSuccess(response));
+      },
+    );
+  }
 }
+
 
 

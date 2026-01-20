@@ -117,4 +117,20 @@ class GameCubit extends Cubit<GameState> {
       },
     );
   }
+
+  Future<GameStartResponse?> endGame(int gameId) async {
+    emit(GameEnding());
+    final result = await _gameRepository.endGame(gameId);
+    return result.fold(
+      (failure) {
+        emit(GameEndError(failure.message));
+        return null;
+      },
+      (response) {
+        gameStartResponse = response;
+        emit(GameEnded(response));
+        return response;
+      },
+    );
+  }
 }

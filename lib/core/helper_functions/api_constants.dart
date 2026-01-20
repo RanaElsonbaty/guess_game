@@ -44,6 +44,7 @@ class ApiConstants {
   static const String INTRO = 'intro';
   static const String OPENED_STORIES = "openedStories";
   static const String NAVIGATION_STATE = "navigation_state";
+  static const String OTP_PHONE = "otp_phone";
   static String errorInternetNotAvailable = 'Your internet is not working';
 
 }

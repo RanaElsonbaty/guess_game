@@ -28,6 +28,7 @@ class _GroupsViewState extends State<GroupsView> {
   List<int> _team2Categories = [];
   bool _isStartingGame = false;
   bool _isAddOneFlow = false;
+  bool _isSameGamePackageFlow = false;
   int _addOneGameId = 0;
   int _addOneTeam1Id = 0;
   int _addOneTeam2Id = 0;
@@ -227,6 +228,108 @@ class _GroupsViewState extends State<GroupsView> {
         );
   }
 
+  Future<void> _addSameGamePackageRounds() async {
+    setState(() {
+      _isStartingGame = true;
+    });
+
+    final team1Count = GlobalStorage.team1Categories.length;
+    final team2Count = GlobalStorage.team2Categories.length;
+    final totalCount = team1Count + team2Count;
+
+    // التحقق من القواعد: عدد >= 1، متساوي، مجموع زوجي
+    if (team1Count == 0 || team2Count == 0) {
+      if (!mounted) return;
+      setState(() => _isStartingGame = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('يجب على كل فريق اختيار فئة واحدة على الأقل'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    if (team1Count != team2Count) {
+      if (!mounted) return;
+      setState(() => _isStartingGame = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('يجب أن يكون عدد الفئات متساوياً بين الفريقين (الفريق الأول: $team1Count، الفريق الثاني: $team2Count)'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    if (totalCount % 2 != 0) {
+      if (!mounted) return;
+      setState(() => _isStartingGame = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('المجموع الكلي للفئات يجب أن يكون زوجياً (حالياً: $totalCount)'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    // الحصول على gameId و teamIds - الأولوية من arguments ثم من GlobalStorage.lastRouteArguments
+    int gameId = _addOneGameId;
+    int team1Id = _addOneTeam1Id;
+    int team2Id = _addOneTeam2Id;
+
+    if (gameId == 0 || team1Id == 0 || team2Id == 0) {
+      final gameArgs = GlobalStorage.lastRouteArguments;
+      gameId = gameArgs['gameId'] as int? ?? gameId;
+      team1Id = gameArgs['team1Id'] as int? ?? team1Id;
+      team2Id = gameArgs['team2Id'] as int? ?? team2Id;
+      
+      // تحديث المتغيرات المحلية للاستخدام لاحقاً
+      _addOneGameId = gameId;
+      _addOneTeam1Id = team1Id;
+      _addOneTeam2Id = team2Id;
+    }
+
+    if (gameId == 0 || team1Id == 0 || team2Id == 0) {
+      final gameStart = _resolveCurrentGameStart();
+      if (gameStart != null) {
+        gameId = gameStart.data.id;
+        final team1 = gameStart.data.teams.firstWhere(
+          (t) => t.teamNumber == 1,
+          orElse: () => gameStart.data.teams[0],
+        );
+        final team2 = gameStart.data.teams.firstWhere(
+          (t) => t.teamNumber == 2,
+          orElse: () => gameStart.data.teams.length > 1 ? gameStart.data.teams[1] : gameStart.data.teams[0],
+        );
+        team1Id = team1.id;
+        team2Id = team2.id;
+      }
+    }
+
+    if (gameId == 0 || team1Id == 0 || team2Id == 0) {
+      if (!mounted) return;
+      setState(() => _isStartingGame = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('لا يمكن تحديد بيانات اللعبة لإضافة جولات جديدة'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    // استخدام AddOneRoundCubit لإضافة الجولات مع فئات متعددة
+    await context.read<AddOneRoundCubit>().addRoundsWithMultipleCategories(
+          gameId: gameId,
+          team1Id: team1Id,
+          team2Id: team2Id,
+          team1CategoriesIds: GlobalStorage.team1Categories,
+          team2CategoriesIds: GlobalStorage.team2Categories,
+        );
+  }
+
   @override
   void initState() {
     super.initState();
@@ -279,9 +382,21 @@ class _GroupsViewState extends State<GroupsView> {
       _team1Categories = args['team1Categories'] ?? [];
       _team2Categories = args['team2Categories'] ?? [];
       _isAddOneFlow = args['isAddOneCategory'] == true;
+      _isSameGamePackageFlow = args['isSameGamePackage'] == true;
       _addOneGameId = args['gameId'] as int? ?? _addOneGameId;
       _addOneTeam1Id = args['team1Id'] as int? ?? _addOneTeam1Id;
       _addOneTeam2Id = args['team2Id'] as int? ?? _addOneTeam2Id;
+      
+      // في حالة isSameGamePackageFlow، تأكد من تحميل الأسماء من GlobalStorage
+      if (_isSameGamePackageFlow) {
+        if (GlobalStorage.team1Name.isNotEmpty) {
+          _team1Controller.text = GlobalStorage.team1Name;
+        }
+        if (GlobalStorage.team2Name.isNotEmpty) {
+          _team2Controller.text = GlobalStorage.team2Name;
+        }
+        print('📋 تم تحميل أسماء الفرق من GlobalStorage: ${GlobalStorage.team1Name}, ${GlobalStorage.team2Name}');
+      }
     }
 
     return BlocListener<AddOneRoundCubit, AddOneRoundState>(
@@ -392,9 +507,48 @@ class _GroupsViewState extends State<GroupsView> {
                   GlobalStorage.team1Name = _team1Controller.text.trim();
                   GlobalStorage.team2Name = _team2Controller.text.trim();
 
+                  // حفظ بيانات اللعبة في GlobalStorage
+                  GlobalStorage.team1Categories = _team1Categories;
+                  GlobalStorage.team2Categories = _team2Categories;
+                  
+                  // في حالة isSameGamePackageFlow، استخدام الأسماء المحفوظة (لا تطلب من المستخدم)
+                  if (_isSameGamePackageFlow) {
+                    // التأكد من وجود الأسماء في GlobalStorage
+                    if (GlobalStorage.team1Name.isEmpty) {
+                      GlobalStorage.team1Name = _team1Controller.text.trim();
+                    }
+                    if (GlobalStorage.team2Name.isEmpty) {
+                      GlobalStorage.team2Name = _team2Controller.text.trim();
+                    }
+                    // التأكد من أن الحقول مملوءة بالأسماء المحفوظة
+                    if (_team1Controller.text.trim().isEmpty && GlobalStorage.team1Name.isNotEmpty) {
+                      _team1Controller.text = GlobalStorage.team1Name;
+                    }
+                    if (_team2Controller.text.trim().isEmpty && GlobalStorage.team2Name.isNotEmpty) {
+                      _team2Controller.text = GlobalStorage.team2Name;
+                    }
+                  } else {
+                    // في الحالات الأخرى، حفظ الأسماء من الحقول
+                    GlobalStorage.team1Name = _team1Controller.text.trim();
+                    GlobalStorage.team2Name = _team2Controller.text.trim();
+                  }
+
+                  // التحقق من وجود أسماء الفرق (خاصة في حالة isSameGamePackageFlow)
+                  if (GlobalStorage.team1Name.isEmpty || GlobalStorage.team2Name.isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('يجب إدخال أسماء الفرق'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                    return;
+                  }
+
                   // بدء اللعبة مباشرة
                   if (_isAddOneFlow) {
                     _addOneRoundAndStartCycle();
+                  } else if (_isSameGamePackageFlow) {
+                    _addSameGamePackageRounds();
                   } else {
                     _startGame();
                   }

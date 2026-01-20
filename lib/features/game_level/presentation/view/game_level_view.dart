@@ -54,6 +54,8 @@ class GameLevelViewWithProvider extends StatelessWidget {
 }
 
 class _GameLevelViewState extends State<GameLevelView> {
+  bool _hasShownInstructionsDialog = false;
+  
   String _getTermsText(BuildContext context) {
     final termsCubit = context.read<TermsCubit>();
     final termsText = termsCubit.formattedTermsText;
@@ -156,7 +158,7 @@ class _GameLevelViewState extends State<GameLevelView> {
 
       final Map<String, dynamic>? effectiveArgs = args ?? globalArgs;
 
-      if (effectiveArgs != null) {
+        if (effectiveArgs != null) {
         setState(() {
           team1Name = effectiveArgs['team1Name'] ?? 'فريق 01';
           team2Name = effectiveArgs['team2Name'] ?? 'فريق 02';
@@ -179,6 +181,17 @@ class _GameLevelViewState extends State<GameLevelView> {
         }
         print('🎯 GameLevelView: team1Name = "$team1Name", team2Name = "$team2Name"');
         print('🎯 GameLevelView: gameStartResponse = $gameStartResponse');
+        
+        // عرض dialog التعليمات فوراً إذا كان gameStartResponse متوفر
+        if (gameStartResponse != null && !_hasShownInstructionsDialog) {
+          _hasShownInstructionsDialog = true;
+          // انتظر قليلاً للتأكد من اكتمال بناء الواجهة
+          Future.delayed(const Duration(milliseconds: 300), () {
+            if (mounted) {
+              _showGameInstructionsDialog(context, gameStartResponse);
+            }
+          });
+        }
       }
     });
   }
@@ -187,28 +200,59 @@ class _GameLevelViewState extends State<GameLevelView> {
   Widget build(BuildContext context) {
     final gameCubit = context.read<GameCubit>();
 
-    return BlocListener<GameCubit, GameState>(
-      listener: (context, state) {
-        print('🎯 GameLevelView: استلام state: ${state.runtimeType}');
-        print('🎯 GameLevelView: gameStartResponse in listener: ${gameStartResponse != null}');
-        if (state is PointPlanUpdated) {
-          print('✅ تم استلام PointPlanUpdated - عرض dialog التعليمات');
-          // عرض dialog التعليمات عند نجاح PATCH
-          _showGameInstructionsDialog(context, gameStartResponse);
-        } else if (state is PointPlanUpdateError) {
-          print('❌ تم استلام PointPlanUpdateError: ${state.message}');
-          // عرض رسالة خطأ
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(state.message),
-              backgroundColor: Colors.red,
-            ),
-          );
-        } else if (state is PointPlanUpdating) {
-          print('🔄 تم استلام PointPlanUpdating - جاري التحديث');
+    return BlocListener<TermsCubit, TermsState>(
+      listener: (context, termsState) {
+        // عرض dialog التعليمات فوراً (مرة واحدة فقط) عندما يكون gameStartResponse متوفر
+        if (!_hasShownInstructionsDialog && gameStartResponse != null) {
+          _hasShownInstructionsDialog = true;
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              _showGameInstructionsDialog(context, gameStartResponse);
+            }
+          });
         }
       },
-      child: BlocBuilder<CategoriesCubit, CategoriesState>(
+      child: BlocListener<GameCubit, GameState>(
+        listener: (context, state) {
+          print('🎯 GameLevelView: استلام state: ${state.runtimeType}');
+          print('🎯 GameLevelView: gameStartResponse in listener: ${gameStartResponse != null}');
+          if (state is PointPlanUpdated) {
+            print('✅ تم استلام PointPlanUpdated');
+            // لا نعرض dialog التعليمات هنا لأنها تم عرضها عند فتح الصفحة
+            // فقط ننتقل مباشرة إلى qrcodeView
+            final updatePointPlanResponse = gameCubit.updatePointPlanResponse;
+            final currentRoundIndex = GlobalStorage.currentRoundIndex;
+            final totalRounds = gameStartResponse?.data.rounds.length ?? 0;
+            final shouldSkipToScore = (currentRoundIndex + 1) >= totalRounds;
+
+            if (kDebugMode) {
+              print('🎯 GameLevelView: currentRoundIndex: $currentRoundIndex');
+              print('🎯 GameLevelView: shouldSkipToScore: $shouldSkipToScore');
+            }
+
+            if (mounted) {
+              Navigator.of(context).pushNamed(
+                Routes.qrcodeView,
+                arguments: {
+                  'updatePointPlanResponse': updatePointPlanResponse,
+                  'gameStartResponse': gameStartResponse,
+                },
+              );
+            }
+          } else if (state is PointPlanUpdateError) {
+            print('❌ تم استلام PointPlanUpdateError: ${state.message}');
+            // عرض رسالة خطأ
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(state.message),
+                backgroundColor: Colors.red,
+              ),
+            );
+          } else if (state is PointPlanUpdating) {
+            print('🔄 تم استلام PointPlanUpdating - جاري التحديث');
+          }
+        },
+        child: BlocBuilder<CategoriesCubit, CategoriesState>(
         builder: (context, categoriesState) {
           // التأكد من تحميل الفئات
           if (categoriesState is CategoriesInitial && gameStartResponse != null) {
@@ -439,64 +483,45 @@ class _GameLevelViewState extends State<GameLevelView> {
         ),
       );
       },
-    ) );
+      ),
+    ),
+    );
   }
 
   void _showGameInstructionsDialog(BuildContext context, gameStartResponse) {
-
-    // الحصول على UpdatePointPlanResponse من GameCubit قبل عرض الـ dialog
-    final gameCubit = context.read<GameCubit>();
     final notificationCubit = context.read<NotificationCubit>();
-    final updatePointPlanResponse = gameCubit.updatePointPlanResponse;
-
-    // حفظ الـ context الأصلي لاستخدامه في التنقل
-    final navigationContext = context;
+    final termsCubit = context.read<TermsCubit>();
 
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (BuildContext dialogContext) {
-                return BlocProvider.value(
-          value: notificationCubit,
-          child: SubscriptionAlertDialog(
-            title: 'تعليمات',
-            content: _getTermsText(context),
-            buttonText: 'حسنا',
-            onButtonPressed: () async {
-                  // إغلاق dialog التعليمات باستخدام dialog context
+        return MultiBlocProvider(
+          providers: [
+            BlocProvider.value(value: notificationCubit),
+            BlocProvider.value(value: termsCubit),
+          ],
+          child: BlocBuilder<TermsCubit, TermsState>(
+            builder: (context, termsState) {
+              // الحصول على نص التعليمات الحالي (سيتحدث تلقائياً عند تحميل البيانات)
+              String termsText = _getTermsText(context);
+              
+              // إذا كانت البيانات لا تزال قيد التحميل، اعرض رسالة التحميل
+              if (termsState is TermsLoading) {
+                termsText = 'جاري تحميل التعليمات...';
+              }
+              
+              return SubscriptionAlertDialog(
+                title: 'تعليمات',
+                content: termsText,
+                buttonText: 'حسنا',
+                onButtonPressed: () {
+                  // إغلاق dialog التعليمات فقط (لا ننتقل لأي صفحة)
                   Navigator.of(dialogContext).pop();
-
-                  // انتظار إغلاق الـ dialog
-                  await Future.delayed(const Duration(milliseconds: 200));
-
-                  // التحقق من رقم الجولة الحالية
-                  final currentRoundIndex = GlobalStorage.currentRoundIndex;
-                  final isFirstRound = currentRoundIndex == 0;
-                  // الانتقال إلى scoreView فقط إذا كانت هذه الجولة الأخيرة
-                  final totalRounds = gameStartResponse?.data.rounds.length ?? 0;
-                  final shouldSkipToScore = (currentRoundIndex + 1) >= totalRounds;
-
-                  if (kDebugMode) {
-                    print('🎯 GameLevelView: currentRoundIndex: $currentRoundIndex');
-                    print('🎯 GameLevelView: isFirstRound: $isFirstRound');
-                    print('🎯 GameLevelView: shouldSkipToScore: $shouldSkipToScore');
-                  }
-
-                  if (navigationContext.mounted) {
-                    // دائماً انتقل إلى qrcodeView أولاً، ثم يستمر الفلو الطبيعي
-                    if (kDebugMode) {
-                      print('🎯 GameLevelView: Navigating to qrcodeView (all rounds)');
-                    }
-                    Navigator.of(navigationContext).pushNamed(
-                      Routes.qrcodeView,
-                      arguments: {
-                        'updatePointPlanResponse': updatePointPlanResponse,
-                        'gameStartResponse': gameStartResponse,
-                      },
-                    );
-                  }
                 },
-              ),
+              );
+            },
+          ),
         );
       },
     );

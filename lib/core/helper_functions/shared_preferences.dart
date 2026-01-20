@@ -179,6 +179,18 @@ class CacheHelper {
     return await sharedPreferences.remove(ApiConstants.NAVIGATION_STATE);
   }
 
+  static Future<bool> saveOtpPhone(String phone) async {
+    return await sharedPreferences.setString(ApiConstants.OTP_PHONE, phone);
+  }
+
+  static String? getOtpPhone() {
+    return sharedPreferences.getString(ApiConstants.OTP_PHONE);
+  }
+
+  static Future<bool> removeOtpPhone() async {
+    return await sharedPreferences.remove(ApiConstants.OTP_PHONE);
+  }
+
   static Future<bool> clearData() async {
     return await sharedPreferences.clear();
   }

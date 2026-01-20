@@ -187,7 +187,7 @@ class _ScoreViewState extends State<ScoreView> {
               // Align under the score cards row right edge (same as QrcodeView)
               right: rightAlignedToRow,
               child: GameBottomRightButton(
-                text: _isLastRound ? 'إنهاء' : 'التالي',
+                text: 'التالي',
                 onTap: () {
                   if (_isLastRound) {
                     Navigator.of(context).pushNamed(

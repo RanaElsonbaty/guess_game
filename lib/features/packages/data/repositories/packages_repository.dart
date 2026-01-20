@@ -10,7 +10,7 @@ abstract class PackagesRepository {
   Future<Either<ApiFailure, List<Package>>> getPackages();
 
   /// Subscribe to a package with payment
-  Future<Either<ApiFailure, String>> subscribeToPackage(int packageId);
+  Future<Either<ApiFailure, String>> subscribeToPackage(int packageId, {bool increase = false});
 }
 
 /// Implementation of PackagesRepository using ApiService
@@ -71,12 +71,19 @@ class PackagesRepositoryImpl extends BaseRepository implements PackagesRepositor
   }
 
   @override
-  Future<Either<ApiFailure, String>> subscribeToPackage(int packageId) async {
+  Future<Either<ApiFailure, String>> subscribeToPackage(int packageId, {bool increase = false}) async {
     return guardFuture(() async {
-      final response = await _apiService.post('/payment/subscribe-in-package', data: {
+      final dataBody = <String, dynamic>{
         'package_id': packageId,
         'payment_method': 'online',
-      });
+      };
+      
+      // إضافة increase إذا كان true (فقط عند وجود subscription)
+      if (increase) {
+        dataBody['increase'] = true;
+      }
+      
+      final response = await _apiService.post('/payment/subscribe-in-package', data: dataBody);
 
       return response.fold(
         (failure) => throw failure,

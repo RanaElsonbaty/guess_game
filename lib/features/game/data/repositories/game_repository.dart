@@ -21,6 +21,7 @@ abstract class GameRepository {
   Future<Either<ApiFailure, AssignWinnerResponse>> assignWinner(AssignWinnerRequest request);
   Future<Either<ApiFailure, GameStatisticsResponse>> gameStatistics(int gameId);
   Future<Either<ApiFailure, GameStartResponse>> addRounds(AddRoundsRequest request);
+  Future<Either<ApiFailure, GameStartResponse>> endGame(int gameId);
 }
 
 class GameRepositoryImpl implements GameRepository {
@@ -146,7 +147,12 @@ class GameRepositoryImpl implements GameRepository {
       final response = await _apiService.post(ApiConstants.gamesAddRounds, data: request.toJson());
 
       return response.fold(
-        (failure) => Left(failure),
+        (failure) {
+          if (kDebugMode) {
+            print('❌ /games/add-rounds error: ${failure.message}');
+          }
+          return Left(failure);
+        },
         (success) {
           if (success.statusCode == 200) {
             if (kDebugMode) {
@@ -154,6 +160,11 @@ class GameRepositoryImpl implements GameRepository {
               print(success.data);
             }
             final gameResponse = GameStartResponse.fromJson(success.data);
+            if (kDebugMode) {
+              print('📝 /games/add-rounds API message: ${gameResponse.message}');
+              print('📊 /games/add-rounds success: ${gameResponse.success}');
+              print('🔢 /games/add-rounds code: ${gameResponse.code}');
+            }
             return Right(gameResponse);
           } else {
             return Left(ApiFailure('فشل في إضافة جولات جديدة'));
@@ -161,7 +172,48 @@ class GameRepositoryImpl implements GameRepository {
         },
       );
     } catch (e) {
+      if (kDebugMode) {
+        print('❌ /games/add-rounds exception: $e');
+      }
       return Left(ApiFailure('حدث خطأ أثناء إضافة جولات جديدة: $e'));
+    }
+  }
+
+  @override
+  Future<Either<ApiFailure, GameStartResponse>> endGame(int gameId) async {
+    try {
+      final response = await _apiService.patch('/games/end/$gameId');
+
+      return response.fold(
+        (failure) {
+          if (kDebugMode) {
+            print('❌ /games/end/$gameId error: ${failure.message}');
+          }
+          return Left(failure);
+        },
+        (success) {
+          if (success.statusCode == 200) {
+            if (kDebugMode) {
+              print('🏁 /games/end/$gameId response (raw):');
+              print(success.data);
+            }
+            final gameResponse = GameStartResponse.fromJson(success.data);
+            if (kDebugMode) {
+              print('📝 /games/end/$gameId API message: ${gameResponse.message}');
+              print('📊 /games/end/$gameId success: ${gameResponse.success}');
+              print('🔢 /games/end/$gameId code: ${gameResponse.code}');
+            }
+            return Right(gameResponse);
+          } else {
+            return Left(ApiFailure('فشل في إنهاء اللعبة'));
+          }
+        },
+      );
+    } catch (e) {
+      if (kDebugMode) {
+        print('❌ /games/end/$gameId exception: $e');
+      }
+      return Left(ApiFailure('حدث خطأ أثناء إنهاء اللعبة: $e'));
     }
   }
 }

@@ -74,4 +74,18 @@ class GameStatisticsError extends GameState {
   GameStatisticsError(this.message);
 }
 
+class GameEnding extends GameState {}
+
+class GameEnded extends GameState {
+  final GameStartResponse response;
+
+  GameEnded(this.response);
+}
+
+class GameEndError extends GameState {
+  final String message;
+
+  GameEndError(this.message);
+}
+
 

@@ -195,35 +195,26 @@ class _RoundWinnerViewState extends State<RoundWinnerView> {
     final team1Name = GlobalStorage.team1Name.isNotEmpty ? GlobalStorage.team1Name : 'الفريق الأول';
     final team2Name = GlobalStorage.team2Name.isNotEmpty ? GlobalStorage.team2Name : 'الفريق الثاني';
 
-    return BlocBuilder<GameCubit, GameState>(
-      builder: (context, state) {
-        // Show loading indicator when assigning winner
-        if (state is WinnerAssigning) {
-          return const Scaffold(
-            body: Center(
-              child: CircularProgressIndicator(),
-            ),
-          );
-        }
-
+    return BlocListener<GameCubit, GameState>(
+      listener: (context, state) {
         // Handle error state
         if (state is WinnerAssignError) {
           if (kDebugMode) {
             print('🎯 RoundWinnerView: WinnerAssignError state received: ${state.message}');
           }
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('خطأ: ${state.message}')),
-            );
-          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('خطأ: ${state.message}')),
+          );
         }
+      },
+      child: BlocBuilder<GameCubit, GameState>(
+        builder: (context, state) {
+          if (kDebugMode) {
+            print('🎯 RoundWinnerView: Building main UI');
+          }
 
-        if (kDebugMode) {
-          print('🎯 RoundWinnerView: Building main UI');
-        }
-
-        // Return main UI
-        return Scaffold(
+          // Return main UI (no loading indicator)
+          return Scaffold(
           backgroundColor: Colors.white,
           drawer: const Drawer(),
           body: SafeArea(
@@ -395,7 +386,8 @@ class _RoundWinnerViewState extends State<RoundWinnerView> {
           ),
         );
         },
-      );
+      ),
+    );
   }
 }
 

@@ -24,10 +24,23 @@ class PackagesView extends StatefulWidget {
 }
 
 class _PackagesViewState extends State<PackagesView> with WidgetsBindingObserver {
+  bool _isIncreaseMode = false;
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    
+    // التحقق من arguments عند فتح الصفحة
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final args = ModalRoute.of(context)?.settings.arguments;
+      if (args is Map<String, dynamic>) {
+        _isIncreaseMode = args['increase'] == true;
+        if (_isIncreaseMode) {
+          print('📦 وضع زيادة الاشتراك مفعّل (باقه جديدة نفس الجيم)');
+        }
+      }
+    });
   }
 
   @override
@@ -87,9 +100,39 @@ class _PackagesViewState extends State<PackagesView> with WidgetsBindingObserver
             print('🎯 الاشتراك منتهي الصلاحية - البقاء في صفحة الباقات');
             // البقاء في packages_view
           } else if (remaining > 0) {
-            print('🎯 الاشتراك نشط ولديه أسئلة متبقية - الانتقال إلى LevelsView');
-            if (mounted) {
-              Navigator.of(context).pushReplacementNamed(Routes.level);
+            // إذا كان في وضع increase (باقه جديدة نفس الجيم)، اذهب لصفحة اختيار الفئات
+            if (_isIncreaseMode) {
+              print('🎯 وضع زيادة الاشتراك - الانتقال لصفحة اختيار الفئات');
+              if (mounted) {
+                // الحصول على gameId و teamIds من GlobalStorage
+                final gameArgs = GlobalStorage.lastRouteArguments;
+                final gameId = gameArgs['gameId'] as int? ?? 0;
+                final team1Id = gameArgs['team1Id'] as int? ?? 0;
+                final team2Id = gameArgs['team2Id'] as int? ?? 0;
+                
+                print('📋 بيانات اللعبة للانتقال: gameId=$gameId, team1Id=$team1Id, team2Id=$team2Id');
+                print('📋 أسماء الفرق المحفوظة: team1=${GlobalStorage.team1Name}, team2=${GlobalStorage.team2Name}');
+                
+                // التأكد من تحميل بيانات اللعبة
+                GlobalStorage.loadGameData();
+                
+                Navigator.of(context).pushReplacementNamed(
+                  Routes.teamCategories,
+                  arguments: {
+                    'limit': user.subscription!.limit ?? 4,
+                    'isAddOneCategory': false, // مسموح بأكثر من فئة
+                    'gameId': gameId,
+                    'team1Id': team1Id,
+                    'team2Id': team2Id,
+                    'isSameGamePackage': true, // علامة للتعرف على هذا السايكل
+                  },
+                );
+              }
+            } else {
+              print('🎯 الاشتراك نشط ولديه أسئلة متبقية - الانتقال إلى LevelsView');
+              if (mounted) {
+                Navigator.of(context).pushReplacementNamed(Routes.level);
+              }
             }
           } else {
             print('🎯 الاشتراك نشط لكن انتهت الأسئلة - البقاء في صفحة الباقات');
@@ -112,7 +155,7 @@ class _PackagesViewState extends State<PackagesView> with WidgetsBindingObserver
         ),
       );
 
-      await context.read<PackagesCubit>().subscribeToPackage(package.id);
+      await context.read<PackagesCubit>().subscribeToPackage(package.id, increase: _isIncreaseMode);
 
       final cubit = context.read<PackagesCubit>();
       if (cubit.paymentUrl != null) {

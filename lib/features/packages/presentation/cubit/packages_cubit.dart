@@ -81,10 +81,10 @@ class PackagesCubit extends Cubit<PackagesState> {
   }
 
   /// Subscribe to a package
-  Future<void> subscribeToPackage(int packageId) async {
+  Future<void> subscribeToPackage(int packageId, {bool increase = false}) async {
     emit(PackagesSubscribing());
 
-    final result = await _packagesRepository.subscribeToPackage(packageId);
+    final result = await _packagesRepository.subscribeToPackage(packageId, increase: increase);
 
     result.fold(
       (failure) => emit(PackagesSubscriptionError(failure.message)),

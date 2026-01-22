@@ -164,7 +164,8 @@ class _TeamCategoriesFirstTeamViewState extends State<TeamCategoriesFirstTeamVie
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return SafeArea(
+      child: Scaffold(
       backgroundColor: Colors.white,
       body: Stack(
         children: [
@@ -455,6 +456,7 @@ class _TeamCategoriesFirstTeamViewState extends State<TeamCategoriesFirstTeamVie
 
         ],
       ),
+    ),
     );
   }
 }

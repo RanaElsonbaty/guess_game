@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:guess_game/core/helper_functions/global_storage.dart';
@@ -367,7 +368,8 @@ class _GroupsViewState extends State<GroupsView> {
           print('❌ API Error: ${state.message}');
         }
       },
-      child: Scaffold(
+      child: SafeArea(
+        child: Scaffold(
             backgroundColor: Colors.white,
             drawer: const AppDrawer(),
             body: Stack(
@@ -398,7 +400,7 @@ class _GroupsViewState extends State<GroupsView> {
                           },
                         ),
                       ),
-                      const SizedBox(width: 48),
+                      SizedBox(width: 80.w),
                       SizedBox(
                         width: 210,
                         child: GroupCard(
@@ -413,9 +415,15 @@ class _GroupsViewState extends State<GroupsView> {
                     ],
                   ),
                   const Spacer(),
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: GestureDetector(
+                ],
+              ),
+            ),
+
+            // Start button aligned under the cards row (same as GameLevelView)
+            Positioned(
+              bottom: 24,
+              right: 24.w + math.max(0, ((MediaQuery.sizeOf(context).width - (48.w)) - ((210 * 2 + 80).w)) / 2),
+              child: GestureDetector(
                 onTap: _isStartingGame ? null : () {
                   // طباعة البيانات المختارة
                   print('🎯 الضغط على زر ابدأ');
@@ -536,12 +544,10 @@ class _GroupsViewState extends State<GroupsView> {
                       ),
                     ),
                   ),
-                ],
-              ),
-            ),
               ],
             ),
           ),
-        );
+        ),
+      );
   }
 }

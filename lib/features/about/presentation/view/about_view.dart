@@ -9,7 +9,8 @@ class AboutView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
+    return SafeArea(
+      child: BlocProvider(
       create: (context) => AboutCubit(),
       child: Scaffold(
         backgroundColor: Colors.white,
@@ -159,6 +160,7 @@ class AboutView extends StatelessWidget {
           },
         ),
       ),
+    ),
     );
   }
 }

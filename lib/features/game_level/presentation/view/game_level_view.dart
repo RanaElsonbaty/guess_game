@@ -259,11 +259,11 @@ class _GameLevelViewState extends State<GameLevelView> {
             });
           }
 
-          return Scaffold(
+          return SafeArea(
+            child: Scaffold(
             backgroundColor: Colors.white,
             drawer: const AppDrawer(),
-            body: SafeArea(
-            child: Stack(
+            body: Stack(
               children: [
                 // Compute the same bottom-right alignment as QrcodeView (under the row's right edge).
                 // Kept here (inside build) to avoid nested Builders and keep braces simple.
@@ -470,12 +470,11 @@ class _GameLevelViewState extends State<GameLevelView> {
                 ),
               ],
             ),
-        ),
-      );
-      },
+          ),
+        );
+        },
       ),
-    ),
-    );
+      ));
   }
 
   void _showGameInstructionsDialog(BuildContext context, gameStartResponse) {
@@ -495,12 +494,12 @@ class _GameLevelViewState extends State<GameLevelView> {
             builder: (context, termsState) {
               // الحصول على نص التعليمات الحالي (سيتحدث تلقائياً عند تحميل البيانات)
               String termsText = _getTermsText(context);
-              
+
               // إذا كانت البيانات لا تزال قيد التحميل، اعرض رسالة التحميل
               if (termsState is TermsLoading) {
                 termsText = 'جاري تحميل التعليمات...';
               }
-              
+
               return SubscriptionAlertDialog(
                 title: 'تعليمات',
                 content: termsText,
@@ -513,7 +512,7 @@ class _GameLevelViewState extends State<GameLevelView> {
             },
           ),
         );
-      },
+      }
     );
   }
 

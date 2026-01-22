@@ -24,7 +24,7 @@ class GroupCard extends StatelessWidget {
       clipper: FileClipper(),
       child: Container(
         width: 237.w,
-        height: 240.h,
+        height: 210.h,
         decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,

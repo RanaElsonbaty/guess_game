@@ -2,13 +2,16 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:guess_game/core/helper_functions/extension.dart';
 import 'package:guess_game/core/helper_functions/shared_preferences.dart';
 import 'package:guess_game/core/routing/routes.dart';
+import 'package:guess_game/core/theming/icons.dart';
 import 'package:guess_game/core/theming/colors.dart';
 import 'package:guess_game/core/theming/styles.dart';
 import 'package:guess_game/core/widgets/app_button.dart';
+import 'package:guess_game/core/helper_functions/toast_helper.dart';
 import 'package:guess_game/features/auth/otp/presentation/cubit/otp_cubit.dart';
 import 'package:guess_game/features/levels/presentation/view/widgets/header_shape_painter.dart';
 
@@ -143,12 +146,7 @@ class _OtpVerifyViewState extends State<OtpVerifyView> {
   Future<void> _resendOtp() async {
     // Ensure phone number is not empty
     if (_phoneNumber.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('رقم الهاتف غير موجود'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      ToastHelper.showError(context, 'رقم الهاتف غير موجود');
       return;
     }
     
@@ -205,21 +203,11 @@ class _OtpVerifyViewState extends State<OtpVerifyView> {
                       print('📱 تم تحديث رقم الهاتف إلى: $_phoneNumber');
                       setState(() {}); // تحديث الواجهة
                     }
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(state.response.message),
-                        backgroundColor: AppColors.green,
-                      ),
-                    );
+                    print('✅ API Response: ${state.response.message}');
                     // Restart timer after successful resend
                     _startTimer();
                   } else if (state is OtpVerifySuccess) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(state.response.message),
-                        backgroundColor: AppColors.green,
-                      ),
-                    );
+                    print('✅ API Response: ${state.response.message}');
                     // Navigate to login view through routes
                     Navigator.of(context).pushReplacementNamed(
                       Routes.login,
@@ -233,12 +221,7 @@ class _OtpVerifyViewState extends State<OtpVerifyView> {
                         ? state.message
                         : (state as OtpVerifyError).message;
 
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(errorMessage),
-                        backgroundColor: Colors.red,
-                      ),
-                    );
+                    print('❌ API Error: $errorMessage');
                   }
                 },
                 builder: (context, state) {
@@ -246,7 +229,7 @@ class _OtpVerifyViewState extends State<OtpVerifyView> {
                     child: Center(
                       child: Container(
                         width: 740.w,
-                        height: 400.h,
+                        height: 350.h,
                         margin: EdgeInsets.symmetric(horizontal: 20.w, vertical: 20.h),
                         decoration: BoxDecoration(
                           color: Colors.white.withOpacity(0.9),
@@ -289,20 +272,8 @@ class _OtpVerifyViewState extends State<OtpVerifyView> {
                               top: -15,
                               right: -15,
                               child: GestureDetector(
-                                onTap: () => context.pop(),
-                                child: Container(
-                                  width: 30.w,
-                                  height: 30.h,
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: Icon(
-                                    Icons.close,
-                                    color: AppColors.secondaryColor,
-                                    size: 20.sp,
-                                  ),
-                                ),
+                                onTap: () => context.pushReplacementNamed(Routes.chooseLoginType),
+                                child: SvgPicture.asset(AppIcons.cancel),
                               ),
                             ),
 
@@ -454,8 +425,6 @@ class _OtpVerifyViewState extends State<OtpVerifyView> {
                                       );
                                     },
                                   ),
-
-                                  SizedBox(height: 10.h),
                                 ],
                               ),
                             ),

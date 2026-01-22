@@ -67,22 +67,12 @@ class _LoginEmailViewState extends State<LoginEmailView> {
                       GlobalStorage.saveToken(state.response.data.token);
                       GlobalStorage.saveSubscription(state.response.data.user.subscription);
 
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(state.response.message),
-                          backgroundColor: AppColors.green,
-                        ),
-                      );
+                      print('✅ API Response: ${state.response.message}');
 
                       // Navigate based on subscription status
                       _navigateAfterLogin();
                     } else if (state is LoginEmailError) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(state.message),
-                          backgroundColor: Colors.red,
-                        ),
-                      );
+                      print('❌ API Error: ${state.message}');
                     }
                   },
                   builder: (context, state) {

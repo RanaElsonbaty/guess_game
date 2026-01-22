@@ -11,6 +11,7 @@ import 'package:guess_game/features/game/data/models/update_score_response.dart'
 import 'package:guess_game/core/routing/routes.dart';
 import 'package:guess_game/features/qrcode/presentation/view/widgets/folder_team_image_card.dart';
 import 'package:guess_game/features/qrcode/presentation/view/widgets/game_bottom_right_button.dart';
+import 'package:guess_game/core/widgets/app_drawer.dart';
 import 'package:guess_game/guess_game.dart';
 
 class QrImageView extends StatefulWidget {
@@ -103,7 +104,7 @@ class _QrImageViewState extends State<QrImageView> {
 
     return Scaffold(
       backgroundColor: Colors.white,
-      drawer: const Drawer(),
+      drawer: const AppDrawer(),
       body: SafeArea(
         child: Stack(
           children: [

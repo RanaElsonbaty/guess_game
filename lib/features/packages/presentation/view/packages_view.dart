@@ -14,6 +14,9 @@ import 'package:guess_game/features/packages/presentation/data/models/package.da
 import 'package:guess_game/features/packages/presentation/view/widgets/header_shape_painter.dart';
 import 'package:guess_game/features/packages/presentation/view/widgets/package_card.dart';
 import 'package:guess_game/features/packages/presentation/view/payment_webview.dart';
+import 'package:guess_game/features/qrcode/presentation/view/widgets/game_drawer_icon.dart';
+import 'package:guess_game/core/widgets/app_drawer.dart';
+import 'package:guess_game/core/helper_functions/toast_helper.dart';
 import 'package:shimmer/shimmer.dart';
 
 class PackagesView extends StatefulWidget {
@@ -146,59 +149,12 @@ class _PackagesViewState extends State<PackagesView> with WidgetsBindingObserver
   }
 
   Future<void> _subscribeToPackage(Package package) async {
-    try {
-      // إظهار رسالة تحميل
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('جاري إعداد صفحة الدفع...'),
-          duration: Duration(seconds: 2),
-        ),
-      );
-
+      try {
+      // بدء عملية الاشتراك - BlocListener سيتولى الانتقال إلى صفحة الدفع مباشرة
       await context.read<PackagesCubit>().subscribeToPackage(package.id, increase: _isIncreaseMode);
-
-      final cubit = context.read<PackagesCubit>();
-      if (cubit.paymentUrl != null) {
-        final url = cubit.paymentUrl!;
-
-        // Log the payment URL and subscription status
-        print('🎯 Payment URL received: $url');
-        print('📊 Subscription status after payment:');
-        print('  - GlobalStorage.subscription: ${GlobalStorage.subscription}');
-        print('  - Subscription != null: ${GlobalStorage.subscription != null}');
-        if (GlobalStorage.subscription != null) {
-          print('  - Subscription details:');
-          print('    - ID: ${GlobalStorage.subscription!.id}');
-          print('    - Status: ${GlobalStorage.subscription!.status}');
-          print('    - Limit: ${GlobalStorage.subscription!.limit}');
-        }
-
-        // فتح صفحة الدفع
-        print('🔗 فتح صفحة الدفع: $url');
-
-        if (mounted) {
-          // Await return from payment then reload packages so the list is not empty.
-          await Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (context) => PaymentWebView(url: url),
-            ),
-          );
-          if (!mounted) return;
-          await context.read<PackagesCubit>().loadPackages();
-          // Also refresh subscription state after return.
-          await _checkSubscriptionAndNavigate();
-        }
-
-        return;
-      }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('حدث خطأ في الاشتراك: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        ToastHelper.showError(context, 'حدث خطأ في الاشتراك: $e');
       }
     }
   }
@@ -208,145 +164,180 @@ class _PackagesViewState extends State<PackagesView> with WidgetsBindingObserver
     return BlocListener<PackagesCubit, PackagesState>(
       listener: (context, state) {
         if (state is PackagesSubscriptionError) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('خطأ في الاشتراك: ${state.message}'),
-              backgroundColor: Colors.red,
-            ),
-          );
+          print('❌ API Error: ${state.message}');
+        } else if (state is PackagesSubscribed) {
+          // الانتقال مباشرة إلى صفحة الدفع عند نجاح الاشتراك
+          final url = state.paymentUrl;
+          print('🎯 Payment URL received: $url');
+          print('🔗 فتح صفحة الدفع مباشرة: $url');
+          
+          if (mounted) {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => PaymentWebView(url: url),
+              ),
+            ).then((_) {
+              // بعد العودة من صفحة الدفع
+              if (mounted) {
+                context.read<PackagesCubit>().loadPackages();
+                _checkSubscriptionAndNavigate();
+              }
+            });
+          }
         }
       },
-      child: Scaffold(
-        backgroundColor: Colors.white,
-        body: Center(
-          child: Container(
-            width: 740.w,
-            height: 280.h,
-            decoration: BoxDecoration(
-              color: Colors.white,
-            ),
-            child: Stack(
-              clipBehavior: Clip.none,
-              children: [
-                /// Background gradient
-                Container(
+      child: SafeArea(
+        child: Scaffold(
+          backgroundColor: Colors.white,
+          drawer: const AppDrawer(),
+          body: Stack(
+            children: [
+              // Drawer icon (top left of main page)
+              Positioned(
+                top: 6.h,
+                left: 6.w,
+                child: GameDrawerIcon(),
+              ),
+              // Main content - positioned to create space from drawer
+              Positioned(
+                top: 75.h, // نزله شوية للأسفل
+                left: 70.w, // إبعاده عن الـ drawer ووضعه يمين شوية
+                right: 20.w,
+                child: Container(
+                  width: 740.w,
+                  height: 255.h,
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        Color(0XFF8e8e8e),
-                        AppColors.black.withOpacity(.2),
-                        Colors.white.withOpacity(.5),
-                      ],
-                    ),
+                    color: Colors.white,
                   ),
-                ),
-                /// Header (painted) INSIDE main container
-                Positioned(
-                  top: -23,
-                  left: 0,
-                  child: SizedBox(
-                    width: 260.w,
-                    height: 80.h,
-                    child: CustomPaint(
-                      painter: HeaderShapePainter(),
-                    ),
-                  ),
-                ),
-                Positioned(
-                  top: -13,
-                  left: 25,
-                  child: Text(
-                    'الباقات',
-                    style: TextStyles.font14Secondary700Weight,
-                  ),
-                ),
-                /// Close button (top right of main container)
-                Positioned(
-                  top: -15,
-                  right: -15,
-                  child: SvgPicture.asset(AppIcons.cancel),
-                ),
-                /// Packages container
-                Positioned(
-                  top: 18.h,
-                  left: 10.w,
-                  right: 10.w,
-                  bottom: 20.h,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: const Color(0XFF231F20).withOpacity(.3),
-                    ),
-                    child: BlocBuilder<PackagesCubit, PackagesState>(
-                      builder: (context, state) {
-                        if (state is PackagesError) {
-                          return Center(
-                            child: Text(
-                              'خطأ في تحميل الباقات: ${state.message}',
-                              style: TextStyles.font14Secondary700Weight.copyWith(
-                                color: Colors.red,
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                          );
-                        } else {
-                          // Show shimmer or real packages
-                          final isLoading = state is PackagesLoading;
-                          final packages = state is PackagesLoaded ? state.packages : [];
-
-                          if (isLoading) {
-                            return Shimmer.fromColors(
-                              baseColor: Colors.grey[300]!,
-                              highlightColor: Colors.grey[100]!,
-                              child: ListView.builder(
-                                scrollDirection: Axis.horizontal,
-                                physics: const BouncingScrollPhysics(),
-                                padding: EdgeInsets.symmetric(horizontal: 12.w),
-                                itemCount: 4,
-                                itemBuilder: (context, index) {
-                                  return Padding(
-                                    padding: EdgeInsets.symmetric(
-                                      horizontal: 8.w,
-                                      vertical: 10.h, // تقليل الـ padding العمودي
+                  child: Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      /// Background gradient
+                      Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              Color(0XFF8e8e8e),
+                              AppColors.black.withOpacity(.2),
+                              Colors.white.withOpacity(.5),
+                            ],
+                          ),
+                        ),
+                      ),
+                      /// Header (painted) INSIDE main container
+                      Positioned(
+                        top: -23,
+                        left: 0,
+                        child: SizedBox(
+                          width: 260.w,
+                          height: 80.h,
+                          child: CustomPaint(
+                            painter: HeaderShapePainter(),
+                          ),
+                        ),
+                      ),
+                      Positioned(
+                        top: -13,
+                        left: 25,
+                        child: Text(
+                          'الباقات',
+                          style: TextStyles.font14Secondary700Weight,
+                        ),
+                      ),
+                      /// Close button (top right of main container)
+                      Positioned(
+                        top: -15,
+                        right: -15,
+                        child: SvgPicture.asset(AppIcons.cancel),
+                      ),
+                      /// Packages container
+                      Positioned(
+                        top: 18.h,
+                        left: 10.w,
+                        right: 10.w,
+                        bottom: 0.h,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: const Color(0XFF231F20).withOpacity(.3),
+                          ),
+                          child: BlocBuilder<PackagesCubit, PackagesState>(
+                            builder: (context, state) {
+                              final cubit = context.read<PackagesCubit>();
+                              
+                              if (state is PackagesError) {
+                                return Center(
+                                  child: Text(
+                                    'خطأ في تحميل الباقات: ${state.message}',
+                                    style: TextStyles.font14Secondary700Weight.copyWith(
+                                      color: Colors.red,
                                     ),
-                                    child: const PackageCard(
-                                      title: 'تحميل...',
-                                    ),
-                                  );
-                                },
-                              ),
-                            );
-                          } else {
-                            return ListView.builder(
-                              scrollDirection: Axis.horizontal,
-                              physics: const BouncingScrollPhysics(),
-                              padding: EdgeInsets.symmetric(horizontal: 12.w),
-                              itemCount: packages.length,
-                              itemBuilder: (context, index) {
-                                final package = packages[index];
-
-                                return Padding(
-                                  padding: EdgeInsets.symmetric(
-                                    horizontal: 8.w,
-                                    vertical: 18.h, // تقليل الـ padding العمودي بسبب زيادة ارتفاع الكارت
-                                  ),
-                                  child: PackageCard(
-                                    package: package,
-                                    isSubscriptionLocked: false, // الكروت في صفحة الباقات دائماً مفتوحة - مطلوب من المستخدم
-                                    onPressed: () => _subscribeToPackage(package),
+                                    textAlign: TextAlign.center,
                                   ),
                                 );
-                              },
-                            );
-                          }
-                        }
-                      },
+                              } else {
+                                // Show shimmer or real packages
+                                // استخدام cubit.packages للحفاظ على الباقات حتى عند الاشتراك
+                                final isLoading = state is PackagesLoading;
+                                final packages = cubit.packages.isNotEmpty 
+                                    ? cubit.packages 
+                                    : (state is PackagesLoaded ? state.packages : []);
+
+                                if (isLoading && packages.isEmpty) {
+                                  return Shimmer.fromColors(
+                                    baseColor: Colors.grey[300]!,
+                                    highlightColor: Colors.grey[100]!,
+                                    child: ListView.builder(
+                                      scrollDirection: Axis.horizontal,
+                                      physics: const BouncingScrollPhysics(),
+                                      padding: EdgeInsets.symmetric(horizontal: 12.w),
+                                      itemCount: 4,
+                                      itemBuilder: (context, index) {
+                                        return Padding(
+                                          padding: EdgeInsets.symmetric(
+                                            horizontal: 8.w,
+                                            vertical: 10.h, // تقليل الـ padding العمودي
+                                          ),
+                                          child: const PackageCard(
+                                            title: 'تحميل...',
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  );
+                                } else {
+                                  return ListView.builder(
+                                    scrollDirection: Axis.horizontal,
+                                    physics: const BouncingScrollPhysics(),
+                                    padding: EdgeInsets.symmetric(horizontal: 12.w),
+                                    itemCount: packages.length,
+                                    itemBuilder: (context, index) {
+                                      final package = packages[index];
+
+                                      return Padding(
+                                        padding: EdgeInsets.symmetric(
+                                          horizontal: 8.w,
+                                          vertical: 18.h, // تقليل الـ padding العمودي بسبب زيادة ارتفاع الكارت
+                                        ),
+                                        child: PackageCard(
+                                          package: package,
+                                          isSubscriptionLocked: false, // الكروت في صفحة الباقات دائماً مفتوحة - مطلوب من المستخدم
+                                          onPressed: () => _subscribeToPackage(package),
+                                        ),
+                                      );
+                                    },
+                                  );
+                                }
+                              }
+                            },
+                      ),
                     ),
+                        )],
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),

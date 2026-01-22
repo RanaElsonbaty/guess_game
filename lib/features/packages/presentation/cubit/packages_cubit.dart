@@ -21,12 +21,17 @@ class PackagesError extends PackagesState {
   PackagesError(this.message);
 }
 
-class PackagesSubscribing extends PackagesState {}
+class PackagesSubscribing extends PackagesState {
+  final List<Package> packages;
+  
+  PackagesSubscribing(this.packages);
+}
 
 class PackagesSubscribed extends PackagesState {
   final String paymentUrl;
+  final List<Package> packages;
 
-  PackagesSubscribed(this.paymentUrl);
+  PackagesSubscribed(this.paymentUrl, this.packages);
 }
 
 class PackagesSubscriptionError extends PackagesState {
@@ -59,6 +64,10 @@ class PackagesCubit extends Cubit<PackagesState> {
   List<Package> get packages {
     if (state is PackagesLoaded) {
       return (state as PackagesLoaded).packages;
+    } else if (state is PackagesSubscribing) {
+      return (state as PackagesSubscribing).packages;
+    } else if (state is PackagesSubscribed) {
+      return (state as PackagesSubscribed).packages;
     }
     return [];
   }
@@ -82,13 +91,15 @@ class PackagesCubit extends Cubit<PackagesState> {
 
   /// Subscribe to a package
   Future<void> subscribeToPackage(int packageId, {bool increase = false}) async {
-    emit(PackagesSubscribing());
+    // الاحتفاظ بالباقات الحالية عند الاشتراك
+    final currentPackages = packages;
+    emit(PackagesSubscribing(currentPackages));
 
     final result = await _packagesRepository.subscribeToPackage(packageId, increase: increase);
 
     result.fold(
       (failure) => emit(PackagesSubscriptionError(failure.message)),
-      (paymentUrl) => emit(PackagesSubscribed(paymentUrl)),
+      (paymentUrl) => emit(PackagesSubscribed(paymentUrl, currentPackages)),
     );
   }
 

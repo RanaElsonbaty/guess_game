@@ -30,7 +30,7 @@ class PackageCard extends StatelessWidget {
       children: [
         Container(
           width: 160.w,
-          height: 270.h, // تقليل الارتفاع قليلاً بسبب تصغير الصورة
+          height: 320.h, // زيادة الارتفاع
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: [Color(0xFF79899f), Color(0xFF8b929b), Color(0xFF79899f)],
@@ -41,7 +41,7 @@ class PackageCard extends StatelessWidget {
             children: [
               // Title
               Container(
-                height: 40,
+                height: 40.h,
                 width: double.infinity,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(

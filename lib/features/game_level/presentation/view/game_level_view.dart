@@ -14,9 +14,11 @@ import 'package:guess_game/features/game/data/models/update_point_plan_request.d
 import 'package:guess_game/features/game/presentation/cubit/game_cubit.dart';
 import 'package:guess_game/features/game_level/presentation/view/widgets/game_level_card.dart';
 import 'package:guess_game/core/widgets/subscription_alert_dialog.dart';
+import 'package:guess_game/core/widgets/app_drawer.dart';
 import 'package:guess_game/features/terms/presentation/cubit/terms_cubit.dart';
 import 'package:guess_game/features/notifications/presentation/cubit/notification_cubit.dart';
 import 'package:guess_game/features/qrcode/presentation/view/widgets/game_bottom_right_button.dart';
+import 'package:guess_game/core/helper_functions/toast_helper.dart';
 import 'package:guess_game/features/levels/presentation/cubit/categories_cubit.dart';
 import 'package:guess_game/features/levels/presentation/data/models/category.dart' as category_model;
 import 'package:guess_game/guess_game.dart';
@@ -240,14 +242,7 @@ class _GameLevelViewState extends State<GameLevelView> {
               );
             }
           } else if (state is PointPlanUpdateError) {
-            print('❌ تم استلام PointPlanUpdateError: ${state.message}');
-            // عرض رسالة خطأ
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(state.message),
-                backgroundColor: Colors.red,
-              ),
-            );
+            print('❌ API Error: ${state.message}');
           } else if (state is PointPlanUpdating) {
             print('🔄 تم استلام PointPlanUpdating - جاري التحديث');
           }
@@ -266,7 +261,7 @@ class _GameLevelViewState extends State<GameLevelView> {
 
           return Scaffold(
             backgroundColor: Colors.white,
-            drawer: const Drawer(),
+            drawer: const AppDrawer(),
             body: SafeArea(
             child: Stack(
               children: [
@@ -345,12 +340,7 @@ class _GameLevelViewState extends State<GameLevelView> {
                     onTap: () {
                       // التحقق من اختيار المستوى لكلا الفريقين
                       if (team1Level == null || team2Level == null) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('يرجى اختيار مستوى لكلا الفريقين'),
-                            backgroundColor: Colors.red,
-                          ),
-                        );
+                        ToastHelper.showError(context, 'يرجى اختيار مستوى لكلا الفريقين');
                         return;
                       }
 

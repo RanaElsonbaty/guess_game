@@ -17,6 +17,7 @@ import 'package:guess_game/features/levels/presentation/view/widgets/header_shap
 import 'package:guess_game/features/qrcode/presentation/view/widgets/score_medal_box.dart';
 import 'package:guess_game/features/qrcode/presentation/view/widgets/game_bottom_right_button.dart';
 import 'package:guess_game/features/qrcode/presentation/view/widgets/game_drawer_icon.dart';
+import 'package:guess_game/core/widgets/app_drawer.dart';
 import 'package:guess_game/guess_game.dart';
 
 class GameWinnerView extends StatefulWidget {
@@ -196,7 +197,7 @@ class _GameWinnerViewState extends State<GameWinnerView> {
 
     return Scaffold(
       backgroundColor: Colors.white,
-      drawer: const Drawer(),
+      drawer: const AppDrawer(),
       body: SafeArea(
         child: BlocBuilder<GameCubit, GameState>(
           builder: (context, state) {

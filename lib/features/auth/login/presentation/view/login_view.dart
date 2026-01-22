@@ -52,22 +52,12 @@ class _LoginViewState extends State<LoginView> {
               GlobalStorage.saveToken(state.response.data.token);
               GlobalStorage.saveSubscription(state.response.data.user.subscription);
 
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(state.response.message),
-                  backgroundColor: AppColors.green,
-                ),
-              );
+              print('✅ API Response: ${state.response.message}');
 
               // Navigate to appropriate screen based on subscription
               _navigateAfterLogin();
             } else if (state is LoginOtpError) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(state.message),
-                  backgroundColor: Colors.red,
-                ),
-              );
+              print('❌ API Error: ${state.message}');
               // Go back to OTP screen on error
               Navigator.of(context).pop();
             }

@@ -12,6 +12,7 @@ import 'package:guess_game/features/levels/presentation/cubit/categories_cubit.d
 import 'package:guess_game/features/levels/presentation/view/widgets/category_card.dart';
 import 'package:guess_game/features/levels/presentation/view/widgets/header_shape_painter.dart';
 import 'package:shimmer/shimmer.dart';
+import 'package:guess_game/core/helper_functions/toast_helper.dart';
 
 class TeamCategoriesFirstTeamView extends StatefulWidget {
   final int limit;
@@ -378,12 +379,7 @@ class _TeamCategoriesFirstTeamViewState extends State<TeamCategoriesFirstTeamVie
 
                 // التحقق من أن الفريق الأول اختار فئة واحدة على الأقل
                 if (team1Count == 0) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('يجب على الفريق الأول اختيار فئة واحدة على الأقل'),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
+                  ToastHelper.showError(context, 'يجب على الفريق الأول اختيار فئة واحدة على الأقل');
                   return;
                 }
 

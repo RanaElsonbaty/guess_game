@@ -12,6 +12,7 @@ import 'package:guess_game/features/levels/presentation/cubit/categories_cubit.d
 import 'package:guess_game/features/levels/presentation/view/widgets/category_card.dart';
 import 'package:guess_game/features/levels/presentation/view/widgets/header_shape_painter.dart';
 import 'package:shimmer/shimmer.dart';
+import 'package:guess_game/core/helper_functions/toast_helper.dart';
 
 class TeamCategoriesSecondTeamView extends StatefulWidget {
   final int limit;
@@ -101,12 +102,7 @@ class _TeamCategoriesSecondTeamViewState extends State<TeamCategoriesSecondTeamV
           
           // التحقق من أن العدد لن يتجاوز عدد الفريق الأول
           if (newCount > team1Count) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('يجب أن يكون عدد الفئات مساوياً للفريق الأول ($team1Count فئة)'),
-                backgroundColor: Colors.orange,
-              ),
-            );
+            ToastHelper.showWarning(context, 'يجب أن يكون عدد الفئات مساوياً للفريق الأول ($team1Count فئة)');
             return;
           }
           
@@ -374,22 +370,12 @@ class _TeamCategoriesSecondTeamViewState extends State<TeamCategoriesSecondTeamV
 
                 // التحقق من أن كل فريق اختار فئة واحدة على الأقل
                 if (team1Count == 0) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('يجب على الفريق الأول اختيار فئة واحدة على الأقل'),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
+                  ToastHelper.showError(context, 'يجب على الفريق الأول اختيار فئة واحدة على الأقل');
                   return;
                 }
 
                 if (team2Count == 0) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('يجب على الفريق الثاني اختيار فئة واحدة على الأقل'),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
+                  ToastHelper.showError(context, 'يجب على الفريق الثاني اختيار فئة واحدة على الأقل');
                   return;
                 }
 
@@ -405,34 +391,19 @@ class _TeamCategoriesSecondTeamViewState extends State<TeamCategoriesSecondTeamV
                   
                   // التحقق من أن العدد متساوي
                   if (team1Count != team2Count) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('يجب أن يكون عدد الفئات متساوياً بين الفريقين (الفريق الأول: $team1Count، الفريق الثاني: $team2Count)'),
-                        backgroundColor: Colors.red,
-                      ),
-                    );
+                    ToastHelper.showError(context, 'يجب أن يكون عدد الفئات متساوياً بين الفريقين (الفريق الأول: $team1Count، الفريق الثاني: $team2Count)');
                     return;
                   }
 
                   // التحقق من أن المجموع زوجي (إذا كان العدد متساوي، فالمجموع دائماً زوجي)
                   if (totalCount % 2 != 0) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('المجموع الكلي للفئات يجب أن يكون زوجياً (حالياً: $totalCount)'),
-                        backgroundColor: Colors.red,
-                      ),
-                    );
+                    ToastHelper.showError(context, 'المجموع الكلي للفئات يجب أن يكون زوجياً (حالياً: $totalCount)');
                     return;
                   }
 
                   // التحقق من أن المجموع على الأقل 2
                   if (totalCount < 2) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('المجموع الكلي للفئات يجب أن يكون على الأقل 2'),
-                        backgroundColor: Colors.red,
-                      ),
-                    );
+                    ToastHelper.showError(context, 'المجموع الكلي للفئات يجب أن يكون على الأقل 2');
                     return;
                   }
                 }

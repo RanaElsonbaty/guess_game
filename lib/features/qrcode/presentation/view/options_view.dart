@@ -9,9 +9,11 @@ import 'package:guess_game/core/theming/icons.dart';
 import 'package:guess_game/core/theming/styles.dart';
 import 'package:guess_game/features/auth/login/presentation/cubit/logout_cubit.dart';
 import 'package:guess_game/core/widgets/subscription_alert_dialog.dart';
+import 'package:guess_game/core/helper_functions/toast_helper.dart';
 import 'package:guess_game/features/levels/presentation/view/widgets/header_shape_painter.dart';
 import 'package:guess_game/features/qrcode/presentation/view/widgets/game_drawer_icon.dart';
 import 'package:guess_game/features/qrcode/presentation/view/widgets/yellow_pill_button.dart';
+import 'package:guess_game/core/widgets/app_drawer.dart';
 import 'package:guess_game/core/injection/service_locator.dart';
 import 'package:guess_game/features/auth/login/presentation/cubit/auth_cubit.dart';
 import 'package:guess_game/features/game/presentation/cubit/game_cubit.dart';
@@ -101,12 +103,6 @@ class _OptionsViewState extends State<OptionsView> {
     return const {};
   }
 
-  void _comingSoon(BuildContext context) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('قريباً')),
-    );
-  }
-
   void _showEndGameDialog(BuildContext context, int gameId) {
     showDialog(
       context: context,
@@ -125,12 +121,7 @@ class _OptionsViewState extends State<OptionsView> {
                 );
               } else if (state is GameEndError) {
                 Navigator.of(dialogContext).pop();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('خطأ في إنهاء اللعبة: ${state.message}'),
-                    backgroundColor: Colors.red,
-                  ),
-                );
+                print('❌ API Error: ${state.message}');
               }
             },
             builder: (context, state) {
@@ -171,24 +162,20 @@ class _OptionsViewState extends State<OptionsView> {
     return BlocConsumer<LogoutCubit, LogoutState>(
       listener: (context, state) {
         if (state is LogoutSuccess) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(state.response.message)),
-          );
+          print('✅ API Response: ${state.response.message}');
           Navigator.of(context).pushNamedAndRemoveUntil(
             Routes.intro,
             (route) => false,
           );
         } else if (state is LogoutError) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(state.message)),
-          );
+          print('❌ API Error: ${state.message}');
         }
       },
       builder: (context, state) {
         final isLoading = state is LogoutLoading;
         return Scaffold(
       backgroundColor: Colors.white,
-      drawer: const Drawer(),
+      drawer: const AppDrawer(),
       body: SafeArea(
         child: Stack(
           children: [
@@ -275,12 +262,7 @@ class _OptionsViewState extends State<OptionsView> {
                                         if (gameId > 0) {
                                           _showEndGameDialog(context, gameId);
                                         } else {
-                                          ScaffoldMessenger.of(context).showSnackBar(
-                                            const SnackBar(
-                                              content: Text('لا يمكن تحديد معرف اللعبة'),
-                                              backgroundColor: Colors.red,
-                                            ),
-                                          );
+                                          ToastHelper.showError(context, 'لا يمكن تحديد معرف اللعبة');
                                         }
                                       },
                                       child: Text(

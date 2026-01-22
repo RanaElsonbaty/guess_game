@@ -14,6 +14,8 @@ import 'package:guess_game/features/game/data/models/update_score_request.dart';
 import 'package:guess_game/features/game/presentation/cubit/game_cubit.dart';
 import 'package:guess_game/features/qrcode/presentation/view/widgets/folder_team_qr_card.dart';
 import 'package:guess_game/features/qrcode/presentation/view/widgets/game_bottom_right_button.dart';
+import 'package:guess_game/core/widgets/app_drawer.dart';
+import 'package:guess_game/core/helper_functions/toast_helper.dart';
 import 'package:guess_game/guess_game.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -118,7 +120,7 @@ class _QrcodeViewState extends State<QrcodeView> {
 
     return Scaffold(
       backgroundColor: Colors.white,
-      drawer: const Drawer(),
+      drawer: const AppDrawer(),
       body: SafeArea(
         child: Stack(
           children: [
@@ -245,9 +247,7 @@ class _QrcodeViewState extends State<QrcodeView> {
   }) async {
     final updateResp = updatePointPlanResponse;
     if (updateResp == null || team01RoundData == null || team02RoundData == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('بيانات اللعبة غير مكتملة')),
-      );
+      ToastHelper.showError(context, 'بيانات اللعبة غير مكتملة');
       return;
     }
 
@@ -274,9 +274,7 @@ class _QrcodeViewState extends State<QrcodeView> {
       if (!mounted) return;
 
       if (scoreResponse == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('فشل تحديث السكور')),
-        );
+        ToastHelper.showError(context, 'فشل تحديث السكور');
         return;
       }
 

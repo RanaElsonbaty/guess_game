@@ -60,24 +60,14 @@ class _OtpViewState extends State<OtpView> {
                 child: BlocConsumer<OtpCubit, OtpState>(
                   listener: (context, state) {
                     if (state is OtpGenerateSuccess) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(state.response.message),
-                          backgroundColor: Colors.green,
-                        ),
-                      );
+                      print('✅ API Response: ${state.response.message}');
                       // الانتقال لصفحة التحقق من OTP
                       context.pushReplacementNamed(
                         Routes.otpVerify,
                         argument: state.phone,
                       );
                     } else if (state is OtpGenerateError) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(state.message),
-                          backgroundColor: Colors.red,
-                        ),
-                      );
+                      print('❌ API Error: ${state.message}');
                     }
                   },
                   builder: (context, state) {

@@ -5,11 +5,15 @@ import 'package:guess_game/core/injection/service_locator.dart';
 import 'package:guess_game/core/routing/routes.dart';
 import 'package:guess_game/core/theming/colors.dart';
 import 'package:guess_game/core/theming/styles.dart';
+import 'package:guess_game/core/helper_functions/toast_helper.dart';
 import 'package:guess_game/features/game/data/models/game_start_request.dart';
 import 'package:guess_game/features/game/data/models/game_start_response.dart';
 import 'package:guess_game/features/game/presentation/cubit/add_one_round_cubit.dart';
 import 'package:guess_game/features/game/presentation/cubit/game_cubit.dart';
 import 'package:guess_game/core/widgets/group_card.dart';
+import 'package:guess_game/features/qrcode/presentation/view/widgets/game_drawer_icon.dart';
+import 'package:guess_game/core/widgets/app_drawer.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class GroupsView extends StatefulWidget {
   const GroupsView({super.key});
@@ -56,24 +60,14 @@ class _GroupsViewState extends State<GroupsView> {
     // التحقق من وجود البيانات المطلوبة
     if (GlobalStorage.team1Categories.isEmpty || GlobalStorage.team2Categories.isEmpty) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('يجب اختيار الفئات لكلا الفريقين أولاً'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        ToastHelper.showError(context, 'يجب اختيار الفئات لكلا الفريقين أولاً');
       }
       return;
     }
 
     if (GlobalStorage.team1Name.isEmpty || GlobalStorage.team2Name.isEmpty) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('يجب إدخال أسماء الفرق'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        ToastHelper.showError(context, 'يجب إدخال أسماء الفرق');
       }
       return;
     }
@@ -109,13 +103,7 @@ class _GroupsViewState extends State<GroupsView> {
           setState(() {
             _isStartingGame = false;
           });
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('✅ تم بدء اللعبة بنجاح!'),
-              backgroundColor: Colors.green,
-              duration: Duration(seconds: 2),
-            ),
-          );
+          ToastHelper.showSuccess(context, '✅ تم بدء اللعبة بنجاح!');
           // حفظ gameStartResponse في GlobalStorage للاستعادة
           GlobalStorage.lastGameStartResponse = gameState.response;
           await GlobalStorage.saveGameStartResponse(gameState.response);
@@ -135,12 +123,7 @@ class _GroupsViewState extends State<GroupsView> {
           setState(() {
             _isStartingGame = false;
           });
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(gameState.message),
-              backgroundColor: Colors.red,
-            ),
-          );
+          ToastHelper.showError(context, gameState.message);
         }
       }
     } catch (e) {
@@ -149,12 +132,7 @@ class _GroupsViewState extends State<GroupsView> {
         setState(() {
           _isStartingGame = false;
         });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('❌ فشل في بدء اللعبة: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        ToastHelper.showError(context, '❌ فشل في بدء اللعبة: $e');
       }
     }
   }
@@ -175,12 +153,7 @@ class _GroupsViewState extends State<GroupsView> {
     if (GlobalStorage.team1Categories.length != 1 || GlobalStorage.team2Categories.length != 1) {
       if (!mounted) return;
       setState(() => _isStartingGame = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('مسموح لكل فريق إضافة فئة واحدة فقط'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      ToastHelper.showError(context, 'مسموح لكل فريق إضافة فئة واحدة فقط');
       return;
     }
 
@@ -210,12 +183,7 @@ class _GroupsViewState extends State<GroupsView> {
     if (gameId == 0 || team1Id == 0 || team2Id == 0) {
       if (!mounted) return;
       setState(() => _isStartingGame = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('لا يمكن تحديد بيانات اللعبة لإضافة جولة جديدة'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      ToastHelper.showError(context, 'لا يمكن تحديد بيانات اللعبة لإضافة جولة جديدة');
       return;
     }
 
@@ -241,36 +209,21 @@ class _GroupsViewState extends State<GroupsView> {
     if (team1Count == 0 || team2Count == 0) {
       if (!mounted) return;
       setState(() => _isStartingGame = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('يجب على كل فريق اختيار فئة واحدة على الأقل'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      ToastHelper.showError(context, 'يجب على كل فريق اختيار فئة واحدة على الأقل');
       return;
     }
 
     if (team1Count != team2Count) {
       if (!mounted) return;
       setState(() => _isStartingGame = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('يجب أن يكون عدد الفئات متساوياً بين الفريقين (الفريق الأول: $team1Count، الفريق الثاني: $team2Count)'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      ToastHelper.showError(context, 'يجب أن يكون عدد الفئات متساوياً بين الفريقين (الفريق الأول: $team1Count، الفريق الثاني: $team2Count)');
       return;
     }
 
     if (totalCount % 2 != 0) {
       if (!mounted) return;
       setState(() => _isStartingGame = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('المجموع الكلي للفئات يجب أن يكون زوجياً (حالياً: $totalCount)'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      ToastHelper.showError(context, 'المجموع الكلي للفئات يجب أن يكون زوجياً (حالياً: $totalCount)');
       return;
     }
 
@@ -311,12 +264,7 @@ class _GroupsViewState extends State<GroupsView> {
     if (gameId == 0 || team1Id == 0 || team2Id == 0) {
       if (!mounted) return;
       setState(() => _isStartingGame = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('لا يمكن تحديد بيانات اللعبة لإضافة جولات جديدة'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      ToastHelper.showError(context, 'لا يمكن تحديد بيانات اللعبة لإضافة جولات جديدة');
       return;
     }
 
@@ -404,13 +352,7 @@ class _GroupsViewState extends State<GroupsView> {
         if (state is AddOneRoundSuccess) {
           if (!mounted) return;
           setState(() => _isStartingGame = false);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('✅ ${state.response.message}'),
-              backgroundColor: Colors.green,
-              duration: const Duration(seconds: 2),
-            ),
-          );
+          print('✅ API Response: ${state.response.message}');
           Navigator.of(context).pushReplacementNamed(
             Routes.gameLevel,
             arguments: {
@@ -422,18 +364,23 @@ class _GroupsViewState extends State<GroupsView> {
         } else if (state is AddOneRoundError) {
           if (!mounted) return;
           setState(() => _isStartingGame = false);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(state.message),
-              backgroundColor: Colors.red,
-            ),
-          );
+          print('❌ API Error: ${state.message}');
         }
       },
       child: Scaffold(
             backgroundColor: Colors.white,
-            body: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 60),
+            drawer: const AppDrawer(),
+            body: Stack(
+              children: [
+                // Drawer icon (top left)
+                Positioned(
+                  top: 6.h,
+                  left: 6.w,
+                  child: GameDrawerIcon(),
+                ),
+                // Main content
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 60),
               child: Column(
                 children: [
                   Row(
@@ -481,23 +428,13 @@ class _GroupsViewState extends State<GroupsView> {
                   // التحقق من أن أسماء الفرق مكتوبة
                   if (_team1Controller.text.trim().isEmpty ||
                       _team2Controller.text.trim().isEmpty) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('يرجى إدخال أسماء الفرق الاثنين'),
-                        backgroundColor: Colors.red,
-                      ),
-                    );
+                    ToastHelper.showError(context, 'يرجى إدخال أسماء الفرق الاثنين');
                     return;
                   }
 
                   // التحقق من وجود فئات مختارة
                   if (_team1Categories.isEmpty || _team2Categories.isEmpty) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('يرجى اختيار الفئات لكلا الفريقين'),
-                        backgroundColor: Colors.red,
-                      ),
-                    );
+                    ToastHelper.showError(context, 'يرجى اختيار الفئات لكلا الفريقين');
                     return;
                   }
 
@@ -535,12 +472,7 @@ class _GroupsViewState extends State<GroupsView> {
 
                   // التحقق من وجود أسماء الفرق (خاصة في حالة isSameGamePackageFlow)
                   if (GlobalStorage.team1Name.isEmpty || GlobalStorage.team2Name.isEmpty) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('يجب إدخال أسماء الفرق'),
-                        backgroundColor: Colors.red,
-                      ),
-                    );
+                    ToastHelper.showError(context, 'يجب إدخال أسماء الفرق');
                     return;
                   }
 
@@ -607,7 +539,9 @@ class _GroupsViewState extends State<GroupsView> {
                 ],
               ),
             ),
+              ],
+            ),
           ),
-    );
+        );
   }
 }

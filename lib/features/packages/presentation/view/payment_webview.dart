@@ -6,6 +6,7 @@ import 'package:guess_game/core/helper_functions/global_storage.dart';
 import 'package:guess_game/core/injection/service_locator.dart';
 import 'package:guess_game/core/routing/routes.dart';
 import 'package:guess_game/features/auth/login/presentation/cubit/auth_cubit.dart';
+import 'package:guess_game/core/helper_functions/toast_helper.dart';
 
 class PaymentWebView extends StatefulWidget {
   final String url;
@@ -65,13 +66,7 @@ class _PaymentWebViewState extends State<PaymentWebView> {
 
   void _showSuccessAndNavigate() async {
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('✅ تم إكمال الدفع بنجاح! سيتم توجيهك لصفحة اختيار الفئات...'),
-          backgroundColor: Colors.green,
-          duration: Duration(seconds: 3),
-        ),
-      );
+      ToastHelper.showSuccess(context, '✅ تم إكمال الدفع بنجاح! سيتم توجيهك لصفحة اختيار الفئات...');
 
       try {
         // تحديث بيانات المستخدم من API بعد الدفع الناجح

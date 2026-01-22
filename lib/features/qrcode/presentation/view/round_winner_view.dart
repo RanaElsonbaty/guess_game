@@ -14,6 +14,8 @@ import 'package:guess_game/features/game/data/models/update_score_response.dart'
 import 'package:guess_game/features/game/presentation/cubit/game_cubit.dart';
 import 'package:guess_game/features/levels/presentation/view/widgets/header_shape_painter.dart';
 import 'package:guess_game/features/qrcode/presentation/view/widgets/yellow_pill_button.dart';
+import 'package:guess_game/core/widgets/app_drawer.dart';
+import 'package:guess_game/core/helper_functions/toast_helper.dart';
 import 'package:guess_game/guess_game.dart';
 
 class RoundWinnerView extends StatefulWidget {
@@ -84,24 +86,18 @@ class _RoundWinnerViewState extends State<RoundWinnerView> {
       if (kDebugMode) {
         print('🎯 RoundWinnerView: No update score response data');
       }
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('لا توجد بيانات متاحة لتعيين الفائز')),
-      );
+      ToastHelper.showError(context, 'لا توجد بيانات متاحة لتعيين الفائز');
       return;
     }
 
     if (_gameStartResponse == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('لا توجد بيانات اللعبة المتاحة')),
-      );
+      ToastHelper.showError(context, 'لا توجد بيانات اللعبة المتاحة');
       return;
     }
 
     final teamId = _getTeamId(teamIndex);
     if (teamId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('لا يمكن تحديد معرف الفريق')),
-      );
+      ToastHelper.showError(context, 'لا يمكن تحديد معرف الفريق');
       return;
     }
 
@@ -128,9 +124,7 @@ class _RoundWinnerViewState extends State<RoundWinnerView> {
       if (kDebugMode) {
         print('🎯 RoundWinnerView: Invalid round ID - no round found at index $roundIndexForWinner');
       }
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('خطأ في تحديد رقم الجولة')),
-      );
+      ToastHelper.showError(context, 'خطأ في تحديد رقم الجولة');
       return;
     }
 
@@ -199,12 +193,7 @@ class _RoundWinnerViewState extends State<RoundWinnerView> {
       listener: (context, state) {
         // Handle error state
         if (state is WinnerAssignError) {
-          if (kDebugMode) {
-            print('🎯 RoundWinnerView: WinnerAssignError state received: ${state.message}');
-          }
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('خطأ: ${state.message}')),
-          );
+          print('❌ API Error: ${state.message}');
         }
       },
       child: BlocBuilder<GameCubit, GameState>(
@@ -216,7 +205,7 @@ class _RoundWinnerViewState extends State<RoundWinnerView> {
           // Return main UI (no loading indicator)
           return Scaffold(
           backgroundColor: Colors.white,
-          drawer: const Drawer(),
+          drawer: const AppDrawer(),
           body: SafeArea(
             child: Stack(
               children: [

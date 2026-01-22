@@ -68,21 +68,11 @@ class _RegisterViewState extends State<RegisterView> {
                 child: BlocConsumer<RegisterCubit, RegisterState>(
                     listener: (context, state) {
                       if (state is RegisterSuccess) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(state.response.message),
-                            backgroundColor: AppColors.green,
-                          ),
-                        );
+                        print('✅ API Response: ${state.response.message}');
                         // Navigate to choose login type page after successful registration
                         context.pushReplacementNamed(Routes.chooseLoginType);
                       } else if (state is RegisterError) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(state.message),
-                            backgroundColor: Colors.red,
-                          ),
-                        );
+                        print('❌ API Error: ${state.message}');
                       }
                     },
                     builder: (context, state) {

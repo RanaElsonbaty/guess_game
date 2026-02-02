@@ -279,7 +279,7 @@ class _GameLevelViewState extends State<GameLevelView> {
                         children: [
                           GameLevelCard(
                             teamName: team2Name,
-                            teamTitle: 'فريق 02',
+                            teamTitle: 'فريق $team2Name', // إضافة كلمة "الفريق" قبل الاسم
                             imageUrl: _getCurrentCategoryImageForTeam(1), // Team 2 (index 1)
                             onLevelSelected: (level) {
                               setState(() {
@@ -290,7 +290,7 @@ class _GameLevelViewState extends State<GameLevelView> {
                           SizedBox(width: 92.w),
                           GameLevelCard(
                             teamName: team1Name,
-                            teamTitle: 'فريق 01',
+                            teamTitle: 'فريق $team1Name', // إضافة كلمة "الفريق" قبل الاسم
                             imageUrl: _getCurrentCategoryImageForTeam(0), // Team 1 (index 0)
                             onLevelSelected: (level) {
                               setState(() {

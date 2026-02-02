@@ -5,46 +5,46 @@ import 'package:guess_game/core/theming/colors.dart';
 import 'package:guess_game/core/theming/images.dart';
 import 'package:guess_game/core/theming/styles.dart';
 
-class CategoryCard extends StatelessWidget {
+class SimpleCategoryCard extends StatelessWidget {
   final String title;
-  final String? imageUrl; // Dynamic image from API
+  final String? imageUrl;
   final bool isLocked;
-  final bool isSubscriptionLocked;
-  final VoidCallback? onPressed;
+  final bool isSelected;
+  final VoidCallback? onTap;
 
-  const CategoryCard({
+  const SimpleCategoryCard({
     super.key,
     required this.title,
-    this.imageUrl, // Optional parameter for dynamic image
+    this.imageUrl,
     this.isLocked = false,
-    this.isSubscriptionLocked = false,
-    this.onPressed,
+    this.isSelected = false,
+    this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    final shouldShowLock = isLocked || isSubscriptionLocked;
-    if (shouldShowLock) {
-      print('🔒 CategoryCard: Showing lock for "$title" (isLocked: $isLocked, isSubscriptionLocked: $isSubscriptionLocked)');
-    }
     return GestureDetector(
-      onTap: onPressed,
+      onTap: isLocked ? null : onTap,
       child: Stack(
         children: [
           Container(
-            width: 145.w,
-            height: 200.h,
+            width: 150.w, // حجم أصغر من CategoryCard الأصلي (145.w)
+            height: 140.h, // حجم أصغر من CategoryCard الأصلي (200.h)
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [Color(0xFF79899f), Color(0xFF8b929b), Color(0xFF79899f)],
               ),
+              // إضافة border للاختيار
+              border: isSelected 
+                  ? Border.all(color: AppColors.secondaryColor, width: 3)
+                  : null,
             ),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                // Title
+                // Title - نفس التصميم بس بحجم أصغر
                 Container(
-                  height: 40,
+                  height: 20.h, // أصغر من 40
                   width: double.infinity,
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
@@ -56,14 +56,17 @@ class CategoryCard extends StatelessWidget {
                   ),
                   child: Text(
                     title,
-                    style: TextStyles.font14Secondary700Weight,
+                    style: TextStyles.font14Secondary700Weight, // خط أصغر
+                    textAlign: TextAlign.center,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
 
-                // Ball Image with optional lock overlay
+                // Ball Image with optional lock overlay - نفس التصميم بس بحجم أصغر
                 SizedBox(
-                  width: 72,
-                  height: 72,
+                  width: 45.w, // أصغر من 72
+                  height: 45.h, // أصغر من 72
                   child: Stack(
                     alignment: Alignment.center,
                     children: [
@@ -71,37 +74,37 @@ class CategoryCard extends StatelessWidget {
                       imageUrl != null && imageUrl!.isNotEmpty
                         ? Image.network(
                             imageUrl!,
-                            width: 72,
-                            height: 72,
+                            width: 50.w,
+                            height: 50.h,
                             fit: BoxFit.cover,
                             errorBuilder: (context, error, stackTrace) {
                               // Fallback to static image if network image fails
                               return Image.asset(
                                 AppImages.ball,
-                                width: 72,
-                                height: 72,
+                                width: 50.w,
+                                height: 50.h,
                                 fit: BoxFit.cover,
                               );
                             },
                           )
                         : Image.asset(
                             AppImages.ball,
-                            width: 72,
-                            height: 72,
+                            width: 50.w,
+                            height: 50.h,
                             fit: BoxFit.cover,
                           ),
 
-                      // Lock overlay if locked (by category status or subscription)
-                      if (isLocked || isSubscriptionLocked) ...[
+                      // Lock overlay if locked
+                      if (isLocked) ...[
                         // Blur effect
                         Positioned.fill(
                           child: Container(
                             decoration: BoxDecoration(
                               color: Colors.black.withOpacity(0.3),
-                              borderRadius: BorderRadius.circular(36),
+                              borderRadius: BorderRadius.circular(25.w), // نصف العرض
                             ),
                             child: ClipRRect(
-                              borderRadius: BorderRadius.circular(36),
+                              borderRadius: BorderRadius.circular(25.w),
                               child: BackdropFilter(
                                 filter: ImageFilter.blur(sigmaX: 2, sigmaY: 2),
                                 child: Container(
@@ -112,61 +115,19 @@ class CategoryCard extends StatelessWidget {
                           ),
                         ),
 
-                        // Lock image
+                        // Lock image - حجم أصغر
                         Image.asset(
                           AppImages.lock,
-                          width: 24,
-                          height: 24,
+                          width: 18.w, // أصغر من 24
+                          height: 18.h, // أصغر من 24
                         ),
                       ],
                     ],
                   ),
                 ),
 
-                // Button
-                Padding(
-                  padding: EdgeInsets.only(bottom: 8.h),
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      /// 🔸 Main Button Body
-                      Container(
-                        height: 28.h,
-                        width: 90.w,
-                        decoration: BoxDecoration(
-                          color: AppColors.buttonYellow,
-                        ),
-                        alignment: Alignment.center,
-                        child: Text(
-                          'اختر',
-                          style: TextStyles.font14Secondary700Weight,
-                        ),
-                      ),
-
-                      /// Right Border
-                      Positioned(
-                        right: 0,
-                        top: 0,
-                        bottom: 0,
-                        child: Container(
-                          width: 2,
-                          color: AppColors.buttonBorderOrange,
-                        ),
-                      ),
-
-                      /// Bottom Border
-                      Positioned(
-                        bottom: 0,
-                        left: 0,
-                        right: 0,
-                        child: Container(
-                          height: 2,
-                          color: AppColors.buttonBorderOrange,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                // مساحة فارغة بدلاً من الزرار
+                SizedBox(height: 8.h), // مساحة بدلاً من الزرار
               ],
             ),
           ),

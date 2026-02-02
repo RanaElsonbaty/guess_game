@@ -159,21 +159,7 @@ class _OptionsViewState extends State<OptionsView> {
     GlobalStorage.team1Name = team1Name;
     GlobalStorage.team2Name = team2Name;
 
-    return BlocConsumer<LogoutCubit, LogoutState>(
-      listener: (context, state) {
-        if (state is LogoutSuccess) {
-          print('✅ API Response: ${state.response.message}');
-          Navigator.of(context).pushNamedAndRemoveUntil(
-            Routes.intro,
-            (route) => false,
-          );
-        } else if (state is LogoutError) {
-          print('❌ API Error: ${state.message}');
-        }
-      },
-      builder: (context, state) {
-        final isLoading = state is LogoutLoading;
-        return Scaffold(
+    return Scaffold(
       backgroundColor: Colors.white,
       drawer: const AppDrawer(),
       body: SafeArea(
@@ -353,27 +339,28 @@ class _OptionsViewState extends State<OptionsView> {
                                     YellowPillButton(
                                       width: 100,
                                       height: 34,
-                                      onTap: isLoading
-                                          ? null
-                                          : () {
-                                              showDialog(
-                                                context: context,
-                                                barrierDismissible: false,
-                                                builder: (dialogContext) {
-                                                  return SubscriptionAlertDialog(
-                                                    title: 'تسجيل الخروج',
-                                                    content: 'هل أنت متأكد من تسجيل الخروج؟',
-                                                    buttonText: 'تأكيد',
-                                                    secondaryButtonText: 'إلغاء',
-                                                    onSecondaryButtonPressed: () => Navigator.of(dialogContext).pop(),
-                                                    onButtonPressed: () {
-                                                      Navigator.of(dialogContext).pop();
-                                                      context.read<LogoutCubit>().logout();
-                                                    },
-                                                  );
-                                                },
-                                              );
-                                            },
+                                      onTap: () {
+                                        showDialog(
+                                          context: context,
+                                          barrierDismissible: false,
+                                          builder: (dialogContext) {
+                                            return SubscriptionAlertDialog(
+                                              title: 'تسجيل الخروج',
+                                              content: 'هل أنت متأكد من تسجيل الخروج؟',
+                                              buttonText: 'تأكيد',
+                                              secondaryButtonText: 'إلغاء',
+                                              onSecondaryButtonPressed: () => Navigator.of(dialogContext).pop(),
+                                              onButtonPressed: () {
+                                                Navigator.of(dialogContext).pop();
+                                                Navigator.of(context).pushNamedAndRemoveUntil(
+                                                  Routes.start,
+                                                  (route) => false,
+                                                );
+                                              },
+                                            );
+                                          },
+                                        );
+                                      },
                                       child: Text(
                                         'خروج',
                                         style: TextStyles.font20Secondary700Weight,
@@ -402,8 +389,6 @@ class _OptionsViewState extends State<OptionsView> {
           ],
         ),
       ),
-        );
-      },
     );
   }
 }

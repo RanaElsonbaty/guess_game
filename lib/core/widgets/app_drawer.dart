@@ -12,6 +12,8 @@ import 'package:guess_game/core/theming/styles.dart';
 import 'package:guess_game/core/routing/routes.dart';
 import 'package:guess_game/features/settings/data/models/settings_response.dart';
 import 'package:guess_game/features/settings/presentation/cubit/settings_cubit.dart';
+import 'package:guess_game/features/auth/login/presentation/cubit/logout_cubit.dart';
+import 'package:guess_game/core/widgets/subscription_alert_dialog.dart';
 import 'package:guess_game/guess_game.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -117,103 +119,111 @@ class _AppDrawerState extends State<AppDrawer> {
       builder: (BuildContext dialogContext) {
         return Dialog(
           backgroundColor: Colors.transparent,
-          child: Container(
-            width: 400.w,
-            padding: EdgeInsets.zero,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  const Color(0xFF79899f).withOpacity(0.3),
-                  const Color(0xFF8b929b).withOpacity(0.3),
-                  const Color(0xFF79899f).withOpacity(0.3),
-                ],
-              ),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxWidth: 400.w,
+              maxHeight: MediaQuery.of(dialogContext).size.height * 0.85,
             ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // الشريط العلوي
-                Container(
-                  width: double.infinity,
-                  height: 60.h,
-                  padding: EdgeInsets.symmetric(horizontal: 20.w),
-                  decoration: const BoxDecoration(
-                    image: DecorationImage(
-                      image: AssetImage(AppImages.card),
-                      fit: BoxFit.cover,
+            child: Container(
+              padding: EdgeInsets.zero,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    const Color(0xFF79899f).withOpacity(0.3),
+                    const Color(0xFF8b929b).withOpacity(0.3),
+                    const Color(0xFF79899f).withOpacity(0.3),
+                  ],
+                ),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // الشريط العلوي
+                  Container(
+                    width: double.infinity,
+                    height: 60.h,
+                    padding: EdgeInsets.symmetric(horizontal: 20.w),
+                    decoration: const BoxDecoration(
+                      image: DecorationImage(
+                        image: AssetImage(AppImages.card),
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        GestureDetector(
+                          onTap: () => Navigator.of(dialogContext).pop(),
+                          child: SvgPicture.asset(
+                            AppIcons.cancel,
+                            width: 24.w,
+                            height: 24.w,
+                          ),
+                        ),
+                        Flexible(
+                          child: Text(
+                            title,
+                            style: TextStyles.font24Secondary700Weight,
+                            textAlign: TextAlign.center,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        SizedBox(width: 40.w),
+                      ],
                     ),
                   ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      GestureDetector(
-                        onTap: () => Navigator.of(dialogContext).pop(),
-                        child: SvgPicture.asset(
-                          AppIcons.cancel,
-                          width: 24.w,
-                          height: 24.w,
+                  // المحتوى
+                  Flexible(
+                    child: Container(
+                      width: double.infinity,
+                      padding: EdgeInsets.all(20.w),
+                      decoration: const BoxDecoration(
+                        color: Colors.transparent,
+                      ),
+                      child: SingleChildScrollView(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: items.map((item) {
+                            developer.log(
+                              '📋 Displaying Item in Dialog:',
+                              name: 'AppDrawer',
+                            );
+                            developer.log(
+                              '  Title: ${item.title}',
+                              name: 'AppDrawer',
+                            );
+                            developer.log(
+                              '  Content: ${item.content}',
+                              name: 'AppDrawer',
+                            );
+                            return Padding(
+                              padding: EdgeInsets.only(bottom: 20.h),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    item.title,
+                                    style: TextStyles.font16Secondary700Weight,
+                                    textAlign: TextAlign.start,
+                                  ),
+                                  SizedBox(height: 8.h),
+                                  Text(
+                                    item.content,
+                                    style: TextStyles.font14Secondary700Weight.copyWith(
+                                      color: AppColors.secondaryColor.withOpacity(0.8),
+                                    ),
+                                    textAlign: TextAlign.start,
+                                  ),
+                                ],
+                              ),
+                            );
+                          }).toList(),
                         ),
                       ),
-                      Text(
-                        title,
-                        style: TextStyles.font24Secondary700Weight,
-                        textAlign: TextAlign.center,
-                      ),
-                      SizedBox(width: 40.w),
-                    ],
-                  ),
-                ),
-                // المحتوى
-                Container(
-                  constraints: BoxConstraints(
-                    maxHeight: MediaQuery.of(dialogContext).size.height * 0.7,
-                  ),
-                  padding: EdgeInsets.all(20.w),
-                  decoration: const BoxDecoration(
-                    color: Colors.transparent,
-                  ),
-                  child: SingleChildScrollView(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: items.map((item) {
-                        developer.log(
-                          '📋 Displaying Item in Dialog:',
-                          name: 'AppDrawer',
-                        );
-                        developer.log(
-                          '  Title: ${item.title}',
-                          name: 'AppDrawer',
-                        );
-                        developer.log(
-                          '  Content: ${item.content}',
-                          name: 'AppDrawer',
-                        );
-                        return Padding(
-                          padding: EdgeInsets.only(bottom: 20.h),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                item.title,
-                                style: TextStyles.font16Secondary700Weight,
-                                textAlign: TextAlign.start,
-                              ),
-                              SizedBox(height: 8.h),
-                              Text(
-                                item.content,
-                                style: TextStyles.font14Secondary700Weight.copyWith(
-                                  color: AppColors.secondaryColor.withOpacity(0.8),
-                                ),
-                                textAlign: TextAlign.start,
-                              ),
-                            ],
-                          ),
-                        );
-                      }).toList(),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         );
@@ -225,11 +235,18 @@ class _AppDrawerState extends State<AppDrawer> {
   Widget build(BuildContext context) {
     final user = GlobalStorage.user;
     
-    return BlocProvider(
-      create: (context) => getIt<SettingsCubit>()
-        ..loadSettings()
-        ..loadSocialMedia()
-        ..loadSupportSettings(),
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider(
+          create: (context) => getIt<SettingsCubit>()
+            ..loadSettings()
+            ..loadSocialMedia()
+            ..loadSupportSettings(),
+        ),
+        BlocProvider(
+          create: (context) => getIt<LogoutCubit>(),
+        ),
+      ],
       child: Drawer(
         backgroundColor: Colors.transparent,
         child: Container(
@@ -516,7 +533,6 @@ class _AppDrawerState extends State<AppDrawer> {
                                 
                                 final hasAnySupport = 
                                     (supportData.supportEmail != null && supportData.supportEmail!.isNotEmpty) ||
-                                    (supportData.supportPhone != null && supportData.supportPhone!.isNotEmpty) ||
                                     (supportData.supportAddress != null && supportData.supportAddress!.isNotEmpty);
                                 
                                 if (!hasAnySupport) {
@@ -529,10 +545,6 @@ class _AppDrawerState extends State<AppDrawer> {
                                 );
                                 developer.log(
                                   '  Email: ${supportData.supportEmail}',
-                                  name: 'AppDrawer',
-                                );
-                                developer.log(
-                                  '  Phone: ${supportData.supportPhone}',
                                   name: 'AppDrawer',
                                 );
                                 developer.log(
@@ -560,21 +572,10 @@ class _AppDrawerState extends State<AppDrawer> {
                                           }
                                         },
                                       ),
-                                    if (supportData.supportPhone != null && supportData.supportPhone!.isNotEmpty)
-                                      Padding(
-                                        padding: EdgeInsets.only(top: supportData.supportEmail != null && supportData.supportEmail!.isNotEmpty ? 8.h : 0),
-                                        child: _buildSupportItem(
-                                          icon: Icons.phone,
-                                          label: 'رقم الهاتف',
-                                          value: supportData.supportPhone!,
-                                          onTap: () => _launchURL('tel:${supportData.supportPhone}', 'Phone'),
-                                        ),
-                                      ),
                                     if (supportData.supportAddress != null && supportData.supportAddress!.isNotEmpty)
                                       Padding(
                                         padding: EdgeInsets.only(
-                                          top: (supportData.supportEmail != null && supportData.supportEmail!.isNotEmpty) ||
-                                                  (supportData.supportPhone != null && supportData.supportPhone!.isNotEmpty)
+                                          top: (supportData.supportEmail != null && supportData.supportEmail!.isNotEmpty)
                                               ? 8.h
                                               : 0,
                                         ),
@@ -585,12 +586,89 @@ class _AppDrawerState extends State<AppDrawer> {
                                           onTap: null,
                                         ),
                                       ),
-                                    SizedBox(height: 24.h),
+                                    SizedBox(height: 12.h), // قللت من 24.h إلى 12.h
                                   ],
                                 );
                               }
                               
                               return const SizedBox.shrink();
+                            },
+                          ),
+                          // تسجيل الخروج
+                          BlocBuilder<LogoutCubit, LogoutState>(
+                            builder: (context, logoutState) {
+                              final isLoading = logoutState is LogoutLoading;
+                              return Column(
+                                children: [
+                                  SizedBox(height: 12.h), // قللت من 24.h إلى 12.h
+                                  _buildMenuItem(
+                                    context: context,
+                                    title: 'تسجيل الخروج',
+                                    onTap: isLoading
+                                        ? null
+                                        : () {
+                                            developer.log(
+                                              '🚪 Logout Clicked',
+                                              name: 'AppDrawer',
+                                            );
+                                            Navigator.of(context).pop(); // إغلاق الـ drawer أولاً
+                                            Future.delayed(const Duration(milliseconds: 100), () {
+                                              showDialog(
+                                                context: context,
+                                                barrierDismissible: false,
+                                                builder: (dialogContext) {
+                                                  return BlocProvider(
+                                                    create: (context) => getIt<LogoutCubit>(), // إنشاء cubit جديد للـ dialog
+                                                    child: BlocConsumer<LogoutCubit, LogoutState>(
+                                                      listener: (context, state) {
+                                                        if (state is LogoutSuccess) {
+                                                          developer.log(
+                                                            '✅ Logout Success: ${state.response.message}',
+                                                            name: 'AppDrawer',
+                                                          );
+                                                          Navigator.of(dialogContext).pop(); // إغلاق الـ dialog
+                                                          Navigator.of(context).pushNamedAndRemoveUntil(
+                                                            Routes.intro,
+                                                            (route) => false,
+                                                          );
+                                                        } else if (state is LogoutError) {
+                                                          developer.log(
+                                                            '❌ Logout Error: ${state.message}',
+                                                            name: 'AppDrawer',
+                                                          );
+                                                          Navigator.of(dialogContext).pop(); // إغلاق الـ dialog حتى لو فشل
+                                                        }
+                                                      },
+                                                      builder: (context, state) {
+                                                        final isLoading = state is LogoutLoading;
+                                                        return SubscriptionAlertDialog(
+                                                          title: 'تسجيل الخروج',
+                                                          content: 'هل أنت متأكد من تسجيل الخروج؟',
+                                                          buttonText: isLoading ? '' : 'تأكيد', // نص فارغ أثناء التحميل
+                                                          secondaryButtonText: 'إلغاء',
+                                                          onSecondaryButtonPressed: isLoading 
+                                                              ? null 
+                                                              : () => Navigator.of(dialogContext).pop(),
+                                                          onButtonPressed: isLoading 
+                                                              ? null 
+                                                              : () {
+                                                                  developer.log(
+                                                                    '🔄 Starting logout process',
+                                                                    name: 'AppDrawer',
+                                                                  );
+                                                                  context.read<LogoutCubit>().logout(); // استخدام الـ cubit الجديد
+                                                                },
+                                                        );
+                                                      },
+                                                    ),
+                                                  );
+                                                },
+                                              );
+                                            });
+                                          },
+                                  ),
+                                ],
+                              );
                             },
                           ),
                           // وسائل التواصل الاجتماعي
@@ -717,14 +795,14 @@ class _AppDrawerState extends State<AppDrawer> {
   Widget _buildMenuItem({
     required BuildContext context,
     required String title,
-    required VoidCallback onTap,
+    VoidCallback? onTap,
   }) {
     return InkWell(
       onTap: onTap,
       child: Container(
         padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
         decoration: BoxDecoration(
-          color:AppColors.darkBlue.withOpacity(.3),
+          color: AppColors.darkBlue.withOpacity(.3),
           borderRadius: BorderRadius.circular(8.r),
         ),
         child: Row(
@@ -732,13 +810,19 @@ class _AppDrawerState extends State<AppDrawer> {
             Expanded(
               child: Text(
                 title,
-                style: TextStyles.font14Secondary700Weight,
+                style: TextStyles.font14Secondary700Weight.copyWith(
+                  color: onTap == null 
+                      ? AppColors.secondaryColor.withOpacity(0.5)
+                      : AppColors.secondaryColor,
+                ),
               ),
             ),
             Icon(
               Icons.arrow_forward_ios,
               size: 16.w,
-              color: AppColors.secondaryColor,
+              color: onTap == null 
+                  ? AppColors.secondaryColor.withOpacity(0.5)
+                  : AppColors.secondaryColor,
             ),
           ],
         ),

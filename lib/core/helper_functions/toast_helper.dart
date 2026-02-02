@@ -9,7 +9,7 @@ import 'package:guess_game/core/theming/colors.dart';
 void toast(
   String? value, {
   ToastGravity? gravity,
-  Toast length = Toast.LENGTH_SHORT,
+  Toast length = Toast.LENGTH_LONG, // تغيير الافتراضي إلى LONG (5 ثواني تقريباً)
   Color? bgColor,
   Color? textColor,
   bool print = false,
@@ -51,9 +51,7 @@ class ToastHelper {
     toast(
       message,
       gravity: gravity ?? ToastGravity.BOTTOM,
-      length: duration != null && duration.inSeconds > 2
-          ? Toast.LENGTH_LONG
-          : Toast.LENGTH_SHORT,
+      length: Toast.LENGTH_LONG, // دائماً استخدم LONG (5 ثواني تقريباً)
       bgColor: Color(0xFF668899),
       textColor: Colors.white,
     );
@@ -69,9 +67,7 @@ class ToastHelper {
     toast(
       message,
       gravity: gravity ?? ToastGravity.BOTTOM,
-      length: duration != null && duration.inSeconds > 2
-          ? Toast.LENGTH_LONG
-          : Toast.LENGTH_SHORT,
+      length: Toast.LENGTH_LONG, // دائماً استخدم LONG (5 ثواني تقريباً)
       bgColor: Colors.red,
       textColor: Colors.white,
     );
@@ -87,9 +83,7 @@ class ToastHelper {
     toast(
       message,
       gravity: gravity ?? ToastGravity.BOTTOM,
-      length: duration != null && duration.inSeconds > 2
-          ? Toast.LENGTH_LONG
-          : Toast.LENGTH_SHORT,
+      length: Toast.LENGTH_LONG, // دائماً استخدم LONG (5 ثواني تقريباً)
       bgColor: AppColors.blue,
       textColor: Colors.white,
     );
@@ -105,10 +99,8 @@ class ToastHelper {
     toast(
       message,
       gravity: gravity ?? ToastGravity.BOTTOM,
-      length: duration != null && duration.inSeconds > 2
-          ? Toast.LENGTH_LONG
-          : Toast.LENGTH_SHORT,
-      bgColor: Colors.orange,
+      length: Toast.LENGTH_LONG, // دائماً استخدم LONG (5 ثواني تقريباً)
+      bgColor: AppColors.secondaryColor,
       textColor: Colors.white,
     );
   }
@@ -125,9 +117,7 @@ class ToastHelper {
     toast(
       message,
       gravity: gravity ?? ToastGravity.BOTTOM,
-      length: duration != null && duration.inSeconds > 2
-          ? Toast.LENGTH_LONG
-          : Toast.LENGTH_SHORT,
+      length: Toast.LENGTH_LONG, // دائماً استخدم LONG (5 ثواني تقريباً)
       bgColor: bgColor,
       textColor: textColor,
     );

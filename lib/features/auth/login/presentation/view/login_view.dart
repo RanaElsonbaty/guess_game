@@ -184,8 +184,8 @@ class _LoginViewState extends State<LoginView> {
     // Reload data from storage
     await GlobalStorage.loadData();
 
-    // Always navigate to LevelsView after successful login
-    print('🎯 Navigation after login: LevelsView (دائماً بعد تسجيل الدخول بنجاح)');
-    context.pushReplacementNamed(Routes.level);
+    // Navigate to StartView after successful login instead of directly to LevelsView
+    print('🎯 Navigation after login: StartView (ثم إلى LevelsView من خلال StartView)');
+    context.pushReplacementNamed(Routes.start);
   }
 }

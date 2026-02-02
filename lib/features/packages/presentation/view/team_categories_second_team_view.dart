@@ -9,10 +9,12 @@ import 'package:guess_game/core/theming/icons.dart';
 import 'package:guess_game/core/theming/styles.dart';
 import 'package:guess_game/core/widgets/subscription_alert_dialog.dart';
 import 'package:guess_game/features/levels/presentation/cubit/categories_cubit.dart';
-import 'package:guess_game/features/levels/presentation/view/widgets/category_card.dart';
+import 'package:guess_game/features/levels/presentation/view/widgets/simple_category_card.dart';
 import 'package:guess_game/features/levels/presentation/view/widgets/header_shape_painter.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:guess_game/core/helper_functions/toast_helper.dart';
+import 'package:guess_game/core/widgets/app_drawer.dart';
+import 'package:guess_game/features/qrcode/presentation/view/widgets/game_drawer_icon.dart';
 
 class TeamCategoriesSecondTeamView extends StatefulWidget {
   final int limit;
@@ -164,16 +166,27 @@ class _TeamCategoriesSecondTeamViewState extends State<TeamCategoriesSecondTeamV
     return SafeArea(
       child: Scaffold(
       backgroundColor: Colors.white,
+      drawer: const AppDrawer(),
       body: Stack(
         children: [
+          // Drawer icon (top left)
+          Positioned(
+            top: 6.h,
+            left: 6.w,
+            child: GameDrawerIcon(),
+          ),
           // المحتوى الرئيسي
-          Center(
-            child: Container(
-              width: 740.w,
-              height: 240.h,
-              decoration: BoxDecoration(
-                color: Colors.white,
-              ),
+          Positioned(
+            top: 85.h, // نزله أكثر ليكون بعيد عن الدراور
+            left: 20.w,
+            right: 0,
+            child: Center(
+              child: Container(
+                width: 700.w,
+                height: 200.h, // صغر الارتفاع من 240 إلى 200
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                ),
               child: Stack(
                 clipBehavior: Clip.none,
                 children: [
@@ -222,10 +235,10 @@ class _TeamCategoriesSecondTeamViewState extends State<TeamCategoriesSecondTeamV
                   ),
                   /// Categories container
                   Positioned(
-                    top: 18.h,
-                    left: 10.w,
-                    right: 10.w,
-                    bottom: 20.h,
+                    top: 18,
+                    left: 10,
+                    right: 10,
+                    bottom: 0,
                     child: Container(
                       decoration: BoxDecoration(
                         color: const Color(0XFF231F20).withOpacity(.3),
@@ -279,71 +292,50 @@ class _TeamCategoriesSecondTeamViewState extends State<TeamCategoriesSecondTeamV
                               return Shimmer.fromColors(
                                 baseColor: Colors.grey[300]!,
                                 highlightColor: Colors.grey[100]!,
-                                child: ListView.builder(
-                                  scrollDirection: Axis.horizontal,
+                                child: GridView.builder(
                                   physics: const BouncingScrollPhysics(),
-                                  padding: EdgeInsets.symmetric(horizontal: 12.w),
-                                  itemCount: 4,
+                                  padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
+                                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                                    crossAxisCount: 4, // 4 كروت في الصف
+                                    crossAxisSpacing: 8.w,
+                                    mainAxisSpacing: 8.h,
+                                    childAspectRatio: 1.6, // نسبة العرض للارتفاع
+                                  ),
+                                  itemCount: 8, // 8 كروت شيمر (صفين × 4)
                                   itemBuilder: (context, index) {
-                                    return Padding(
-                                      padding: EdgeInsets.symmetric(
-                                        horizontal: 8.w,
-                                        vertical: 20.h,
-                                      ),
-                                      child: const CategoryCard(
-                                        title: 'تحميل...',
-                                        isLocked: false,
-                                      ),
+                                    return const SimpleCategoryCard(
+                                      title: 'تحميل...',
+                                      isLocked: false,
                                     );
                                   },
                                 ),
                               );
                             } else {
-                              // عرض جميع الفئات المتاحة
-                              return ListView.builder(
-                                scrollDirection: Axis.horizontal,
+                              // عرض جميع الفئات المتاحة في GridView
+                              return GridView.builder(
                                 physics: const BouncingScrollPhysics(),
-                                padding: EdgeInsets.symmetric(horizontal: 12.w),
+                                padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
+                                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: 4, // 4 كروت في الصف
+                                  crossAxisSpacing: 8.w,
+                                  mainAxisSpacing: 8.h,
+                                  childAspectRatio: 1.6, // نسبة العرض للارتفاع
+                                ),
                                 itemCount: categories.length,
                                 itemBuilder: (context, index) {
                                   final category = categories[index];
                                   final isSelected = selectedCategoriesForSecondTeam.contains(category.id);
 
-                                  return Padding(
-                                    padding: EdgeInsets.symmetric(
-                                      horizontal: 8.w,
-                                      vertical: 20.h,
-                                    ),
-                                  child: GestureDetector(
+                                  return SimpleCategoryCard(
+                                    title: category.name,
+                                    imageUrl: category.image,
+                                    isLocked: !category.status,
+                                    isSelected: isSelected,
                                     onTap: category.status ? () {
                                       _toggleCategorySelection(category.id);
                                       print('🏷️ الفئة: ${category.name} (ID: ${category.id}) للفريق الثاني');
                                       print('📋 الفئات المختارة حالياً: $selectedCategoriesForSecondTeam');
                                     } : null,
-                                    behavior: HitTestBehavior.translucent,
-                                    child: Stack(
-                                        children: [
-                                          CategoryCard(
-                                            title: category.name,
-                                            imageUrl: category.image,
-                                            isLocked: !category.status,
-                                            isSubscriptionLocked: false, // غير مقفل في صفحة الفريق الثاني
-                                            onPressed: null, // إزالة onPressed من CategoryCard
-                                          ),
-                                          if (isSelected)
-                                            Positioned.fill(
-                                              child: Container(
-                                                decoration: BoxDecoration(
-                                                  border: Border.all(
-                                                    color: AppColors.secondaryColor,
-                                                    width: 3,
-                                                  ),
-                                                ),
-                                              ),
-                                            ),
-                                        ],
-                                      ),
-                                    ),
                                   );
                                 },
                               );
@@ -357,11 +349,11 @@ class _TeamCategoriesSecondTeamViewState extends State<TeamCategoriesSecondTeamV
               ),
             ),
           ),
-
+          ),
           // زر التالي في أسفل يمين الشاشة
           Positioned(
-            bottom: 40,
-            right: 40,
+            bottom: 30.h,
+            right: 45.w,
             child: GestureDetector(
               onTap: () async {
                 // منطق التحقق من الاختيارات

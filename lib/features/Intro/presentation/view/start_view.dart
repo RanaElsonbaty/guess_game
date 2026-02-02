@@ -121,22 +121,6 @@ class _StartViewState extends State<StartView> {
                           }
                         },),
 
-                        SizedBox(height: 1.h),
-
-                        // About Button
-                        TextButton(
-                          onPressed: () {
-                            context.pushNamed(Routes.about);
-                          },
-                          child: Text(
-                            'حول التطبيق',
-                            style: TextStyle(
-                              color: AppColors.secondaryColor,
-                              fontSize: 16.sp,
-                              decoration: TextDecoration.underline,
-                            ),
-                          ),
-                        ),
                       ],
                     ),
                   ),

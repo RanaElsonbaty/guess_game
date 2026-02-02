@@ -173,12 +173,12 @@ void main() async {
           print('  - Subscription remaining: $remaining');
         }
 
-        // For logged-in users, set default route to LevelsView
+        // For logged-in users, set default route to StartView
         // Navigation state restoration will override this if valid state exists
         print('🎯 Navigation: Setting default route for logged-in user');
         print('🔍 DEBUG: user.subscription = ${user.subscription}');
-        initialRoute = Routes.level;
-        print('🎯 DEFAULT DECISION: LevelsView (will be overridden by saved navigation state if available)');
+        initialRoute = Routes.start;
+        print('🎯 DEFAULT DECISION: StartView (ثم إلى LevelsView من خلال StartView)');
 
         // Update GlobalStorage for consistency
         GlobalStorage.subscription = user.subscription;

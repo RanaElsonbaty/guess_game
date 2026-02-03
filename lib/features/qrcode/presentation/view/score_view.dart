@@ -133,7 +133,7 @@ class _ScoreViewState extends State<ScoreView> {
                     textDirection: TextDirection.ltr,
                     children: [
                       FolderTeamScoreCard(
-                        teamTitle: 'الفريق 02',
+                        teamTitle: 'نقاط فريق ${GlobalStorage.team2Name.isNotEmpty ? GlobalStorage.team2Name : '02'}',
                         score: team02Score,
                         isWinner: winnerTeam == 2,
                         isLoser: winnerTeam == 1,
@@ -143,7 +143,7 @@ class _ScoreViewState extends State<ScoreView> {
                       ),
                       SizedBox(width: gapW.w),
                       FolderTeamScoreCard(
-                        teamTitle: 'الفريق 01',
+                        teamTitle: 'نقاط فريق ${GlobalStorage.team1Name.isNotEmpty ? GlobalStorage.team1Name : '01'}',
                         score: team01Score,
                         isWinner: winnerTeam == 1,
                         isLoser: winnerTeam == 2,

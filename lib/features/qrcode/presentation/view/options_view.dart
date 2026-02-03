@@ -7,7 +7,6 @@ import 'package:guess_game/core/routing/routes.dart';
 import 'package:guess_game/core/theming/colors.dart';
 import 'package:guess_game/core/theming/icons.dart';
 import 'package:guess_game/core/theming/styles.dart';
-import 'package:guess_game/features/auth/login/presentation/cubit/logout_cubit.dart';
 import 'package:guess_game/core/widgets/subscription_alert_dialog.dart';
 import 'package:guess_game/core/helper_functions/toast_helper.dart';
 import 'package:guess_game/features/levels/presentation/view/widgets/header_shape_painter.dart';
@@ -129,6 +128,54 @@ class _OptionsViewState extends State<OptionsView> {
               return SubscriptionAlertDialog(
                 title: 'إنهاء اللعبة',
                 content: 'هل أنت متأكد من انهاء الجيم؟',
+                buttonText: 'تأكيد',
+                secondaryButtonText: 'إلغاء',
+                onSecondaryButtonPressed: isLoading
+                    ? null
+                    : () => Navigator.of(dialogContext).pop(),
+                onButtonPressed: isLoading
+                    ? null
+                    : () {
+                        context.read<GameCubit>().endGame(gameId);
+                      },
+              );
+            },
+          ),
+        );
+      },
+    );
+  }
+
+  void _showLogoutEndGameDialog(BuildContext context, int gameId) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        return BlocProvider(
+          create: (context) => getIt<GameCubit>(),
+          child: BlocConsumer<GameCubit, GameState>(
+            listener: (context, state) {
+              if (state is GameEnded) {
+                Navigator.of(dialogContext).pop();
+                Navigator.of(context).pushNamedAndRemoveUntil(
+                  Routes.start,
+                  (route) => false,
+                );
+              } else if (state is GameEndError) {
+                Navigator.of(dialogContext).pop();
+                print('❌ API Error: ${state.message}');
+                // Even if ending game fails, still logout
+                Navigator.of(context).pushNamedAndRemoveUntil(
+                  Routes.start,
+                  (route) => false,
+                );
+              }
+            },
+            builder: (context, state) {
+              final isLoading = state is GameEnding;
+              return SubscriptionAlertDialog(
+                title: 'تسجيل الخروج',
+                content: 'هل أنت متأكد من تسجيل الخروج؟ سيتم إنهاء اللعبة الحالية.',
                 buttonText: 'تأكيد',
                 secondaryButtonText: 'إلغاء',
                 onSecondaryButtonPressed: isLoading
@@ -340,26 +387,34 @@ class _OptionsViewState extends State<OptionsView> {
                                       width: 100,
                                       height: 34,
                                       onTap: () {
-                                        showDialog(
-                                          context: context,
-                                          barrierDismissible: false,
-                                          builder: (dialogContext) {
-                                            return SubscriptionAlertDialog(
-                                              title: 'تسجيل الخروج',
-                                              content: 'هل أنت متأكد من تسجيل الخروج؟',
-                                              buttonText: 'تأكيد',
-                                              secondaryButtonText: 'إلغاء',
-                                              onSecondaryButtonPressed: () => Navigator.of(dialogContext).pop(),
-                                              onButtonPressed: () {
-                                                Navigator.of(dialogContext).pop();
-                                                Navigator.of(context).pushNamedAndRemoveUntil(
-                                                  Routes.start,
-                                                  (route) => false,
-                                                );
-                                              },
-                                            );
-                                          },
-                                        );
+                                        // الحصول على gameId من arguments
+                                        final args = _routeArgs(context);
+                                        final int gameId = args['gameId'] as int? ?? 0;
+                                        if (gameId > 0) {
+                                          _showLogoutEndGameDialog(context, gameId);
+                                        } else {
+                                          // If no gameId, just logout directly
+                                          showDialog(
+                                            context: context,
+                                            barrierDismissible: false,
+                                            builder: (dialogContext) {
+                                              return SubscriptionAlertDialog(
+                                                title: 'تسجيل الخروج',
+                                                content: 'هل أنت متأكد من تسجيل الخروج؟',
+                                                buttonText: 'تأكيد',
+                                                secondaryButtonText: 'إلغاء',
+                                                onSecondaryButtonPressed: () => Navigator.of(dialogContext).pop(),
+                                                onButtonPressed: () {
+                                                  Navigator.of(dialogContext).pop();
+                                                  Navigator.of(context).pushNamedAndRemoveUntil(
+                                                    Routes.start,
+                                                    (route) => false,
+                                                  );
+                                                },
+                                              );
+                                            },
+                                          );
+                                        }
                                       },
                                       child: Text(
                                         'خروج',

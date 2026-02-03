@@ -135,7 +135,7 @@ class _QrcodeViewState extends State<QrcodeView> {
                     textDirection: TextDirection.ltr,
                     children: [
                       FolderTeamQrCard(
-                        teamTitle: 'الفريق 02',
+                        teamTitle: 'فريق ${GlobalStorage.team2Name.isNotEmpty ? GlobalStorage.team2Name : '02'}',
                         qrCode: team02RoundData?.qrCode ?? '',
                         questionsCount: team02RoundData?.questionNumber,
                         answersCount: team02RoundData?.answerNumber,
@@ -153,7 +153,7 @@ class _QrcodeViewState extends State<QrcodeView> {
                       ),
                       SizedBox(width: gapW.w),
                       FolderTeamQrCard(
-                        teamTitle: 'الفريق 01',
+                        teamTitle: 'فريق ${GlobalStorage.team1Name.isNotEmpty ? GlobalStorage.team1Name : '01'}',
                         qrCode: team01RoundData?.qrCode ?? '',
                         questionsCount: team01RoundData?.questionNumber,
                         answersCount: team01RoundData?.answerNumber,

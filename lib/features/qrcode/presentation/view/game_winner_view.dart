@@ -292,7 +292,7 @@ class _GameWinnerViewState extends State<GameWinnerView> {
                               ),
                               SizedBox(height: 10.h),
                               Text(
-                                winnerName,
+                                winnerName == 'تعادل' ? winnerName : 'فريق $winnerName',
                                 style: TextStyles.font14Secondary700Weight,
                                 textAlign: TextAlign.center,
                               ),

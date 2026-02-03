@@ -385,17 +385,17 @@ class _AppDrawerState extends State<AppDrawer> {
                             },
                           ),
                           SizedBox(height: 12.h),
-                          // اشتراكاتي
+                          // جولاتي
                           _buildMenuItem(
                             context: context,
-                            title: 'اشتراكاتي',
+                            title: 'جولاتي',
                             onTap: () {
                               developer.log(
-                                '📋 My Subscriptions Clicked',
+                                '🎮 My Rounds Clicked',
                                 name: 'AppDrawer',
                               );
                               Navigator.of(context).pop(); // إغلاق الـ drawer
-                              Navigator.of(context).pushNamed(Routes.mySubscriptions);
+                              Navigator.of(context).pushNamed(Routes.myRounds);
                             },
                           ),
                           SizedBox(height: 12.h),

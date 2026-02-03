@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:guess_game/core/helper_functions/global_storage.dart';
 import 'dart:math' as math;
 import 'package:guess_game/core/theming/colors.dart';
 import 'package:guess_game/core/theming/icons.dart';
@@ -118,7 +119,7 @@ class _QrImageViewState extends State<QrImageView> {
                     textDirection: TextDirection.ltr,
                     children: [
                       FolderTeamImageCard(
-                        teamTitle: 'الفريق 02',
+                        teamTitle: 'فريق ${GlobalStorage.team2Name.isNotEmpty ? GlobalStorage.team2Name : '02'}',
                         imageUrl: team02Image,
                         width: cardW,
                         height: cardH,
@@ -126,7 +127,7 @@ class _QrImageViewState extends State<QrImageView> {
                       ),
                       SizedBox(width: gapW.w),
                       FolderTeamImageCard(
-                        teamTitle: 'الفريق 01',
+                        teamTitle: 'فريق ${GlobalStorage.team1Name.isNotEmpty ? GlobalStorage.team1Name : '01'}',
                         imageUrl: team01Image,
                         width: cardW,
                         height: cardH,

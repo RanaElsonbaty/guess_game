@@ -336,6 +336,20 @@ class _GroupsViewState extends State<GroupsView> {
       _addOneTeam1Id = args['team1Id'] as int? ?? _addOneTeam1Id;
       _addOneTeam2Id = args['team2Id'] as int? ?? _addOneTeam2Id;
       
+      // Handle replay from MyRoundsView
+      final isReplay = args['isReplay'] == true;
+      if (isReplay) {
+        final team1Name = args['team1Name'] as String? ?? '';
+        final team2Name = args['team2Name'] as String? ?? '';
+        if (team1Name.isNotEmpty && team2Name.isNotEmpty) {
+          _team1Controller.text = team1Name;
+          _team2Controller.text = team2Name;
+          GlobalStorage.team1Name = team1Name;
+          GlobalStorage.team2Name = team2Name;
+          print('🎮 تم تحميل أسماء الفرق من جولاتي: $team1Name, $team2Name');
+        }
+      }
+      
       // في حالة isSameGamePackageFlow، تأكد من تحميل الأسماء من GlobalStorage
       if (_isSameGamePackageFlow) {
         if (GlobalStorage.team1Name.isNotEmpty) {

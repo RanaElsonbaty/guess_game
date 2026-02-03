@@ -31,6 +31,7 @@ import 'package:guess_game/features/qrcode/presentation/view/round_winner_view.d
 import 'package:guess_game/features/qrcode/presentation/view/score_view.dart';
 import 'package:guess_game/features/qrcode/presentation/view/game_winner_view.dart';
 import 'package:guess_game/features/qrcode/presentation/view/options_view.dart';
+import 'package:guess_game/features/subscriptions/presentation/view/my_subscriptions_view.dart';
 import 'package:guess_game/features/notifications/presentation/cubit/notification_cubit.dart';
 import 'package:guess_game/guess_game.dart';
 
@@ -276,6 +277,13 @@ class AppRoutes {
             create: (context) => getIt<LogoutCubit>(),
             child: const OptionsView(),
           ),
+          settings: routeSettings,
+        );
+      case Routes.mySubscriptions:
+        print('📋 AppRoutes: تم استدعاء mySubscriptions');
+        
+        return _createSmoothPageRoute(
+          const MySubscriptionsView(),
           settings: routeSettings,
         );
       default:

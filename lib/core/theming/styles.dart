@@ -29,6 +29,12 @@ class TextStyles {
     fontWeight: FontWeight.w700,
     fontSize: 14.sp,
   );
+  static final font12Secondary700Weight = GoogleFonts.getFont(
+    AppFonts.bukra,
+    color: AppColors.secondaryColor,
+    fontWeight: FontWeight.w700,
+    fontSize: 12.sp,
+  );
   static final font24Secondary700Weight = GoogleFonts.getFont(
     AppFonts.bukra,
     color: AppColors.secondaryColor,

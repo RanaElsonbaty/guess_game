@@ -385,6 +385,20 @@ class _AppDrawerState extends State<AppDrawer> {
                             },
                           ),
                           SizedBox(height: 12.h),
+                          // اشتراكاتي
+                          _buildMenuItem(
+                            context: context,
+                            title: 'اشتراكاتي',
+                            onTap: () {
+                              developer.log(
+                                '📋 My Subscriptions Clicked',
+                                name: 'AppDrawer',
+                              );
+                              Navigator.of(context).pop(); // إغلاق الـ drawer
+                              Navigator.of(context).pushNamed(Routes.mySubscriptions);
+                            },
+                          ),
+                          SizedBox(height: 12.h),
                           // سياسة الخصوصية
                           _buildMenuItem(
                             context: context,

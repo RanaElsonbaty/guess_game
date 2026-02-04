@@ -75,7 +75,15 @@ class _MyRoundsViewState extends State<MyRoundsView> {
           // Initialize team data if not exists
           if (!teamCategoriesMap.containsKey(teamNumber)) {
             teamCategoriesMap[teamNumber] = <int>{};
-            teamNamesMap[teamNumber] = item.team?.name ?? 'فريق $teamNumber';
+            // Extract clean team name without "فريق" prefix
+            String cleanTeamName = item.team?.name ?? '';
+            if (cleanTeamName.startsWith('فريق ')) {
+              cleanTeamName = cleanTeamName.substring(5).trim();
+            }
+            if (cleanTeamName.isEmpty) {
+              cleanTeamName = teamNumber == 1 ? 'الأول' : 'الثاني';
+            }
+            teamNamesMap[teamNumber] = cleanTeamName;
           }
           
           // Add category to team's set (Set automatically handles duplicates)
@@ -84,8 +92,20 @@ class _MyRoundsViewState extends State<MyRoundsView> {
       }
 
       // Extract team names, categories, and team numbers
-      String team1Name = teamNamesMap[1] ?? 'فريق 1';
-      String team2Name = teamNamesMap[2] ?? 'فريق 2';
+      String team1Name = teamNamesMap[1] ?? 'الأول';
+      String team2Name = teamNamesMap[2] ?? 'الثاني';
+      
+      // Remove "فريق" prefix if it exists in the team names
+      if (team1Name.startsWith('فريق ')) {
+        team1Name = team1Name.substring(5).trim(); // Remove "فريق " (5 characters)
+      }
+      if (team2Name.startsWith('فريق ')) {
+        team2Name = team2Name.substring(5).trim(); // Remove "فريق " (5 characters)
+      }
+      
+      // If team name is empty after removing prefix, use default
+      if (team1Name.isEmpty) team1Name = 'الأول';
+      if (team2Name.isEmpty) team2Name = 'الثاني';
       List<int> team1Categories = teamCategoriesMap[1]?.toList() ?? [];
       List<int> team2Categories = teamCategoriesMap[2]?.toList() ?? [];
       int team1Number = 1;
@@ -221,7 +241,7 @@ class _MyRoundsViewState extends State<MyRoundsView> {
                                 children: [
                                   Expanded(
                                     child: Text(
-                                      '${item.team?.name ?? 'فريق ${item.team?.teamNumber ?? 0}'}: ${item.category?.name ?? 'فئة غير محددة'}',
+                                      '${item.team?.name?.replaceFirst('فريق ', '') ?? 'فريق ${item.team?.teamNumber ?? 0}'}: ${item.category?.name ?? 'فئة غير محددة'}',
                                       style: TextStyles.font12Secondary700Weight.copyWith(
                                         color: Colors.white.withOpacity(0.8),
                                       ),

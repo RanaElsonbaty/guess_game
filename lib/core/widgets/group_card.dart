@@ -81,6 +81,10 @@ class GroupCard extends StatelessWidget {
                         isDense: true,
                       ),
                       onChanged: onChanged,
+                      enabled: true, // Explicitly enable editing
+                      readOnly: false, // Explicitly set as not read-only
+                      autocorrect: false,
+                      enableSuggestions: false,
                     ),
                   ),
                 ],

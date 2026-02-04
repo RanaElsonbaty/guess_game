@@ -326,25 +326,27 @@ class _AppDrawerState extends State<AppDrawer> {
                         child: Shimmer.fromColors(
                           baseColor: Colors.grey[300]!,
                           highlightColor: Colors.grey[100]!,
-                          child: Column(
-                            children: [
-                              // Shimmer for menu items (5 items: الباقات، الفئات، سياسة الخصوصية، الشروط والأحكام، عن التطبيق)
-                              _buildShimmerMenuItem(),
-                              SizedBox(height: 12.h),
-                              _buildShimmerMenuItem(),
-                              SizedBox(height: 12.h),
-                              _buildShimmerMenuItem(),
-                              SizedBox(height: 12.h),
-                              _buildShimmerMenuItem(),
-                              SizedBox(height: 12.h),
-                              _buildShimmerMenuItem(),
-                              SizedBox(height: 24.h),
-                              // Shimmer for support section
-                              _buildShimmerSupportSection(),
-                              SizedBox(height: 24.h),
-                              // Shimmer for social media
-                              _buildShimmerSocialMedia(),
-                            ],
+                          child: SingleChildScrollView(
+                            child: Column(
+                              children: [
+                                // Shimmer for menu items (5 items: الباقات، الفئات، سياسة الخصوصية، الشروط والأحكام، عن التطبيق)
+                                _buildShimmerMenuItem(),
+                                SizedBox(height: 12.h),
+                                _buildShimmerMenuItem(),
+                                SizedBox(height: 12.h),
+                                _buildShimmerMenuItem(),
+                                SizedBox(height: 12.h),
+                                _buildShimmerMenuItem(),
+                                SizedBox(height: 12.h),
+                                _buildShimmerMenuItem(),
+                                SizedBox(height: 24.h),
+                                // Shimmer for support section
+                                _buildShimmerSupportSection(),
+                                SizedBox(height: 24.h),
+                                // Shimmer for social media
+                                _buildShimmerSocialMedia(),
+                              ],
+                            ),
                           ),
                         ),
                       );

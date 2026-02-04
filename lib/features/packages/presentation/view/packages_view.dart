@@ -39,7 +39,13 @@ class _PackagesViewState extends State<PackagesView> with WidgetsBindingObserver
       final args = ModalRoute.of(context)?.settings.arguments;
       if (args is Map<String, dynamic>) {
         _isIncreaseMode = args['increase'] == true;
-        if (_isIncreaseMode) {
+        final fromMyRounds = args['fromMyRounds'] == true;
+        
+        if (fromMyRounds) {
+          print('📦 تم الوصول من صفحة جولاتي - حفظ بيانات اللعبة');
+          // Save the game data from MyRounds to GlobalStorage
+          GlobalStorage.lastRouteArguments = Map<String, dynamic>.from(args);
+        } else if (_isIncreaseMode) {
           print('📦 وضع زيادة الاشتراك مفعّل (باقه جديدة نفس الجيم)');
         }
       }
@@ -103,12 +109,35 @@ class _PackagesViewState extends State<PackagesView> with WidgetsBindingObserver
             print('🎯 الاشتراك منتهي الصلاحية - البقاء في صفحة الباقات');
             // البقاء في packages_view
           } else if (remaining > 0) {
-            // إذا كان في وضع increase (باقه جديدة نفس الجيم)، اذهب لصفحة اختيار الفئات
-            if (_isIncreaseMode) {
+            // التحقق من مصدر الوصول
+            final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+            final fromMyRounds = args?['fromMyRounds'] == true;
+            
+            if (fromMyRounds) {
+              print('🎯 تم الدفع من صفحة جولاتي - الانتقال مباشرة لصفحة GroupsView');
+              // Navigate directly to GroupsView with saved game data
+              final team1Name = args?['team1Name'] as String? ?? '';
+              final team2Name = args?['team2Name'] as String? ?? '';
+              final team1Categories = (args?['team1Categories'] as List<dynamic>?)?.cast<int>() ?? <int>[];
+              final team2Categories = (args?['team2Categories'] as List<dynamic>?)?.cast<int>() ?? <int>[];
+              
+              if (mounted) {
+                Navigator.of(context).pushReplacementNamed(
+                  Routes.groups,
+                  arguments: {
+                    'team1Name': team1Name,
+                    'team2Name': team2Name,
+                    'team1Categories': team1Categories,
+                    'team2Categories': team2Categories,
+                    'isReplay': true, // Use /games/start
+                  },
+                );
+              }
+            } else if (_isIncreaseMode) {
               print('🎯 وضع زيادة الاشتراك - الانتقال لصفحة اختيار الفئات');
               if (mounted) {
                 // الحصول على gameId و teamIds من GlobalStorage
-                final gameArgs = GlobalStorage.lastRouteArguments;
+                final gameArgs = GlobalStorage.lastRouteArguments ?? <String, dynamic>{};
                 final gameId = gameArgs['gameId'] as int? ?? 0;
                 final team1Id = gameArgs['team1Id'] as int? ?? 0;
                 final team2Id = gameArgs['team2Id'] as int? ?? 0;
@@ -149,9 +178,26 @@ class _PackagesViewState extends State<PackagesView> with WidgetsBindingObserver
   }
 
   Future<void> _subscribeToPackage(Package package) async {
-      try {
-      // بدء عملية الاشتراك - BlocListener سيتولى الانتقال إلى صفحة الدفع مباشرة
-      await context.read<PackagesCubit>().subscribeToPackage(package.id, increase: _isIncreaseMode);
+    try {
+      // التحقق من مصدر الوصول
+      final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+      final fromMyRounds = args?['fromMyRounds'] == true;
+      final packageId = args?['packageId'] as int?;
+      
+      if (fromMyRounds) {
+        // Save the MyRounds data to GlobalStorage for use after payment
+        GlobalStorage.lastRouteArguments = Map<String, dynamic>.from(args ?? {});
+        
+        // Use the specific package ID from MyRounds
+        if (packageId != null) {
+          await context.read<PackagesCubit>().subscribeToPackage(packageId, increase: _isIncreaseMode);
+        } else {
+          await context.read<PackagesCubit>().subscribeToPackage(package.id, increase: _isIncreaseMode);
+        }
+      } else {
+        // Normal subscription flow
+        await context.read<PackagesCubit>().subscribeToPackage(package.id, increase: _isIncreaseMode);
+      }
     } catch (e) {
       if (mounted) {
         ToastHelper.showError(context, 'حدث خطأ في الاشتراك: $e');

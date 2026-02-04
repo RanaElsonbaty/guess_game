@@ -4,17 +4,17 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:guess_game/core/helper_functions/global_storage.dart';
 import 'package:guess_game/core/injection/service_locator.dart';
-import 'package:guess_game/core/routing/routes.dart';
 import 'package:guess_game/core/theming/colors.dart';
 import 'package:guess_game/core/theming/icons.dart';
 import 'package:guess_game/core/theming/styles.dart';
 import 'package:guess_game/core/widgets/app_drawer.dart';
-import 'package:guess_game/features/game/data/models/game_statistics_response.dart';
-import 'package:guess_game/features/game/data/models/game_start_response.dart';
-import 'package:guess_game/features/game/presentation/cubit/game_cubit.dart';
-import 'package:guess_game/features/levels/presentation/view/widgets/header_shape_painter.dart';
+import 'package:guess_game/features/game/data/models/all_games_response.dart';
+import 'package:guess_game/features/game/presentation/cubit/get_all_games_cubit.dart';
+import 'package:guess_game/features/packages/data/repositories/packages_repository.dart';
+import 'package:guess_game/features/packages/presentation/view/payment_webview.dart';
+import 'package:guess_game/features/packages/presentation/view/widgets/header_shape_painter.dart';
 import 'package:guess_game/features/qrcode/presentation/view/widgets/game_drawer_icon.dart';
-import 'package:guess_game/features/qrcode/presentation/view/widgets/yellow_pill_button.dart';
+import 'package:shimmer/shimmer.dart';
 
 class MyRoundsView extends StatefulWidget {
   const MyRoundsView({super.key});
@@ -24,518 +24,35 @@ class MyRoundsView extends StatefulWidget {
 }
 
 class _MyRoundsViewState extends State<MyRoundsView> {
-  bool _hasGameId = false;
+  final Map<String, bool> _expandedGames = {};
+  final Map<String, bool> _expandedPackages = {};
+  final Map<String, bool> _expandedRounds = {};
 
   @override
   void initState() {
     super.initState();
-    // Try to get gameId from various sources
-    _loadGameStatistics();
+    context.read<GetAllGamesCubit>().getAllGames();
   }
 
-  void _loadGameStatistics() {
-    int? gameId;
-    
-    // Try to get gameId from different sources
-    // 1. From GlobalStorage.lastRouteArguments
-    gameId = GlobalStorage.lastRouteArguments?['gameId'] as int?;
-    
-    // 2. From last game start response
-    if (gameId == null) {
-      final lastGameStart = GlobalStorage.lastGameStartResponse;
-      if (lastGameStart != null) {
-        gameId = lastGameStart.data.id;
-      }
+  Color _getStatusColor(String status) {
+    switch (status.toLowerCase()) {
+      case 'active':
+        return Colors.green;
+      case 'expired':
+        return Colors.red;
+      case 'pending':
+        return Colors.orange;
+      default:
+        return Colors.grey;
     }
-    
-    // 3. From current game start response
-    if (gameId == null) {
-      final currentGameStart = GlobalStorage.gameStartResponse;
-      if (currentGameStart is GameStartResponse) {
-        gameId = currentGameStart.data.id;
-      }
-    }
-    
-    if (gameId != null && gameId > 0) {
-      setState(() {
-        _hasGameId = true;
-      });
-      context.read<GameCubit>().getGameStatistics(gameId);
-    } else {
-      setState(() {
-        _hasGameId = false;
-      });
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      drawer: const AppDrawer(),
-      body: SafeArea(
-        child: Stack(
-          children: [
-            // Main content container
-            Positioned.fill(
-              child: Padding(
-                padding: EdgeInsets.only(top: 75.h, bottom: 28.h, left: 0, right: 24.w),
-                child: Align(
-                  alignment: Alignment.topCenter,
-                  child: SizedBox(
-                    width: (255 * 2 + 92).w,
-                    child: Container(
-                      decoration: const BoxDecoration(color: Colors.white),
-                      child: Stack(
-                        clipBehavior: Clip.none,
-                        children: [
-                          // Background gradient
-                          Container(
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                begin: Alignment.topCenter,
-                                end: Alignment.bottomCenter,
-                                colors: [
-                                  const Color(0XFF8e8e8e),
-                                  AppColors.black.withOpacity(.2),
-                                  Colors.white.withOpacity(.5),
-                                ],
-                              ),
-                            ),
-                          ),
-
-                          // Header (painted) + title
-                          Positioned(
-                            top: -23,
-                            left: 0,
-                            child: SizedBox(
-                              width: 285.w,
-                              height: 80.h,
-                              child: CustomPaint(painter: HeaderShapePainter()),
-                            ),
-                          ),
-                          Positioned(
-                            top: -13,
-                            left: 50,
-                            child: Text(
-                              'جولاتي',
-                              style: TextStyles.font14Secondary700Weight,
-                            ),
-                          ),
-
-                          // Close button
-                          Positioned(
-                            top: -15,
-                            right: -15,
-                            child: GestureDetector(
-                              onTap: () => Navigator.of(context).pop(),
-                              child: SvgPicture.asset(AppIcons.cancel),
-                            ),
-                          ),
-
-                          // Content area
-                          Positioned(
-                            top: 18.h,
-                            left: 10.w,
-                            right: 10.w,
-                            bottom: 20.h,
-                            child: Container(
-                              decoration: BoxDecoration(
-                                color: const Color(0XFF231F20).withOpacity(.3),
-                              ),
-                              child: BlocBuilder<GameCubit, GameState>(
-                                builder: (context, state) {
-                                  if (!_hasGameId) {
-                                    return _buildNoGameIdContent();
-                                  } else if (state is GameStatisticsLoading) {
-                                    return _buildLoadingContent();
-                                  } else if (state is GameStatisticsLoaded) {
-                                    return _buildRoundsContent(state.response);
-                                  } else if (state is GameStatisticsError) {
-                                    return _buildErrorContent(state.message);
-                                  } else {
-                                    return _buildNoRoundsContent();
-                                  }
-                                },
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-
-            // Drawer icon (top left)
-            Positioned(
-              top: 6.h,
-              left: 6.w,
-              child: GameDrawerIcon(),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildLoadingContent() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          CircularProgressIndicator(
-            color: AppColors.primaryColor,
-          ),
-          SizedBox(height: 16.h),
-          Text(
-            'جاري تحميل الجولات...',
-            style: TextStyles.font16Secondary700Weight,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildRoundsContent(GameStatisticsResponse statistics) {
-    final rounds = statistics.data.rounds;
-    final teams = statistics.data.teams;
-
-    if (rounds.isEmpty) {
-      return _buildNoRoundsContent();
-    }
-
-    return Padding(
-      padding: EdgeInsets.all(16.w),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Game info header
-          Container(
-            width: double.infinity,
-            padding: EdgeInsets.all(12.w),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  AppColors.primaryColor.withOpacity(0.8),
-                  AppColors.primaryColor.withOpacity(0.6),
-                ],
-              ),
-              borderRadius: BorderRadius.circular(8.r),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'اللعبة: ${statistics.data.game.name}',
-                  style: TextStyles.font14Secondary700Weight,
-                ),
-                SizedBox(height: 4.h),
-                Text(
-                  'إجمالي الجولات: ${statistics.data.statistics.totalRounds}',
-                  style: TextStyles.font12Secondary700Weight.copyWith(
-                    color: AppColors.secondaryColor.withOpacity(0.8),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          SizedBox(height: 16.h),
-
-          // Rounds list
-          Expanded(
-            child: ListView.builder(
-              itemCount: rounds.length,
-              itemBuilder: (context, index) {
-                final round = rounds[index];
-                return _buildRoundCard(round, teams);
-              },
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildRoundCard(GameStatisticsRound round, List<GameStatisticsTeam> teams) {
-    return Container(
-      margin: EdgeInsets.only(bottom: 12.h),
-      padding: EdgeInsets.all(16.w),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            AppColors.darkBlue.withOpacity(0.7),
-            AppColors.darkBlue.withOpacity(0.5),
-          ],
-        ),
-        borderRadius: BorderRadius.circular(12.r),
-        border: Border.all(
-          color: AppColors.secondaryColor.withOpacity(0.3),
-          width: 1,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Round header
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'الجولة رقم ${round.roundNumber}',
-                style: TextStyles.font16Secondary700Weight,
-              ),
-              Container(
-                padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
-                decoration: BoxDecoration(
-                  color: AppColors.primaryColor.withOpacity(0.8),
-                  borderRadius: BorderRadius.circular(12.r),
-                ),
-                child: Text(
-                  'ID: ${round.roundId}',
-                  style: TextStyles.font10Secondary700Weight,
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: 12.h),
-
-          // Teams data
-          ...round.teamsData.map((teamData) => _buildTeamDataRow(teamData)),
-          
-          SizedBox(height: 12.h),
-
-          // Replay button
-          Align(
-            alignment: Alignment.centerRight,
-            child: YellowPillButton(
-              width: 140.w,
-              height: 32.h,
-              onTap: () => _replayGame(round, teams),
-              child: Text(
-                'تكرار لعب الجيم',
-                style: TextStyles.font12Secondary700Weight,
-                textAlign: TextAlign.center,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTeamDataRow(GameStatisticsRoundTeamData teamData) {
-    return Container(
-      margin: EdgeInsets.only(bottom: 8.h),
-      padding: EdgeInsets.all(12.w),
-      decoration: BoxDecoration(
-        color: AppColors.secondaryColor.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(8.r),
-        border: Border.all(
-          color: AppColors.secondaryColor.withOpacity(0.2),
-          width: 1,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'الفريق: ${teamData.teamName}',
-                style: TextStyles.font14Secondary700Weight,
-              ),
-              Text(
-                'النقاط: ${teamData.pointEarned}',
-                style: TextStyles.font12Secondary700Weight.copyWith(
-                  color: AppColors.primaryColor,
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: 4.h),
-          Text(
-            'الفئة: ${teamData.categoryName}',
-            style: TextStyles.font12Secondary700Weight.copyWith(
-              color: AppColors.secondaryColor.withOpacity(0.8),
-            ),
-          ),
-          SizedBox(height: 4.h),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'الحالة: ${_getStatusText(teamData.status)}',
-                style: TextStyles.font10Secondary700Weight.copyWith(
-                  color: _getStatusColor(teamData.status),
-                ),
-              ),
-              Text(
-                'الأسئلة: ${teamData.answerNumber}/${teamData.maxAnswers}',
-                style: TextStyles.font10Secondary700Weight.copyWith(
-                  color: AppColors.secondaryColor.withOpacity(0.7),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildNoGameIdContent() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.info_outline,
-            size: 64.w,
-            color: AppColors.secondaryColor.withOpacity(0.5),
-          ),
-          SizedBox(height: 16.h),
-          Text(
-            'لا توجد ألعاب متاحة',
-            style: TextStyles.font16Secondary700Weight,
-            textAlign: TextAlign.center,
-          ),
-          SizedBox(height: 8.h),
-          Text(
-            'يجب لعب لعبة واحدة على الأقل لعرض الجولات',
-            style: TextStyles.font14Secondary700Weight.copyWith(
-              color: AppColors.secondaryColor.withOpacity(0.7),
-            ),
-            textAlign: TextAlign.center,
-          ),
-          SizedBox(height: 16.h),
-          YellowPillButton(
-            width: 140.w,
-            height: 32.h,
-            onTap: () {
-              Navigator.of(context).pushNamed(Routes.level);
-            },
-            child: Text(
-              'ابدأ لعبة جديدة',
-              style: TextStyles.font12Secondary700Weight,
-              textAlign: TextAlign.center,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildNoRoundsContent() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.sports_esports,
-            size: 64.w,
-            color: AppColors.secondaryColor.withOpacity(0.5),
-          ),
-          SizedBox(height: 16.h),
-          Text(
-            'لا توجد جولات',
-            style: TextStyles.font16Secondary700Weight,
-            textAlign: TextAlign.center,
-          ),
-          SizedBox(height: 8.h),
-          Text(
-            'لم يتم العثور على أي جولات مسجلة',
-            style: TextStyles.font14Secondary700Weight.copyWith(
-              color: AppColors.secondaryColor.withOpacity(0.7),
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildErrorContent(String message) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.error_outline,
-            size: 64.w,
-            color: Colors.red.withOpacity(0.7),
-          ),
-          SizedBox(height: 16.h),
-          Text(
-            'خطأ في تحميل البيانات',
-            style: TextStyles.font16Secondary700Weight,
-            textAlign: TextAlign.center,
-          ),
-          SizedBox(height: 8.h),
-          Text(
-            message,
-            style: TextStyles.font14Secondary700Weight.copyWith(
-              color: AppColors.secondaryColor.withOpacity(0.7),
-            ),
-            textAlign: TextAlign.center,
-          ),
-          SizedBox(height: 16.h),
-          YellowPillButton(
-            width: 120.w,
-            height: 32.h,
-            onTap: () {
-              _loadGameStatistics();
-            },
-            child: Text(
-              'إعادة المحاولة',
-              style: TextStyles.font12Secondary700Weight,
-              textAlign: TextAlign.center,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _replayGame(GameStatisticsRound round, List<GameStatisticsTeam> teams) {
-    // Extract team names from the round data
-    final team1Data = round.teamsData.isNotEmpty ? round.teamsData[0] : null;
-    final team2Data = round.teamsData.length > 1 ? round.teamsData[1] : null;
-
-    if (team1Data == null || team2Data == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('بيانات الفرق غير مكتملة'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
-
-    // Save team names to GlobalStorage
-    GlobalStorage.team1Name = team1Data.teamName;
-    GlobalStorage.team2Name = team2Data.teamName;
-
-    // Navigate to GroupsView with the team names
-    Navigator.of(context).pushNamed(
-      Routes.groups,
-      arguments: {
-        'team1Name': team1Data.teamName,
-        'team2Name': team2Data.teamName,
-        'isReplay': true,
-        'roundNumber': round.roundNumber,
-        'roundId': round.roundId,
-      },
-    );
   }
 
   String _getStatusText(String status) {
     switch (status.toLowerCase()) {
-      case 'completed':
-        return 'مكتملة';
-      case 'in_progress':
-        return 'قيد التنفيذ';
+      case 'active':
+        return 'نشط';
+      case 'expired':
+        return 'منتهي الصلاحية';
       case 'pending':
         return 'في الانتظار';
       default:
@@ -543,16 +60,600 @@ class _MyRoundsViewState extends State<MyRoundsView> {
     }
   }
 
-  Color _getStatusColor(String status) {
-    switch (status.toLowerCase()) {
-      case 'completed':
-        return Colors.green;
-      case 'in_progress':
-        return Colors.orange;
-      case 'pending':
-        return Colors.blue;
-      default:
-        return AppColors.secondaryColor;
+  void _subscribeToPackage(PackageData package, GameItem game) {
+    // Extract team data from ALL rounds of the package
+    if (package.rounds.isNotEmpty) {
+      // Collect all categories from all rounds for each team
+      final Map<int, Set<int>> teamCategoriesMap = {};
+      final Map<int, String> teamNamesMap = {};
+      
+      // Process all rounds to collect categories
+      for (final round in package.rounds) {
+        for (final item in round.roundData) {
+          final teamNumber = item.team?.teamNumber ?? 0;
+          
+          // Initialize team data if not exists
+          if (!teamCategoriesMap.containsKey(teamNumber)) {
+            teamCategoriesMap[teamNumber] = <int>{};
+            teamNamesMap[teamNumber] = item.team?.name ?? 'فريق $teamNumber';
+          }
+          
+          // Add category to team's set (Set automatically handles duplicates)
+          teamCategoriesMap[teamNumber]!.add(item.categoryId);
+        }
+      }
+
+      // Extract team names, categories, and team numbers
+      String team1Name = teamNamesMap[1] ?? 'فريق 1';
+      String team2Name = teamNamesMap[2] ?? 'فريق 2';
+      List<int> team1Categories = teamCategoriesMap[1]?.toList() ?? [];
+      List<int> team2Categories = teamCategoriesMap[2]?.toList() ?? [];
+      int team1Number = 1;
+      int team2Number = 2;
+
+      print('🎯 الاشتراك في الباقة: ${package.name}');
+      print('📋 بيانات الفرق من جميع الجولات (${package.rounds.length} جولة):');
+      print('  - الفريق الأول: $team1Name (رقم: $team1Number), الفئات: $team1Categories');
+      print('  - الفريق الثاني: $team2Name (رقم: $team2Number), الفئات: $team2Categories');
+      print('📊 إجمالي الفئات المجمعة:');
+      print('  - فريق 1: ${team1Categories.length} فئة');
+      print('  - فريق 2: ${team2Categories.length} فئة');
+
+      // Navigate directly to PaymentWebView with subscription
+      _performSubscription(package, {
+        'fromMyRounds': true,
+        'packageId': package.id,
+        'team1Name': team1Name,
+        'team2Name': team2Name,
+        'team1Categories': team1Categories,
+        'team2Categories': team2Categories,
+        'team1Number': team1Number,
+        'team2Number': team2Number,
+        'paymentMethod': 'online',
+        'packageLimit': package.limit, // إضافة حد الباقة
+        'totalRounds': package.rounds.length, // إضافة عدد الجولات
+      });
     }
+  }
+
+  Future<void> _performSubscription(PackageData package, Map<String, dynamic> gameData) async {
+    try {
+      // Save game data to GlobalStorage
+      GlobalStorage.lastRouteArguments = Map<String, dynamic>.from(gameData);
+      
+      print('💾 حفظ بيانات اللعبة في GlobalStorage: $gameData');
+      
+      // Call the subscription API directly
+      final packagesRepository = getIt<PackagesRepository>();
+      final result = await packagesRepository.subscribeToPackage(package.id, increase: false);
+      
+      result.fold(
+        (failure) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('خطأ في الاشتراك: ${failure.message}'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+        },
+        (paymentUrl) {
+          print('🎯 تم الحصول على رابط الدفع: $paymentUrl');
+          
+          // Navigate to PaymentWebView
+          if (mounted) {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => PaymentWebView(url: paymentUrl),
+              ),
+            );
+          }
+        },
+      );
+    } catch (e) {
+      print('❌ خطأ في عملية الاشتراك: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('حدث خطأ في الاشتراك: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Widget _buildRoundDetails(List<RoundData> rounds, String packageKey) {
+    return Column(
+      children: rounds.map((round) {
+        final roundKey = '${packageKey}_round_${round.id}';
+        final isRoundExpanded = _expandedRounds[roundKey] ?? false;
+        
+        return Container(
+          margin: EdgeInsets.only(bottom: 8.h),
+          padding: EdgeInsets.all(12.w),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(8.r),
+            border: Border.all(color: Colors.white.withOpacity(0.2)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Round header - clickable
+              InkWell(
+                onTap: () {
+                  setState(() {
+                    _expandedRounds[roundKey] = !isRoundExpanded;
+                  });
+                },
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'الجولة ${round.roundNumber}',
+                        style: TextStyles.font14Secondary700Weight.copyWith(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    Icon(
+                      isRoundExpanded ? Icons.expand_less : Icons.expand_more,
+                      color: Colors.white,
+                      size: 20.sp,
+                    ),
+                  ],
+                ),
+              ),
+              // Round details - expandable
+              AnimatedSize(
+                duration: Duration(milliseconds: 300),
+                child: isRoundExpanded
+                    ? Container(
+                        padding: EdgeInsets.only(top: 8.h),
+                        child: Column(
+                          children: round.roundData.map((item) {
+                            return Padding(
+                              padding: EdgeInsets.only(bottom: 4.h),
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      '${item.team?.name ?? 'فريق ${item.team?.teamNumber ?? 0}'}: ${item.category?.name ?? 'فئة غير محددة'}',
+                                      style: TextStyles.font12Secondary700Weight.copyWith(
+                                        color: Colors.white.withOpacity(0.8),
+                                      ),
+                                    ),
+                                  ),
+                                  Text(
+                                    '${item.pointEarned} نقطة',
+                                    style: TextStyles.font12Secondary700Weight.copyWith(
+                                      color: item.pointEarned >= 0 ? Colors.green : Colors.red,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                      )
+                    : SizedBox.shrink(),
+              ),
+            ],
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        drawer: const AppDrawer(),
+        body: Stack(
+          children: [
+            // Drawer icon (top left of main page)
+            Positioned(
+              top: 6.h,
+              left: 6.w,
+              child: GameDrawerIcon(),
+            ),
+            // Main content - positioned to create space from drawer
+            Positioned(
+              top: 75.h, // نزله شوية للأسفل
+              left: 70.w, // إبعاده عن الـ drawer ووضعه يمين شوية
+              right: 20.w,
+              child: Container(
+                width: 740.w,
+                height: 255.h, // نفس ارتفاع صفحة الباقات
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                ),
+                child: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    /// Background gradient
+                    Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Color(0XFF8e8e8e),
+                            AppColors.black.withOpacity(.2),
+                            Colors.white.withOpacity(.5),
+                          ],
+                        ),
+                      ),
+                    ),
+                    /// Header (painted) INSIDE main container
+                    Positioned(
+                      top: -23,
+                      left: 0,
+                      child: SizedBox(
+                        width: 260.w,
+                        height: 80.h,
+                        child: CustomPaint(
+                          painter: HeaderShapePainter(),
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      top: -13,
+                      left: 25,
+                      child: Text(
+                        'جولاتي',
+                        style: TextStyles.font14Secondary700Weight,
+                      ),
+                    ),
+                    /// Close button (top right of main container)
+                    Positioned(
+                      top: -15,
+                      right: -15,
+                      child: GestureDetector(
+                        onTap: () => Navigator.of(context).pop(),
+                        child: SvgPicture.asset(AppIcons.cancel),
+                      ),
+                    ),
+                    /// Content container
+                    Positioned(
+                      top: 18.h,
+                      left: 10.w,
+                      right: 10.w,
+                      bottom: 0.h,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: const Color(0XFF231F20).withOpacity(.3),
+                        ),
+                        child: BlocBuilder<GetAllGamesCubit, GetAllGamesState>(
+                          builder: (context, state) {
+                            if (state is GetAllGamesLoading) {
+                              return _buildShimmerLoading();
+                            } else if (state is GetAllGamesError) {
+                              return Center(
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Text(
+                                      'خطأ في تحميل البيانات',
+                                      style: TextStyles.font16Secondary700Weight.copyWith(
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                    SizedBox(height: 10.h),
+                                    Text(
+                                      state.message,
+                                      style: TextStyles.font14Secondary700Weight.copyWith(
+                                        color: Colors.white.withOpacity(0.7),
+                                      ),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                    SizedBox(height: 20.h),
+                                    ElevatedButton(
+                                      onPressed: () {
+                                        context.read<GetAllGamesCubit>().getAllGames();
+                                      },
+                                      child: Text('إعادة المحاولة'),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            } else if (state is GetAllGamesLoaded) {
+                              if (state.response.data.isEmpty) {
+                                return Center(
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(
+                                        Icons.games_outlined,
+                                        size: 80.sp,
+                                        color: Colors.white.withOpacity(0.5),
+                                      ),
+                                      SizedBox(height: 20.h),
+                                      Text(
+                                        'لا توجد جولات متاحة',
+                                        style: TextStyles.font20Secondary700Weight.copyWith(
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                      SizedBox(height: 10.h),
+                                      Text(
+                                        'ابدأ لعبة جديدة لرؤية جولاتك هنا',
+                                        style: TextStyles.font14Secondary700Weight.copyWith(
+                                          color: Colors.white.withOpacity(0.7),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              }
+
+                              return Padding(
+                                padding: EdgeInsets.all(12.w),
+                                child: ListView.builder(
+                                  itemCount: state.response.data.length,
+                                  itemBuilder: (context, gameIndex) {
+                                    final game = state.response.data[gameIndex];
+                                    final gameKey = 'game_${game.id}';
+                                    final isGameExpanded = _expandedGames[gameKey] ?? false;
+                                    
+                                    return Container(
+                                      margin: EdgeInsets.only(bottom: 16.h),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white.withOpacity(0.1),
+                                        borderRadius: BorderRadius.circular(12.r),
+                                        border: Border.all(color: Colors.white.withOpacity(0.3)),
+                                      ),
+                                      child: Column(
+                                        children: [
+                                          // Game header - clickable
+                                          InkWell(
+                                            onTap: () {
+                                              setState(() {
+                                                _expandedGames[gameKey] = !isGameExpanded;
+                                              });
+                                            },
+                                            child: Container(
+                                              padding: EdgeInsets.all(16.w),
+                                              decoration: BoxDecoration(
+                                                color: Colors.white.withOpacity(0.1),
+                                                borderRadius: BorderRadius.only(
+                                                  topLeft: Radius.circular(12.r),
+                                                  topRight: Radius.circular(12.r),
+                                                  bottomLeft: isGameExpanded ? Radius.zero : Radius.circular(12.r),
+                                                  bottomRight: isGameExpanded ? Radius.zero : Radius.circular(12.r),
+                                                ),
+                                              ),
+                                              child: Row(
+                                                children: [
+                                                  Expanded(
+                                                    child: Column(
+                                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                                      children: [
+                                                        Text(
+                                                          game.name,
+                                                          style: TextStyles.font16Secondary700Weight.copyWith(
+                                                            color: Colors.white,
+                                                          ),
+                                                        ),
+                                                        SizedBox(height: 4.h),
+                                                        Row(
+                                                          children: [
+                                                            Container(
+                                                              padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 2.h),
+                                                              decoration: BoxDecoration(
+                                                                color: game.status == 'completed' ? Colors.green : Colors.orange,
+                                                                borderRadius: BorderRadius.circular(4.r),
+                                                              ),
+                                                              child: Text(
+                                                                game.status == 'completed' ? 'مكتملة' : 'قيد التقدم',
+                                                                style: TextStyles.font12Secondary700Weight.copyWith(
+                                                                  color: Colors.white,
+                                                                ),
+                                                              ),
+                                                            ),
+                                                            SizedBox(width: 8.w),
+                                                            Text(
+                                                              '${game.packages.length} باقة',
+                                                              style: TextStyles.font12Secondary700Weight.copyWith(
+                                                                color: Colors.white.withOpacity(0.7),
+                                                              ),
+                                                            ),
+                                                          ],
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                  Icon(
+                                                    isGameExpanded ? Icons.expand_less : Icons.expand_more,
+                                                    color: Colors.white,
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          ),
+                                          // Game content - expandable
+                                          AnimatedSize(
+                                            duration: Duration(milliseconds: 300),
+                                            child: isGameExpanded
+                                                ? Column(
+                                                    children: game.packages.map((package) {
+                                                      final packageKey = '${gameKey}_package_${package.id}';
+                                                      final isPackageExpanded = _expandedPackages[packageKey] ?? false;
+                                                      
+                                                      return Container(
+                                                        margin: EdgeInsets.all(8.w),
+                                                        decoration: BoxDecoration(
+                                                          color: Colors.white.withOpacity(0.05),
+                                                          borderRadius: BorderRadius.circular(8.r),
+                                                          border: Border.all(color: Colors.white.withOpacity(0.2)),
+                                                        ),
+                                                        child: Column(
+                                                          children: [
+                                                            // Package header - clickable
+                                                            InkWell(
+                                                              onTap: () {
+                                                                setState(() {
+                                                                  _expandedPackages[packageKey] = !isPackageExpanded;
+                                                                });
+                                                              },
+                                                              child: Container(
+                                                                padding: EdgeInsets.all(12.w),
+                                                                child: Row(
+                                                                  children: [
+                                                                    Expanded(
+                                                                      child: Column(
+                                                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                                                        children: [
+                                                                          Text(
+                                                                            package.name,
+                                                                            style: TextStyles.font14Secondary700Weight.copyWith(
+                                                                              color: Colors.white,
+                                                                            ),
+                                                                          ),
+                                                                          SizedBox(height: 4.h),
+                                                                          Row(
+                                                                            children: [
+                                                                              Text(
+                                                                                'السعر: ${package.price} ريال',
+                                                                                style: TextStyles.font12Secondary700Weight.copyWith(
+                                                                                  color: Colors.white.withOpacity(0.8),
+                                                                                ),
+                                                                              ),
+                                                                              SizedBox(width: 16.w),
+                                                                              Text(
+                                                                                'الحد الأقصى: ${package.limit}',
+                                                                                style: TextStyles.font12Secondary700Weight.copyWith(
+                                                                                  color: Colors.white.withOpacity(0.8),
+                                                                                ),
+                                                                              ),
+                                                                            ],
+                                                                          ),
+                                                                          SizedBox(height: 4.h),
+                                                                          Row(
+                                                                            children: [
+                                                                              Container(
+                                                                                padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.h),
+                                                                                decoration: BoxDecoration(
+                                                                                  color: _getStatusColor(package.subscriptionStatus),
+                                                                                  borderRadius: BorderRadius.circular(4.r),
+                                                                                ),
+                                                                                child: Text(
+                                                                                  _getStatusText(package.subscriptionStatus),
+                                                                                  style: TextStyles.font10Secondary700Weight.copyWith(
+                                                                                    color: Colors.white,
+                                                                                  ),
+                                                                                ),
+                                                                              ),
+                                                                              SizedBox(width: 8.w),
+                                                                              Text(
+                                                                                '${package.rounds.length} جولة',
+                                                                                style: TextStyles.font12Secondary700Weight.copyWith(
+                                                                                  color: Colors.white.withOpacity(0.7),
+                                                                                ),
+                                                                              ),
+                                                                            ],
+                                                                          ),
+                                                                        ],
+                                                                      ),
+                                                                    ),
+                                                                    Icon(
+                                                                      isPackageExpanded ? Icons.expand_less : Icons.expand_more,
+                                                                      color: Colors.white,
+                                                                    ),
+                                                                  ],
+                                                                ),
+                                                              ),
+                                                            ),
+                                                            // Package content - expandable
+                                                            AnimatedSize(
+                                                              duration: Duration(milliseconds: 300),
+                                                              child: isPackageExpanded
+                                                                  ? Container(
+                                                                      padding: EdgeInsets.all(12.w),
+                                                                      child: Column(
+                                                                        children: [
+                                                                          // Rounds
+                                                                          if (package.rounds.isNotEmpty) ...[
+                                                                            _buildRoundDetails(package.rounds, packageKey),
+                                                                            SizedBox(height: 12.h),
+                                                                          ],
+                                                                          // Subscribe button
+                                                                          SizedBox(
+                                                                            width: double.infinity,
+                                                                            child: ElevatedButton(
+                                                                              onPressed: () => _subscribeToPackage(package, game),
+                                                                              style: ElevatedButton.styleFrom(
+                                                                                backgroundColor: Color(0xFF79899f),
+                                                                                padding: EdgeInsets.symmetric(vertical: 12.h),
+                                                                                shape: RoundedRectangleBorder(
+                                                                                  borderRadius: BorderRadius.circular(8.r),
+                                                                                ),
+                                                                              ),
+                                                                              child: Text(
+                                                                                'تكرار اللعب',
+                                                                                style: TextStyles.font14Secondary700Weight.copyWith(
+                                                                                  color: Colors.white,
+                                                                                ),
+                                                                              ),
+                                                                            ),
+                                                                          ),
+                                                                        ],
+                                                                      ),
+                                                                    )
+                                                                  : SizedBox.shrink(),
+                                                            ),
+                                                          ],
+                                                        ),
+                                                      );
+                                                    }).toList(),
+                                                  )
+                                                : SizedBox.shrink(),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  },
+                                ),
+                              );
+                            }
+                            return SizedBox.shrink();
+                          },
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildShimmerLoading() {
+    return Shimmer.fromColors(
+      baseColor: Colors.grey[300]!,
+      highlightColor: Colors.grey[100]!,
+      child: ListView.builder(
+        itemCount: 3,
+        itemBuilder: (context, index) {
+          return Container(
+            margin: EdgeInsets.only(bottom: 16.h),
+            height: 200.h,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12.r),
+            ),
+          );
+        },
+      ),
+    );
   }
 }

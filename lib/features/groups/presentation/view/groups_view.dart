@@ -7,6 +7,7 @@ import 'package:guess_game/core/routing/routes.dart';
 import 'package:guess_game/core/theming/colors.dart';
 import 'package:guess_game/core/theming/styles.dart';
 import 'package:guess_game/core/helper_functions/toast_helper.dart';
+import 'package:guess_game/core/widgets/subscription_alert_dialog.dart';
 import 'package:guess_game/features/game/data/models/game_start_request.dart';
 import 'package:guess_game/features/game/data/models/game_start_response.dart';
 import 'package:guess_game/features/game/presentation/cubit/add_one_round_cubit.dart';
@@ -37,6 +38,7 @@ class _GroupsViewState extends State<GroupsView> {
   int _addOneGameId = 0;
   int _addOneTeam1Id = 0;
   int _addOneTeam2Id = 0;
+  bool _hasLoadedReplayData = false; // Flag to track if replay data has been loaded
 
   @override
   void dispose() {
@@ -63,6 +65,9 @@ class _GroupsViewState extends State<GroupsView> {
       if (mounted) {
         ToastHelper.showError(context, 'يجب اختيار الفئات لكلا الفريقين أولاً');
       }
+      setState(() {
+        _isStartingGame = false;
+      });
       return;
     }
 
@@ -70,6 +75,9 @@ class _GroupsViewState extends State<GroupsView> {
       if (mounted) {
         ToastHelper.showError(context, 'يجب إدخال أسماء الفرق');
       }
+      setState(() {
+        _isStartingGame = false;
+      });
       return;
     }
 
@@ -119,12 +127,23 @@ class _GroupsViewState extends State<GroupsView> {
           );
         }
       } else if (gameState is GameStartError) {
-        // فشل - عرض رسالة خطأ
+        // فشل - التحقق من نوع الخطأ
         if (mounted) {
           setState(() {
             _isStartingGame = false;
           });
-          ToastHelper.showError(context, gameState.message);
+          
+          // التحقق إذا كان الخطأ متعلق بالاشتراك
+          final errorMessage = gameState.message.toLowerCase();
+          if (errorMessage.contains('subscription') || 
+              errorMessage.contains('اشتراك') || 
+              errorMessage.contains('انتهى') ||
+              errorMessage.contains('expired') ||
+              errorMessage.contains('limit')) {
+            _showSubscriptionRequiredDialog();
+          } else {
+            ToastHelper.showError(context, gameState.message);
+          }
         }
       }
     } catch (e) {
@@ -136,6 +155,37 @@ class _GroupsViewState extends State<GroupsView> {
         ToastHelper.showError(context, '❌ فشل في بدء اللعبة: $e');
       }
     }
+  }
+
+  void _showSubscriptionRequiredDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        return SubscriptionAlertDialog(
+          title: 'اشتراك مطلوب',
+          content: 'يجب الاشتراك في باقة جديدة لبدء اللعبة',
+          buttonText: 'اشتراك',
+          secondaryButtonText: 'إلغاء',
+          onSecondaryButtonPressed: () => Navigator.of(dialogContext).pop(),
+          onButtonPressed: () {
+            Navigator.of(dialogContext).pop();
+            
+            // حفظ بيانات اللعبة الحالية للاستعادة بعد الدفع
+            GlobalStorage.lastRouteArguments = {
+              'team1Name': GlobalStorage.team1Name,
+              'team2Name': GlobalStorage.team2Name,
+              'team1Categories': GlobalStorage.team1Categories,
+              'team2Categories': GlobalStorage.team2Categories,
+              'isReplayAfterPayment': true, // علامة للعودة إلى GroupsView بعد الدفع
+            };
+            
+            // الانتقال إلى صفحة الباقات
+            Navigator.of(context).pushNamed(Routes.packages);
+          },
+        );
+      },
+    );
   }
 
   GameStartResponse? _resolveCurrentGameStart() {
@@ -292,7 +342,7 @@ class _GroupsViewState extends State<GroupsView> {
         t1Name: GlobalStorage.team1Name,
         t2Name: GlobalStorage.team2Name,
       );
-      print('💾 تم حفظ اسم الفريق الأول: "${GlobalStorage.team1Name}"');
+      print('💾 تم حفظ اسم الفريق الأول: "${GlobalStorage.team1Name}" (من controller: "${_team1Controller.text}")');
     };
 
     _team2Listener = () {
@@ -303,7 +353,7 @@ class _GroupsViewState extends State<GroupsView> {
         t1Name: GlobalStorage.team1Name,
         t2Name: GlobalStorage.team2Name,
       );
-      print('💾 تم حفظ اسم الفريق الثاني: "${GlobalStorage.team2Name}"');
+      print('💾 تم حفظ اسم الفريق الثاني: "${GlobalStorage.team2Name}" (من controller: "${_team2Controller.text}")');
     };
 
     // إضافة الـ listeners للـ controllers
@@ -321,6 +371,45 @@ class _GroupsViewState extends State<GroupsView> {
         _team2Controller.text = GlobalStorage.team2Name;
       }
     }
+
+    // Load replay data from route arguments if available
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+      if (args != null && args['isReplay'] == true && !_hasLoadedReplayData) {
+        final team1Name = args['team1Name'] as String? ?? '';
+        final team2Name = args['team2Name'] as String? ?? '';
+        final team1Categories = args['team1Categories'] as List<int>? ?? [];
+        final team2Categories = args['team2Categories'] as List<int>? ?? [];
+        
+        // Set controller text only once when loading replay data
+        if (team1Name.isNotEmpty) {
+          print('🔧 تعيين اسم الفريق الأول: $team1Name');
+          _team1Controller.text = team1Name;
+          GlobalStorage.team1Name = team1Name;
+        }
+        if (team2Name.isNotEmpty) {
+          print('🔧 تعيين اسم الفريق الثاني: $team2Name');
+          _team2Controller.text = team2Name;
+          GlobalStorage.team2Name = team2Name;
+        }
+        print('🎮 تم تحميل أسماء الفرق من جولاتي: $team1Name, $team2Name');
+        print('🔧 حالة الـ controllers بعد التحميل:');
+        print('  - _team1Controller.text: "${_team1Controller.text}"');
+        print('  - _team2Controller.text: "${_team2Controller.text}"');
+        
+        // Load categories for replay
+        if (team1Categories.isNotEmpty && team2Categories.isNotEmpty) {
+          _team1Categories = team1Categories;
+          _team2Categories = team2Categories;
+          GlobalStorage.team1Categories = team1Categories;
+          GlobalStorage.team2Categories = team2Categories;
+          print('🎮 تم تحميل فئات الفرق من جولاتي: $team1Categories, $team2Categories');
+        }
+        
+        _hasLoadedReplayData = true; // Mark as loaded to prevent repeated loading
+        setState(() {}); // Trigger rebuild to show the loaded data
+      }
+    });
   }
 
   @override
@@ -336,26 +425,12 @@ class _GroupsViewState extends State<GroupsView> {
       _addOneTeam1Id = args['team1Id'] as int? ?? _addOneTeam1Id;
       _addOneTeam2Id = args['team2Id'] as int? ?? _addOneTeam2Id;
       
-      // Handle replay from MyRoundsView
-      final isReplay = args['isReplay'] == true;
-      if (isReplay) {
-        final team1Name = args['team1Name'] as String? ?? '';
-        final team2Name = args['team2Name'] as String? ?? '';
-        if (team1Name.isNotEmpty && team2Name.isNotEmpty) {
-          _team1Controller.text = team1Name;
-          _team2Controller.text = team2Name;
-          GlobalStorage.team1Name = team1Name;
-          GlobalStorage.team2Name = team2Name;
-          print('🎮 تم تحميل أسماء الفرق من جولاتي: $team1Name, $team2Name');
-        }
-      }
-      
       // في حالة isSameGamePackageFlow، تأكد من تحميل الأسماء من GlobalStorage
       if (_isSameGamePackageFlow) {
-        if (GlobalStorage.team1Name.isNotEmpty) {
+        if (GlobalStorage.team1Name.isNotEmpty && _team1Controller.text != GlobalStorage.team1Name) {
           _team1Controller.text = GlobalStorage.team1Name;
         }
-        if (GlobalStorage.team2Name.isNotEmpty) {
+        if (GlobalStorage.team2Name.isNotEmpty && _team2Controller.text != GlobalStorage.team2Name) {
           _team2Controller.text = GlobalStorage.team2Name;
         }
         print('📋 تم تحميل أسماء الفرق من GlobalStorage: ${GlobalStorage.team1Name}, ${GlobalStorage.team2Name}');
@@ -410,6 +485,7 @@ class _GroupsViewState extends State<GroupsView> {
                           controller: _team2Controller,
                           hintText: 'اضف اسم الفريق',
                           onChanged: (value) {
+                            print('🔄 تم تغيير اسم الفريق الثاني إلى: "$value"');
                             setState(() {});
                           },
                         ),
@@ -422,6 +498,7 @@ class _GroupsViewState extends State<GroupsView> {
                           controller: _team1Controller,
                           hintText: 'اضف اسم الفريق',
                           onChanged: (value) {
+                            print('🔄 تم تغيير اسم الفريق الأول إلى: "$value"');
                             setState(() {});
                           },
                         ),

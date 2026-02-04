@@ -16,6 +16,8 @@ import 'package:guess_game/core/widgets/app_drawer.dart';
 import 'package:guess_game/core/injection/service_locator.dart';
 import 'package:guess_game/features/auth/login/presentation/cubit/auth_cubit.dart';
 import 'package:guess_game/features/game/presentation/cubit/game_cubit.dart';
+import 'package:guess_game/features/packages/presentation/cubit/packages_cubit.dart';
+import 'package:guess_game/features/packages/presentation/view/payment_webview.dart';
 
 class OptionsView extends StatefulWidget {
   const OptionsView({super.key});
@@ -77,6 +79,62 @@ class _OptionsViewState extends State<OptionsView> {
         });
       }
     }
+  }
+
+  void _showAddOneCategoryDialog(BuildContext context, int gameId, int team1Id, int team2Id, String team1Name, String team2Name) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        return BlocProvider(
+          create: (context) => getIt<PackagesCubit>(),
+          child: BlocConsumer<PackagesCubit, PackagesState>(
+            listener: (context, state) {
+              if (state is PackagesSubscribed) {
+                Navigator.of(dialogContext).pop();
+                
+                // Save game data for the +1 category flow
+                GlobalStorage.lastRouteArguments = {
+                  'gameId': gameId,
+                  'team1Id': team1Id,
+                  'team2Id': team2Id,
+                  'team1Name': team1Name,
+                  'team2Name': team2Name,
+                  'isAddOneCategory': true, // Flag to identify +1 category flow
+                };
+
+                // Navigate to payment webview
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => PaymentWebView(url: state.paymentUrl),
+                  ),
+                );
+              } else if (state is PackagesSubscriptionError) {
+                Navigator.of(dialogContext).pop();
+                ToastHelper.showError(context, state.message);
+              }
+            },
+            builder: (context, state) {
+              final isLoading = state is PackagesSubscribing;
+              return SubscriptionAlertDialog(
+                title: 'فئة +1 جديدة',
+                content: 'الانتقال لصفحة الدفع',
+                buttonText: 'حسناً',
+                secondaryButtonText: 'إلغاء',
+                onSecondaryButtonPressed: isLoading
+                    ? null
+                    : () => Navigator.of(dialogContext).pop(),
+                onButtonPressed: isLoading
+                    ? null
+                    : () {
+                        context.read<PackagesCubit>().subscribeWithoutPackage();
+                      },
+              );
+            },
+          ),
+        );
+      },
+    );
   }
 
   void _showSubscriptionExpiredDialog() {
@@ -308,38 +366,12 @@ class _OptionsViewState extends State<OptionsView> {
                                     YellowPillButton(
                                       width: 220.w,
                                       height: 30.h,
-                                      onTap: !_isRefreshing && !_isLimitZero && GlobalStorage.subscription?.limit != null && GlobalStorage.subscription!.limit! >= 1
-                                        ? () async {
-                                            // Check limit again before proceeding
-                                            final currentLimit = GlobalStorage.subscription?.limit ?? 0;
-                                            if (currentLimit == 0 || GlobalStorage.subscription == null) {
-                                              _showSubscriptionExpiredDialog();
-                                              return;
-                                            }
-
-                                            // Start "add one category" flow: clear categories but keep team names.
-                                            await GlobalStorage.saveGameData(
-                                              team1Cats: [],
-                                              team2Cats: [],
-                                              t1Name: team1Name,
-                                              t2Name: team2Name,
-                                            );
-                                            Navigator.of(context).pushNamed(
-                                              Routes.teamCategories,
-                                              arguments: {
-                                                'limit': GlobalStorage.subscription?.limit ?? 1,
-                                                'isAddOneCategory': true,
-                                                'gameId': gameId,
-                                                'team1Id': team1Id,
-                                                'team2Id': team2Id,
-                                              },
-                                            );
-                                          }
-                                        : _isLimitZero
-                                          ? () => _showSubscriptionExpiredDialog()
-                                          : null,
+                                      onTap: () {
+                                        // استدعاء dialog مباشرة بدون أي شروط
+                                        _showAddOneCategoryDialog(context, gameId, team1Id, team2Id, team1Name, team2Name);
+                                      },
                                       child: Text(
-                                        'فئه +1 جديده',
+                                        'فئة جديدة نفس الجيم',
                                         style: TextStyles.font20Secondary700Weight,
                                         textAlign: TextAlign.center,
                                       ),
@@ -349,30 +381,45 @@ class _OptionsViewState extends State<OptionsView> {
                                       width: 220.w,
                                       height: 30.h,
                                       onTap: () {
-                                        // حفظ gameId و teamIds للاستخدام بعد الشراء
+                                        // حفظ البيانات للاستخدام بعد الشراء
                                         GlobalStorage.saveGameData(
                                           team1Cats: [],
                                           team2Cats: [],
                                           t1Name: team1Name,
                                           t2Name: team2Name,
                                         );
-                                        // حفظ gameId و teamIds في GlobalStorage
+                                        // حفظ gameId و teamIds في GlobalStorage مع علامة isSameGamePackage
                                         GlobalStorage.lastRouteArguments = {
                                           'gameId': gameId,
                                           'team1Id': team1Id,
                                           'team2Id': team2Id,
+                                          'team1Name': team1Name,
+                                          'team2Name': team2Name,
                                           'isSameGamePackage': true, // علامة للتعرف على هذا السايكل
                                         };
                                         
-                                        // التحقق من subscription
+                                        // التحقق من subscription وتمرير البيانات لصفحة الباقات
+                                        final packagesArguments = {
+                                          'gameId': gameId,
+                                          'team1Id': team1Id,
+                                          'team2Id': team2Id,
+                                          'team1Name': team1Name,
+                                          'team2Name': team2Name,
+                                          'isSameGamePackage': true,
+                                        };
+                                        
                                         if (GlobalStorage.subscription == null) {
                                           // subscription = null → انتقل مباشرة لصفحة packages
-                                          Navigator.of(context).pushNamed(Routes.packages);
-                                        } else {
-                                          // subscription != null → انتقل مع increase = true
                                           Navigator.of(context).pushNamed(
                                             Routes.packages,
-                                            arguments: {'increase': true},
+                                            arguments: packagesArguments,
+                                          );
+                                        } else {
+                                          // subscription != null → انتقل مع increase = true
+                                          packagesArguments['increase'] = true;
+                                          Navigator.of(context).pushNamed(
+                                            Routes.packages,
+                                            arguments: packagesArguments,
                                           );
                                         }
                                       },

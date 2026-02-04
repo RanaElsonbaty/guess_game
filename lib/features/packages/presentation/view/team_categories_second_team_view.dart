@@ -20,12 +20,14 @@ class TeamCategoriesSecondTeamView extends StatefulWidget {
   final int limit;
   final List<int> team1Categories;
   final bool isAddOneCategory;
+  final bool isSameGamePackage;
 
   const TeamCategoriesSecondTeamView({
     super.key,
     required this.limit,
     required this.team1Categories,
     this.isAddOneCategory = false,
+    this.isSameGamePackage = false,
   });
 
   @override
@@ -99,17 +101,12 @@ class _TeamCategoriesSecondTeamViewState extends State<TeamCategoriesSecondTeamV
             return;
           }
         } else {
-          // يجب أن يكون العدد مساوياً لعدد الفريق الأول
+          // في الوضع العادي: يمكن اختيار حتى limit فئة
           final newCount = currentTeam2Count + 1;
           
-          // التحقق من أن العدد لن يتجاوز عدد الفريق الأول
-          if (newCount > team1Count) {
-            ToastHelper.showWarning(context, 'يجب أن يكون عدد الفئات مساوياً للفريق الأول ($team1Count فئة)');
-            return;
-          }
-          
-          // التحقق من الحد الأقصى
-          if (newCount > maxSelectableCategories) {
+          // التحقق من الحد الأقصى (limit)
+          if (newCount > widget.limit) {
+            ToastHelper.showWarning(context, 'يمكن اختيار حتى ${widget.limit} فئة فقط');
             return;
           }
         }
@@ -359,18 +356,6 @@ class _TeamCategoriesSecondTeamViewState extends State<TeamCategoriesSecondTeamV
                 // منطق التحقق من الاختيارات
                 final team1Count = team1Categories.length;
                 final team2Count = selectedCategoriesForSecondTeam.length;
-                final totalCount = team1Count + team2Count;
-
-                // التحقق من أن كل فريق اختار فئة واحدة على الأقل
-                if (team1Count == 0) {
-                  ToastHelper.showError(context, 'يجب على الفريق الأول اختيار فئة واحدة على الأقل');
-                  return;
-                }
-
-                if (team2Count == 0) {
-                  ToastHelper.showError(context, 'يجب على الفريق الثاني اختيار فئة واحدة على الأقل');
-                  return;
-                }
 
                 if (widget.isAddOneCategory) {
                   // In add-one mode: exactly 1 category per team.
@@ -378,25 +363,18 @@ class _TeamCategoriesSecondTeamViewState extends State<TeamCategoriesSecondTeamV
                     _showOneCategoryOnlyDialog();
                     return;
                   }
-                  // المجموع = 2 (زوجي) ✓
                 } else {
-                  // Normal mode: يجب أن يكون العدد متساوياً، والمجموع زوجي
+                  // Normal mode: كل فريق يجب أن يختار عدد فئات = limit بالضبط
                   
-                  // التحقق من أن العدد متساوي
-                  if (team1Count != team2Count) {
-                    ToastHelper.showError(context, 'يجب أن يكون عدد الفئات متساوياً بين الفريقين (الفريق الأول: $team1Count، الفريق الثاني: $team2Count)');
+                  // التحقق من أن الفريق الأول اختار العدد الصحيح
+                  if (team1Count != widget.limit) {
+                    ToastHelper.showError(context, 'يجب على الفريق الأول اختيار ${widget.limit} فئة بالضبط (مختار حالياً: $team1Count)');
                     return;
                   }
 
-                  // التحقق من أن المجموع زوجي (إذا كان العدد متساوي، فالمجموع دائماً زوجي)
-                  if (totalCount % 2 != 0) {
-                    ToastHelper.showError(context, 'المجموع الكلي للفئات يجب أن يكون زوجياً (حالياً: $totalCount)');
-                    return;
-                  }
-
-                  // التحقق من أن المجموع على الأقل 2
-                  if (totalCount < 2) {
-                    ToastHelper.showError(context, 'المجموع الكلي للفئات يجب أن يكون على الأقل 2');
+                  // التحقق من أن الفريق الثاني اختار العدد الصحيح
+                  if (team2Count != widget.limit) {
+                    ToastHelper.showError(context, 'يجب على الفريق الثاني اختيار ${widget.limit} فئة بالضبط (مختار حالياً: $team2Count)');
                     return;
                   }
                 }
@@ -414,13 +392,14 @@ class _TeamCategoriesSecondTeamViewState extends State<TeamCategoriesSecondTeamV
                 print('🚀 الضغط على زر التالي - الانتقال لصفحة المجموعات');
                 print('📋 الفئات المختارة للفريق الأول: $team1Categories ($team1Count فئة)');
                 print('📋 الفئات المختارة للفريق الثاني: $selectedCategoriesForSecondTeam ($team2Count فئة)');
-                print('✅ تم التحقق: العدد متساوي ($team1Count = $team2Count)، المجموع زوجي ($totalCount)');
+                print('✅ تم التحقق: كل فريق اختار ${widget.limit} فئة بالضبط');
                 Navigator.of(context).pushNamed(
                   Routes.groups,
                   arguments: {
                     'team1Categories': team1Categories,
                     'team2Categories': selectedCategoriesForSecondTeam,
                     'isAddOneCategory': widget.isAddOneCategory,
+                    'isSameGamePackage': widget.isSameGamePackage,
                     'gameId': _gameId,
                     'team1Id': _team1Id,
                     'team2Id': _team2Id,

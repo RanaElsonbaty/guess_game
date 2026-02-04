@@ -19,11 +19,13 @@ import 'package:guess_game/features/qrcode/presentation/view/widgets/game_drawer
 class TeamCategoriesFirstTeamView extends StatefulWidget {
   final int limit;
   final bool isAddOneCategory;
+  final bool isSameGamePackage;
 
   const TeamCategoriesFirstTeamView({
     super.key,
     required this.limit,
     this.isAddOneCategory = false,
+    this.isSameGamePackage = false,
   });
 
   @override
@@ -369,16 +371,16 @@ class _TeamCategoriesFirstTeamViewState extends State<TeamCategoriesFirstTeamVie
                 // منطق التحقق من الاختيارات
                 final team1Count = selectedCategoriesForFirstTeam.length;
 
-                // التحقق من أن الفريق الأول اختار فئة واحدة على الأقل
-                if (team1Count == 0) {
-                  ToastHelper.showError(context, 'يجب على الفريق الأول اختيار فئة واحدة على الأقل');
-                  return;
-                }
-
                 if (widget.isAddOneCategory) {
                   // في حالة add-one: يجب أن تكون فئة واحدة بالضبط
                   if (team1Count != 1) {
                     _showOneCategoryOnlyDialog();
+                    return;
+                  }
+                } else {
+                  // في الوضع العادي: يجب أن يكون العدد مساوياً للـ limit بالضبط
+                  if (team1Count != widget.limit) {
+                    ToastHelper.showError(context, 'يجب على الفريق الأول اختيار ${widget.limit} فئة بالضبط (مختار حالياً: $team1Count)');
                     return;
                   }
                 }
@@ -396,6 +398,7 @@ class _TeamCategoriesFirstTeamViewState extends State<TeamCategoriesFirstTeamVie
                     'limit': widget.limit,
                     'team1Categories': selectedCategoriesForFirstTeam,
                     'isAddOneCategory': widget.isAddOneCategory,
+                    'isSameGamePackage': widget.isSameGamePackage,
                     'gameId': _gameId,
                     'team1Id': _team1Id,
                     'team2Id': _team2Id,

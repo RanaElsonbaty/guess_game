@@ -103,6 +103,20 @@ class PackagesCubit extends Cubit<PackagesState> {
     );
   }
 
+  /// Subscribe without package_id (for +1 category feature)
+  Future<void> subscribeWithoutPackage() async {
+    // الاحتفاظ بالباقات الحالية عند الاشتراك
+    final currentPackages = packages;
+    emit(PackagesSubscribing(currentPackages));
+
+    final result = await _packagesRepository.subscribeWithoutPackage();
+
+    result.fold(
+      (failure) => emit(PackagesSubscriptionError(failure.message)),
+      (paymentUrl) => emit(PackagesSubscribed(paymentUrl, currentPackages)),
+    );
+  }
+
   /// Check if subscribing
   bool get isSubscribing => state is PackagesSubscribing;
 

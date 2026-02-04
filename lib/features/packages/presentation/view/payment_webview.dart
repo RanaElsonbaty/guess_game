@@ -66,7 +66,7 @@ class _PaymentWebViewState extends State<PaymentWebView> {
 
   void _showSuccessAndNavigate() async {
     if (mounted) {
-      ToastHelper.showSuccess(context, '✅ تم إكمال الدفع بنجاح! سيتم توجيهك لصفحة اختيار الفئات...');
+      ToastHelper.showSuccess(context, '✅ تم إكمال الدفع بنجاح!');
 
       try {
         // تحديث بيانات المستخدم من API بعد الدفع الناجح
@@ -99,16 +99,150 @@ class _PaymentWebViewState extends State<PaymentWebView> {
             print('  - Limit: $limit');
           }
 
-          // انتظار ثم الانتقال باستخدام الـ limit المحدث
-          Future.delayed(const Duration(seconds: 3), () {
-            if (mounted) {
-              Navigator.of(context).pushNamedAndRemoveUntil(
-                Routes.teamCategories,
-                (route) => false,
-                arguments: {'limit': limit},
-              );
-            }
-          });
+          // Check if this is for +1 category flow, same game package flow, replay after payment, or from MyRounds
+          final isAddOneCategory = GlobalStorage.lastRouteArguments?['isAddOneCategory'] as bool? ?? false;
+          final isSameGamePackage = GlobalStorage.lastRouteArguments?['isSameGamePackage'] as bool? ?? false;
+          final isReplayAfterPayment = GlobalStorage.lastRouteArguments?['isReplayAfterPayment'] as bool? ?? false;
+          final fromMyRounds = GlobalStorage.lastRouteArguments?['fromMyRounds'] as bool? ?? false;
+          
+          if (fromMyRounds) {
+            // This is from MyRounds subscription flow - navigate directly to GroupsView with saved game data
+            final team1Name = GlobalStorage.lastRouteArguments?['team1Name'] as String? ?? '';
+            final team2Name = GlobalStorage.lastRouteArguments?['team2Name'] as String? ?? '';
+            final team1Categories = (GlobalStorage.lastRouteArguments?['team1Categories'] as List<dynamic>?)?.cast<int>() ?? <int>[];
+            final team2Categories = (GlobalStorage.lastRouteArguments?['team2Categories'] as List<dynamic>?)?.cast<int>() ?? <int>[];
+            
+            // Save the game data to GlobalStorage
+            await GlobalStorage.saveGameData(
+              team1Cats: team1Categories,
+              team2Cats: team2Categories,
+              t1Name: team1Name,
+              t2Name: team2Name,
+            );
+            
+            // Navigate directly to GroupsView with the saved data
+            Future.delayed(const Duration(seconds: 2), () {
+              if (mounted) {
+                Navigator.of(context).pushNamedAndRemoveUntil(
+                  Routes.groups,
+                  (route) => false,
+                  arguments: {
+                    'team1Name': team1Name,
+                    'team2Name': team2Name,
+                    'team1Categories': team1Categories,
+                    'team2Categories': team2Categories,
+                    'isReplay': true, // Use /games/start
+                  },
+                );
+              }
+            });
+          } else if (isAddOneCategory) {
+            // This is +1 category flow - navigate to TeamCategoriesFirstTeamView to select categories first
+            final gameId = GlobalStorage.lastRouteArguments?['gameId'] as int? ?? 0;
+            final team1Id = GlobalStorage.lastRouteArguments?['team1Id'] as int? ?? 0;
+            final team2Id = GlobalStorage.lastRouteArguments?['team2Id'] as int? ?? 0;
+            final team1Name = GlobalStorage.lastRouteArguments?['team1Name'] as String? ?? GlobalStorage.team1Name;
+            final team2Name = GlobalStorage.lastRouteArguments?['team2Name'] as String? ?? GlobalStorage.team2Name;
+            
+            // Clear categories but keep team names for +1 category flow
+            await GlobalStorage.saveGameData(
+              team1Cats: [],
+              team2Cats: [],
+              t1Name: team1Name,
+              t2Name: team2Name,
+            );
+            
+            // Navigate to TeamCategoriesFirstTeamView with +1 category flag
+            Future.delayed(const Duration(seconds: 2), () {
+              if (mounted) {
+                Navigator.of(context).pushNamedAndRemoveUntil(
+                  Routes.teamCategories,
+                  (route) => false,
+                  arguments: {
+                    'limit': limit,
+                    'isAddOneCategory': true,
+                    'gameId': gameId,
+                    'team1Id': team1Id,
+                    'team2Id': team2Id,
+                  },
+                );
+              }
+            });
+          } else if (isSameGamePackage) {
+            // This is same game package flow - navigate to TeamCategoriesFirstTeamView with same game flag
+            final gameId = GlobalStorage.lastRouteArguments?['gameId'] as int? ?? 0;
+            final team1Id = GlobalStorage.lastRouteArguments?['team1Id'] as int? ?? 0;
+            final team2Id = GlobalStorage.lastRouteArguments?['team2Id'] as int? ?? 0;
+            final team1Name = GlobalStorage.lastRouteArguments?['team1Name'] as String? ?? GlobalStorage.team1Name;
+            final team2Name = GlobalStorage.lastRouteArguments?['team2Name'] as String? ?? GlobalStorage.team2Name;
+            
+            // Clear categories but keep team names for same game package flow
+            await GlobalStorage.saveGameData(
+              team1Cats: [],
+              team2Cats: [],
+              t1Name: team1Name,
+              t2Name: team2Name,
+            );
+            
+            // Navigate to TeamCategoriesFirstTeamView with same game package flag
+            Future.delayed(const Duration(seconds: 2), () {
+              if (mounted) {
+                Navigator.of(context).pushNamedAndRemoveUntil(
+                  Routes.teamCategories,
+                  (route) => false,
+                  arguments: {
+                    'limit': limit,
+                    'isSameGamePackage': true,
+                    'gameId': gameId,
+                    'team1Id': team1Id,
+                    'team2Id': team2Id,
+                  },
+                );
+              }
+            });
+          } else if (isReplayAfterPayment) {
+            // This is replay after payment flow - navigate back to GroupsView with saved game data
+            final team1Name = GlobalStorage.lastRouteArguments?['team1Name'] as String? ?? '';
+            final team2Name = GlobalStorage.lastRouteArguments?['team2Name'] as String? ?? '';
+            final team1Categories = (GlobalStorage.lastRouteArguments?['team1Categories'] as List<dynamic>?)?.cast<int>() ?? <int>[];
+            final team2Categories = (GlobalStorage.lastRouteArguments?['team2Categories'] as List<dynamic>?)?.cast<int>() ?? <int>[];
+            
+            // Save the game data to GlobalStorage
+            await GlobalStorage.saveGameData(
+              team1Cats: team1Categories,
+              team2Cats: team2Categories,
+              t1Name: team1Name,
+              t2Name: team2Name,
+            );
+            
+            // Navigate back to GroupsView with the saved data
+            Future.delayed(const Duration(seconds: 2), () {
+              if (mounted) {
+                Navigator.of(context).pushNamedAndRemoveUntil(
+                  Routes.groups,
+                  (route) => false,
+                  arguments: {
+                    'team1Name': team1Name,
+                    'team2Name': team2Name,
+                    'team1Categories': team1Categories,
+                    'team2Categories': team2Categories,
+                    'isReplay': true, // Keep the replay flag
+                  },
+                );
+              }
+            });
+          } else {
+            // Regular flow - just navigate to team categories
+            Future.delayed(const Duration(seconds: 3), () {
+              if (mounted) {
+                Navigator.of(context).pushNamedAndRemoveUntil(
+                  Routes.teamCategories,
+                  (route) => false,
+                  arguments: {'limit': limit},
+                );
+              }
+            });
+          }
         } else {
           print('❌ فشل في تحديث بيانات المستخدم، سيتم استخدام القيمة الافتراضية');
 

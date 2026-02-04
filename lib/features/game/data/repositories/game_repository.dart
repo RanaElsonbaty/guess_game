@@ -3,9 +3,10 @@ import 'package:flutter/foundation.dart';
 import 'package:guess_game/core/helper_functions/api_constants.dart';
 import 'package:guess_game/core/network/api_failure.dart';
 import 'package:guess_game/core/network/api_service.dart';
+import 'package:guess_game/features/game/data/models/add_rounds_request.dart';
+import 'package:guess_game/features/game/data/models/all_games_response.dart';
 import 'package:guess_game/features/game/data/models/assign_winner_request.dart';
 import 'package:guess_game/features/game/data/models/assign_winner_response.dart';
-import 'package:guess_game/features/game/data/models/add_rounds_request.dart';
 import 'package:guess_game/features/game/data/models/game_statistics_response.dart';
 import 'package:guess_game/features/game/data/models/game_start_request.dart';
 import 'package:guess_game/features/game/data/models/game_start_response.dart';
@@ -22,6 +23,7 @@ abstract class GameRepository {
   Future<Either<ApiFailure, GameStatisticsResponse>> gameStatistics(int gameId);
   Future<Either<ApiFailure, GameStartResponse>> addRounds(AddRoundsRequest request);
   Future<Either<ApiFailure, GameStartResponse>> endGame(int gameId);
+  Future<Either<ApiFailure, AllGamesResponse>> getAllGames();
 }
 
 class GameRepositoryImpl implements GameRepository {
@@ -214,6 +216,45 @@ class GameRepositoryImpl implements GameRepository {
         print('❌ /games/end/$gameId exception: $e');
       }
       return Left(ApiFailure('حدث خطأ أثناء إنهاء اللعبة: $e'));
+    }
+  }
+
+  @override
+  Future<Either<ApiFailure, AllGamesResponse>> getAllGames() async {
+    try {
+      final response = await _apiService.get('/games');
+
+      return response.fold(
+        (failure) {
+          if (kDebugMode) {
+            print('❌ /games error: ${failure.message}');
+          }
+          return Left(failure);
+        },
+        (success) {
+          if (success.statusCode == 200) {
+            if (kDebugMode) {
+              print('🎮 /games response (raw):');
+              print(success.data);
+            }
+            final gamesResponse = AllGamesResponse.fromJson(success.data);
+            if (kDebugMode) {
+              print('📝 /games API message: ${gamesResponse.message}');
+              print('📊 /games success: ${gamesResponse.success}');
+              print('🔢 /games code: ${gamesResponse.code}');
+              print('🎯 /games total games: ${gamesResponse.data.length}');
+            }
+            return Right(gamesResponse);
+          } else {
+            return Left(ApiFailure('فشل في جلب الألعاب'));
+          }
+        },
+      );
+    } catch (e) {
+      if (kDebugMode) {
+        print('❌ /games exception: $e');
+      }
+      return Left(ApiFailure('حدث خطأ أثناء جلب الألعاب: $e'));
     }
   }
 }

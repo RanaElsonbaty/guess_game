@@ -31,19 +31,19 @@ class Package {
 
   factory Package.fromJson(Map<String, dynamic> json) {
     return Package(
-      id: json['id'],
-      name: json['name'],
-      description: json['description'],
-      image: json['image'],
-      buttonText: json['button_text'],
-      price: json['price'],
-      points: json['points'],
-      limit: json['limit'],
-      moneyPngCount: json['money_png_count'],
-      status: json['status'],
+      id: json['id'] ?? 0,
+      name: json['name'] ?? '',
+      description: json['description'] ?? '',
+      image: json['image'] ?? '',
+      buttonText: json['button_text'] ?? '',
+      price: json['price'] ?? '',
+      points: json['points'] ?? 0,
+      limit: json['limit'] ?? 0,
+      moneyPngCount: json['money_png_count'] ?? 0,
+      status: json['status'] ?? false,
       deletedAt: json['deleted_at'],
-      createdAt: json['created_at'],
-      updatedAt: json['updated_at'],
+      createdAt: json['created_at'] ?? '',
+      updatedAt: json['updated_at'] ?? '',
     );
   }
 

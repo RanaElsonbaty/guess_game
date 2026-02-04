@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:guess_game/features/game/data/models/add_rounds_request.dart';
 import 'package:guess_game/features/game/data/models/assign_winner_request.dart';
 import 'package:guess_game/features/game/data/models/assign_winner_response.dart';
 import 'package:guess_game/features/game/data/models/game_statistics_response.dart';
@@ -129,6 +130,22 @@ class GameCubit extends Cubit<GameState> {
       (response) {
         gameStartResponse = response;
         emit(GameEnded(response));
+        return response;
+      },
+    );
+  }
+
+  Future<GameStartResponse?> addRounds(AddRoundsRequest request) async {
+    emit(GameStarting()); // Reuse existing state for loading
+    final result = await _gameRepository.addRounds(request);
+    return result.fold(
+      (failure) {
+        emit(GameStartError(failure.message));
+        return null;
+      },
+      (response) {
+        gameStartResponse = response;
+        emit(GameStarted(response)); // Reuse existing state for success
         return response;
       },
     );

@@ -24,6 +24,7 @@ import 'package:guess_game/features/packages/presentation/view/team_categories_s
 import 'package:guess_game/features/packages/presentation/view/team_categories_first_team_view.dart';
 import 'package:guess_game/features/game/presentation/cubit/game_cubit.dart';
 import 'package:guess_game/features/game/presentation/cubit/add_one_round_cubit.dart';
+import 'package:guess_game/features/game/presentation/cubit/get_all_games_cubit.dart';
 import 'package:guess_game/features/game_level/presentation/view/game_level_view.dart';
 import 'package:guess_game/features/qrcode/presentation/view/qrcode_view.dart';
 import 'package:guess_game/features/qrcode/presentation/view/qr_image_view.dart';
@@ -153,6 +154,9 @@ class AppRoutes {
             child: TeamCategoriesFirstTeamView(
               limit: limit,
               isAddOneCategory: isAddOneCategory,
+              isSameGamePackage: routeSettings.arguments is Map<String, dynamic> 
+                  ? (routeSettings.arguments as Map<String, dynamic>)['isSameGamePackage'] == true
+                  : false,
             ),
           ),
           settings: routeSettings,
@@ -164,6 +168,7 @@ class AppRoutes {
         int limit = 0;
         List<int> team1Categories = [];
         bool isAddOneCategorySecond = false;
+        bool isSameGamePackageSecond = false;
 
         // حساب limit من subscription remaining (عدد الفئات المسموح لكل فريق)
         final userSubscription = GlobalStorage.subscription;
@@ -178,6 +183,7 @@ class AppRoutes {
           limit = args['limit'] as int? ?? remaining;
           team1Categories = args['team1Categories'] as List<int>? ?? [];
           isAddOneCategorySecond = args['isAddOneCategory'] == true;
+          isSameGamePackageSecond = args['isSameGamePackage'] == true;
         } else if (routeSettings.arguments is int) {
           // البيانات تأتي من team_categories_first_team_view.dart (int فقط)
           limit = routeSettings.arguments as int;
@@ -201,6 +207,7 @@ class AppRoutes {
               limit: limit,
               team1Categories: team1Categories,
               isAddOneCategory: isAddOneCategorySecond,
+              isSameGamePackage: isSameGamePackageSecond,
             ),
           ),
           settings: routeSettings,
@@ -291,8 +298,8 @@ class AppRoutes {
         print('🎮 AppRoutes: تم استدعاء myRounds');
         
         return _createSmoothPageRoute(
-          BlocProvider<GameCubit>(
-            create: (context) => getIt<GameCubit>(),
+          BlocProvider<GetAllGamesCubit>(
+            create: (context) => getIt<GetAllGamesCubit>(),
             child: const MyRoundsView(),
           ),
           settings: routeSettings,

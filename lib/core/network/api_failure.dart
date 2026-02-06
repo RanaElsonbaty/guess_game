@@ -8,7 +8,7 @@ class ApiFailure {
   List<Object?> get props => [message, statusCode];
 
   @override
-  String toString() => 'ApiFailure(message: $message, statusCode: $statusCode)';
+  String toString() => message;
 }
 
 

@@ -216,12 +216,14 @@ class _OtpVerifyViewState extends State<OtpVerifyView> {
                         'otp': _getOtpString(),
                       },
                     );
-                  } else if (state is OtpGenerateError || state is OtpVerifyError) {
-                    final errorMessage = state is OtpGenerateError
-                        ? state.message
-                        : (state as OtpVerifyError).message;
-
-                    print('❌ API Error: $errorMessage');
+                  } else if (state is OtpGenerateError) {
+                    print('❌ API Error (Generate): ${state.message}');
+                    // Show error in toast
+                    ToastHelper.showError(context, state.message);
+                  } else if (state is OtpVerifyError) {
+                    print('❌ API Error (Verify): ${state.message}');
+                    // Show error in toast
+                    ToastHelper.showError(context, state.message);
                   }
                 },
                 builder: (context, state) {

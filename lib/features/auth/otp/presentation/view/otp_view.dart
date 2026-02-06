@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:guess_game/core/helper_functions/extension.dart';
+import 'package:guess_game/core/helper_functions/toast_helper.dart';
 import 'package:guess_game/core/injection/service_locator.dart';
 import 'package:guess_game/core/routing/routes.dart';
 import 'package:guess_game/core/theming/colors.dart';
@@ -68,6 +69,8 @@ class _OtpViewState extends State<OtpView> {
                       );
                     } else if (state is OtpGenerateError) {
                       print('❌ API Error: ${state.message}');
+                      // Show error in toast
+                      ToastHelper.showError(context, state.message);
                     }
                   },
                   builder: (context, state) {

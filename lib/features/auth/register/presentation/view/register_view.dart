@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:guess_game/core/helper_functions/extension.dart';
+import 'package:guess_game/core/helper_functions/toast_helper.dart';
 import 'package:guess_game/core/injection/service_locator.dart';
 import 'package:guess_game/core/routing/routes.dart';
 import 'package:guess_game/core/theming/colors.dart';
@@ -26,6 +27,9 @@ class _RegisterViewState extends State<RegisterView> {
   final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+  
+  bool _isPasswordVisible = false;
+  bool _isConfirmPasswordVisible = false;
 
   @override
   void dispose() {
@@ -73,6 +77,8 @@ class _RegisterViewState extends State<RegisterView> {
                         context.pushReplacementNamed(Routes.chooseLoginType);
                       } else if (state is RegisterError) {
                         print('❌ API Error: ${state.message}');
+                        // Show error in toast
+                        ToastHelper.showError(context, state.message);
                       }
                     },
                     builder: (context, state) {
@@ -318,7 +324,7 @@ class _RegisterViewState extends State<RegisterView> {
                                             ),
                                             child: TextFormField(
                                               controller: _passwordController,
-                                              obscureText: true,
+                                              obscureText: !_isPasswordVisible,
                                               style: TextStyles.font14Secondary700Weight.copyWith(
                                                 color: AppColors.secondaryColor,
                                               ),
@@ -336,6 +342,19 @@ class _RegisterViewState extends State<RegisterView> {
                                                 prefixIcon: Icon(
                                                   Icons.lock,
                                                   color: AppColors.secondaryColor,
+                                                ),
+                                                suffixIcon: IconButton(
+                                                  icon: Icon(
+                                                    _isPasswordVisible
+                                                        ? Icons.visibility
+                                                        : Icons.visibility_off,
+                                                    color: AppColors.secondaryColor,
+                                                  ),
+                                                  onPressed: () {
+                                                    setState(() {
+                                                      _isPasswordVisible = !_isPasswordVisible;
+                                                    });
+                                                  },
                                                 ),
                                                 contentPadding: EdgeInsets.symmetric(
                                                   horizontal: 16.w,
@@ -371,7 +390,7 @@ class _RegisterViewState extends State<RegisterView> {
                                             ),
                                             child: TextFormField(
                                               controller: _confirmPasswordController,
-                                              obscureText: true,
+                                              obscureText: !_isConfirmPasswordVisible,
                                               style: TextStyles.font14Secondary700Weight.copyWith(
                                                 color: AppColors.secondaryColor,
                                               ),
@@ -389,6 +408,19 @@ class _RegisterViewState extends State<RegisterView> {
                                                 prefixIcon: Icon(
                                                   Icons.lock_outline,
                                                   color: AppColors.secondaryColor,
+                                                ),
+                                                suffixIcon: IconButton(
+                                                  icon: Icon(
+                                                    _isConfirmPasswordVisible
+                                                        ? Icons.visibility
+                                                        : Icons.visibility_off,
+                                                    color: AppColors.secondaryColor,
+                                                  ),
+                                                  onPressed: () {
+                                                    setState(() {
+                                                      _isConfirmPasswordVisible = !_isConfirmPasswordVisible;
+                                                    });
+                                                  },
                                                 ),
                                                 contentPadding: EdgeInsets.symmetric(
                                                   horizontal: 16.w,

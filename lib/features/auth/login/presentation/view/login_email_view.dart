@@ -4,6 +4,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:guess_game/core/helper_functions/extension.dart';
 import 'package:guess_game/core/helper_functions/global_storage.dart';
+import 'package:guess_game/core/helper_functions/toast_helper.dart';
 import 'package:guess_game/core/injection/service_locator.dart';
 import 'package:guess_game/core/routing/routes.dart';
 import 'package:guess_game/core/theming/colors.dart';
@@ -24,6 +25,8 @@ class _LoginEmailViewState extends State<LoginEmailView> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  
+  bool _isPasswordVisible = false;
 
   @override
   void dispose() {
@@ -73,6 +76,8 @@ class _LoginEmailViewState extends State<LoginEmailView> {
                       _navigateAfterLogin();
                     } else if (state is LoginEmailError) {
                       print('❌ API Error: ${state.message}');
+                      // Show error in toast
+                      ToastHelper.showError(context, state.message);
                     }
                   },
                   builder: (context, state) {
@@ -216,7 +221,7 @@ class _LoginEmailViewState extends State<LoginEmailView> {
                                         ),
                                         child: TextFormField(
                                           controller: _passwordController,
-                                          obscureText: true,
+                                          obscureText: !_isPasswordVisible,
                                           style: TextStyles.font14Secondary700Weight.copyWith(
                                             color: AppColors.secondaryColor,
                                           ),
@@ -234,6 +239,19 @@ class _LoginEmailViewState extends State<LoginEmailView> {
                                             prefixIcon: Icon(
                                               Icons.lock,
                                               color: AppColors.secondaryColor,
+                                            ),
+                                            suffixIcon: IconButton(
+                                              icon: Icon(
+                                                _isPasswordVisible
+                                                    ? Icons.visibility
+                                                    : Icons.visibility_off,
+                                                color: AppColors.secondaryColor,
+                                              ),
+                                              onPressed: () {
+                                                setState(() {
+                                                  _isPasswordVisible = !_isPasswordVisible;
+                                                });
+                                              },
                                             ),
                                             contentPadding: EdgeInsets.symmetric(
                                               horizontal: 16.w,

@@ -10,6 +10,8 @@ import 'package:guess_game/features/game/data/models/assign_winner_response.dart
 import 'package:guess_game/features/game/data/models/game_statistics_response.dart';
 import 'package:guess_game/features/game/data/models/game_start_request.dart';
 import 'package:guess_game/features/game/data/models/game_start_response.dart';
+import 'package:guess_game/features/game/data/models/repeat_game_request.dart';
+import 'package:guess_game/features/game/data/models/repeat_game_response.dart';
 import 'package:guess_game/features/game/data/models/update_point_plan_request.dart';
 import 'package:guess_game/features/game/data/models/update_point_plan_response.dart';
 import 'package:guess_game/features/game/data/models/update_score_request.dart';
@@ -24,6 +26,7 @@ abstract class GameRepository {
   Future<Either<ApiFailure, GameStartResponse>> addRounds(AddRoundsRequest request);
   Future<Either<ApiFailure, GameStartResponse>> endGame(int gameId);
   Future<Either<ApiFailure, AllGamesResponse>> getAllGames();
+  Future<Either<ApiFailure, RepeatGameResponse>> repeatGame(RepeatGameRequest request);
 }
 
 class GameRepositoryImpl implements GameRepository {
@@ -255,6 +258,44 @@ class GameRepositoryImpl implements GameRepository {
         print('❌ /games exception: $e');
       }
       return Left(ApiFailure('حدث خطأ أثناء جلب الألعاب: $e'));
+    }
+  }
+
+  @override
+  Future<Either<ApiFailure, RepeatGameResponse>> repeatGame(RepeatGameRequest request) async {
+    try {
+      final response = await _apiService.post('/games/copy-game', data: request.toJson());
+
+      return response.fold(
+        (failure) {
+          if (kDebugMode) {
+            print('❌ /games/copy-game error: ${failure.message}');
+          }
+          return Left(failure);
+        },
+        (success) {
+          if (success.statusCode == 200) {
+            if (kDebugMode) {
+              print('🔄 /games/copy-game response (raw):');
+              print(success.data);
+            }
+            final repeatResponse = RepeatGameResponse.fromJson(success.data);
+            if (kDebugMode) {
+              print('📝 /games/copy-game API message: ${repeatResponse.message}');
+              print('📊 /games/copy-game success: ${repeatResponse.success}');
+              print('🔢 /games/copy-game code: ${repeatResponse.code}');
+            }
+            return Right(repeatResponse);
+          } else {
+            return Left(ApiFailure('فشل في تكرار اللعبة'));
+          }
+        },
+      );
+    } catch (e) {
+      if (kDebugMode) {
+        print('❌ /games/copy-game exception: $e');
+      }
+      return Left(ApiFailure('حدث خطأ أثناء تكرار اللعبة: $e'));
     }
   }
 }

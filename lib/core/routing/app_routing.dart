@@ -15,6 +15,7 @@ import 'package:guess_game/features/auth/login/presentation/cubit/logout_cubit.d
 import 'package:guess_game/features/auth/otp/presentation/view/otp_verify_view.dart';
 import 'package:guess_game/features/auth/otp/presentation/cubit/otp_cubit.dart';
 import 'package:guess_game/features/about/presentation/view/about_view.dart';
+import 'package:guess_game/features/game/presentation/cubit/repeat_game_cubit.dart';
 import 'package:guess_game/features/groups/presentation/view/groups_view.dart';
 import 'package:guess_game/features/levels/presentation/cubit/categories_cubit.dart';
 import 'package:guess_game/features/levels/presentation/view/levels_view.dart';
@@ -98,6 +99,9 @@ class AppRoutes {
               ),
               BlocProvider<AddOneRoundCubit>(
                 create: (context) => getIt<AddOneRoundCubit>(),
+              ),
+              BlocProvider<RepeatGameCubit>(
+                create: (context) => getIt<RepeatGameCubit>(),
               ),
             ],
             child: const GroupsView(),

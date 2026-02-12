@@ -57,6 +57,7 @@ class GameLevelViewWithProvider extends StatelessWidget {
 
 class _GameLevelViewState extends State<GameLevelView> {
   bool _hasShownInstructionsDialog = false;
+  bool _isReplay = false; // Flag to track if this is a repeat game flow
   
   String _getTermsText(BuildContext context) {
     final termsCubit = context.read<TermsCubit>();
@@ -165,6 +166,7 @@ class _GameLevelViewState extends State<GameLevelView> {
           team1Name = effectiveArgs['team1Name'] ?? 'فريق 01';
           team2Name = effectiveArgs['team2Name'] ?? 'فريق 02';
           gameStartResponse = effectiveArgs['gameStartResponse'];
+          _isReplay = effectiveArgs['isReplay'] ?? false; // Get replay flag
         });
 
         // حفظ gameStartResponse في GlobalStorage كـ backup
@@ -238,6 +240,7 @@ class _GameLevelViewState extends State<GameLevelView> {
                 arguments: {
                   'updatePointPlanResponse': updatePointPlanResponse,
                   'gameStartResponse': gameStartResponse,
+                  'isReplay': _isReplay, // Pass replay flag to QrcodeView
                 },
               );
             }

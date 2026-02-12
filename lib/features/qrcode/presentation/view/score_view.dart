@@ -30,6 +30,7 @@ class _ScoreViewState extends State<ScoreView> {
   GameStartResponse? _gameStartResponse;
   bool _didReadArgs = false;
   bool _isLastRound = false;
+  bool _isReplay = false; // Track if this is a repeat game flow
 
   @override
   void didChangeDependencies() {
@@ -52,6 +53,7 @@ class _ScoreViewState extends State<ScoreView> {
     final s = effectiveArgs?['updateScoreResponse'];
     final a = effectiveArgs?['assignWinnerResponse'];
     final g = effectiveArgs?['gameStartResponse'];
+    _isReplay = effectiveArgs?['isReplay'] ?? false; // Get replay flag
     if (p is UpdatePointPlanResponse) {
       setState(() => _pointPlanResponse = p);
     }
@@ -198,6 +200,7 @@ class _ScoreViewState extends State<ScoreView> {
                         'updateScoreResponse': _scoreResponse,
                         'assignWinnerResponse': _assignWinnerResponse,
                         'gameStartResponse': _gameStartResponse,
+                        'isReplay': _isReplay, // Pass replay flag to GameWinnerView
                       },
                     );
                   } else {
@@ -208,6 +211,7 @@ class _ScoreViewState extends State<ScoreView> {
                         'team1Name': GlobalStorage.team1Name.isNotEmpty ? GlobalStorage.team1Name : 'فريق 01',
                         'team2Name': GlobalStorage.team2Name.isNotEmpty ? GlobalStorage.team2Name : 'فريق 02',
                         'gameStartResponse': _gameStartResponse,
+                        'isReplay': _isReplay, // Pass replay flag to next round
                       },
                     );
                   }

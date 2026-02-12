@@ -263,6 +263,9 @@ class _OptionsViewState extends State<OptionsView> {
     final String team2Name = args['team2Name'] as String? ?? GlobalStorage.team2Name;
     GlobalStorage.team1Name = team1Name;
     GlobalStorage.team2Name = team2Name;
+    
+    // Check if this is a repeat game flow by checking if game name contains "(Copy)"
+    final bool isReplayFlow = args['isReplay'] == true;
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -339,138 +342,177 @@ class _OptionsViewState extends State<OptionsView> {
                                 color: const Color(0XFF231F20).withOpacity(.3),
                               ),
                               child: Center(
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    SizedBox(height: 20.h),
+                                child: isReplayFlow
+                                    ? // Show only exit button for repeat game flow
                                     YellowPillButton(
-                                      width: 220.w,
-                                      height: 30.h,
-                                      onTap: () {
-                                        // الحصول على gameId من arguments
-                                        final args = _routeArgs(context);
-                                        final int gameId = args['gameId'] as int? ?? 0;
-                                        if (gameId > 0) {
-                                          _showEndGameDialog(context, gameId);
-                                        } else {
-                                          ToastHelper.showError(context, 'لا يمكن تحديد معرف اللعبة');
-                                        }
-                                      },
-                                      child: Text(
-                                        'باقه جديدة',
-                                        style: TextStyles.font20Secondary700Weight,
-                                        textAlign: TextAlign.center,
-                                      ),
-                                    ),
-                                    SizedBox(height: 12.h),
-                                    YellowPillButton(
-                                      width: 220.w,
-                                      height: 30.h,
-                                      onTap: () {
-                                        // استدعاء dialog مباشرة بدون أي شروط
-                                        _showAddOneCategoryDialog(context, gameId, team1Id, team2Id, team1Name, team2Name);
-                                      },
-                                      child: Text(
-                                        'فئة جديدة نفس الجيم',
-                                        style: TextStyles.font20Secondary700Weight,
-                                        textAlign: TextAlign.center,
-                                      ),
-                                    ),
-                                    SizedBox(height: 12.h),
-                                    YellowPillButton(
-                                      width: 220.w,
-                                      height: 30.h,
-                                      onTap: () {
-                                        // حفظ البيانات للاستخدام بعد الشراء
-                                        GlobalStorage.saveGameData(
-                                          team1Cats: [],
-                                          team2Cats: [],
-                                          t1Name: team1Name,
-                                          t2Name: team2Name,
-                                        );
-                                        // حفظ gameId و teamIds في GlobalStorage مع علامة isSameGamePackage
-                                        GlobalStorage.lastRouteArguments = {
-                                          'gameId': gameId,
-                                          'team1Id': team1Id,
-                                          'team2Id': team2Id,
-                                          'team1Name': team1Name,
-                                          'team2Name': team2Name,
-                                          'isSameGamePackage': true, // علامة للتعرف على هذا السايكل
-                                        };
-                                        
-                                        // التحقق من subscription وتمرير البيانات لصفحة الباقات
-                                        final packagesArguments = {
-                                          'gameId': gameId,
-                                          'team1Id': team1Id,
-                                          'team2Id': team2Id,
-                                          'team1Name': team1Name,
-                                          'team2Name': team2Name,
-                                          'isSameGamePackage': true,
-                                        };
-                                        
-                                        if (GlobalStorage.subscription == null) {
-                                          // subscription = null → انتقل مباشرة لصفحة packages
-                                          Navigator.of(context).pushNamed(
-                                            Routes.packages,
-                                            arguments: packagesArguments,
-                                          );
-                                        } else {
-                                          // subscription != null → انتقل مع increase = true
-                                          packagesArguments['increase'] = true;
-                                          Navigator.of(context).pushNamed(
-                                            Routes.packages,
-                                            arguments: packagesArguments,
-                                          );
-                                        }
-                                      },
-                                      child: Text(
-                                        'باقه جديدة نفس الجيم',
-                                        style: TextStyles.font20Secondary700Weight,
-                                        textAlign: TextAlign.center,
-                                      ),
-                                    ),
-                                    SizedBox(height: 14.h),
-                                    YellowPillButton(
-                                      width: 100,
-                                      height: 34,
-                                      onTap: () {
-                                        // الحصول على gameId من arguments
-                                        final args = _routeArgs(context);
-                                        final int gameId = args['gameId'] as int? ?? 0;
-                                        if (gameId > 0) {
-                                          _showLogoutEndGameDialog(context, gameId);
-                                        } else {
-                                          // If no gameId, just logout directly
-                                          showDialog(
-                                            context: context,
-                                            barrierDismissible: false,
-                                            builder: (dialogContext) {
-                                              return SubscriptionAlertDialog(
-                                                title: 'تسجيل الخروج',
-                                                content: 'هل أنت متأكد من تسجيل الخروج؟',
-                                                buttonText: 'تأكيد',
-                                                secondaryButtonText: 'إلغاء',
-                                                onSecondaryButtonPressed: () => Navigator.of(dialogContext).pop(),
-                                                onButtonPressed: () {
-                                                  Navigator.of(dialogContext).pop();
-                                                  Navigator.of(context).pushNamedAndRemoveUntil(
-                                                    Routes.start,
-                                                    (route) => false,
-                                                  );
-                                                },
-                                              );
+                                        width: 100,
+                                        height: 34,
+                                        onTap: () {
+                                          if (gameId > 0) {
+                                            _showLogoutEndGameDialog(context, gameId);
+                                          } else {
+                                            // If no gameId, just logout directly
+                                            showDialog(
+                                              context: context,
+                                              barrierDismissible: false,
+                                              builder: (dialogContext) {
+                                                return SubscriptionAlertDialog(
+                                                  title: 'تسجيل الخروج',
+                                                  content: 'هل أنت متأكد من تسجيل الخروج؟',
+                                                  buttonText: 'تأكيد',
+                                                  secondaryButtonText: 'إلغاء',
+                                                  onSecondaryButtonPressed: () => Navigator.of(dialogContext).pop(),
+                                                  onButtonPressed: () {
+                                                    Navigator.of(dialogContext).pop();
+                                                    Navigator.of(context).pushNamedAndRemoveUntil(
+                                                      Routes.start,
+                                                      (route) => false,
+                                                    );
+                                                  },
+                                                );
+                                              },
+                                            );
+                                          }
+                                        },
+                                        child: Text(
+                                          'خروج',
+                                          style: TextStyles.font20Secondary700Weight,
+                                          textAlign: TextAlign.center,
+                                        ),
+                                      )
+                                    : // Show all buttons for normal flow
+                                    Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          SizedBox(height: 20.h),
+                                          YellowPillButton(
+                                            width: 220.w,
+                                            height: 30.h,
+                                            onTap: () {
+                                              // الحصول على gameId من arguments
+                                              final args = _routeArgs(context);
+                                              final int gameId = args['gameId'] as int? ?? 0;
+                                              if (gameId > 0) {
+                                                _showEndGameDialog(context, gameId);
+                                              } else {
+                                                ToastHelper.showError(context, 'لا يمكن تحديد معرف اللعبة');
+                                              }
                                             },
-                                          );
-                                        }
-                                      },
-                                      child: Text(
-                                        'خروج',
-                                        style: TextStyles.font20Secondary700Weight,
-                                        textAlign: TextAlign.center,
+                                            child: Text(
+                                              'باقه جديدة',
+                                              style: TextStyles.font20Secondary700Weight,
+                                              textAlign: TextAlign.center,
+                                            ),
+                                          ),
+                                          SizedBox(height: 12.h),
+                                          YellowPillButton(
+                                            width: 220.w,
+                                            height: 30.h,
+                                            onTap: () {
+                                              // استدعاء dialog مباشرة بدون أي شروط
+                                              _showAddOneCategoryDialog(context, gameId, team1Id, team2Id, team1Name, team2Name);
+                                            },
+                                            child: Text(
+                                              'فئة جديدة نفس الجيم',
+                                              style: TextStyles.font20Secondary700Weight,
+                                              textAlign: TextAlign.center,
+                                            ),
+                                          ),
+                                          SizedBox(height: 12.h),
+                                          YellowPillButton(
+                                            width: 220.w,
+                                            height: 30.h,
+                                            onTap: () {
+                                              // حفظ البيانات للاستخدام بعد الشراء
+                                              GlobalStorage.saveGameData(
+                                                team1Cats: [],
+                                                team2Cats: [],
+                                                t1Name: team1Name,
+                                                t2Name: team2Name,
+                                              );
+                                              // حفظ gameId و teamIds في GlobalStorage مع علامة isSameGamePackage
+                                              GlobalStorage.lastRouteArguments = {
+                                                'gameId': gameId,
+                                                'team1Id': team1Id,
+                                                'team2Id': team2Id,
+                                                'team1Name': team1Name,
+                                                'team2Name': team2Name,
+                                                'isSameGamePackage': true, // علامة للتعرف على هذا السايكل
+                                              };
+                                              
+                                              // التحقق من subscription وتمرير البيانات لصفحة الباقات
+                                              final packagesArguments = {
+                                                'gameId': gameId,
+                                                'team1Id': team1Id,
+                                                'team2Id': team2Id,
+                                                'team1Name': team1Name,
+                                                'team2Name': team2Name,
+                                                'isSameGamePackage': true,
+                                              };
+                                              
+                                              if (GlobalStorage.subscription == null) {
+                                                // subscription = null → انتقل مباشرة لصفحة packages
+                                                Navigator.of(context).pushNamed(
+                                                  Routes.packages,
+                                                  arguments: packagesArguments,
+                                                );
+                                              } else {
+                                                // subscription != null → انتقل مع increase = true
+                                                packagesArguments['increase'] = true;
+                                                Navigator.of(context).pushNamed(
+                                                  Routes.packages,
+                                                  arguments: packagesArguments,
+                                                );
+                                              }
+                                            },
+                                            child: Text(
+                                              'باقه جديدة نفس الجيم',
+                                              style: TextStyles.font20Secondary700Weight,
+                                              textAlign: TextAlign.center,
+                                            ),
+                                          ),
+                                          SizedBox(height: 14.h),
+                                          YellowPillButton(
+                                            width: 100,
+                                            height: 34,
+                                            onTap: () {
+                                              // الحصول على gameId من arguments
+                                              final args = _routeArgs(context);
+                                              final int gameId = args['gameId'] as int? ?? 0;
+                                              if (gameId > 0) {
+                                                _showLogoutEndGameDialog(context, gameId);
+                                              } else {
+                                                // If no gameId, just logout directly
+                                                showDialog(
+                                                  context: context,
+                                                  barrierDismissible: false,
+                                                  builder: (dialogContext) {
+                                                    return SubscriptionAlertDialog(
+                                                      title: 'تسجيل الخروج',
+                                                      content: 'هل أنت متأكد من تسجيل الخروج؟',
+                                                      buttonText: 'تأكيد',
+                                                      secondaryButtonText: 'إلغاء',
+                                                      onSecondaryButtonPressed: () => Navigator.of(dialogContext).pop(),
+                                                      onButtonPressed: () {
+                                                        Navigator.of(dialogContext).pop();
+                                                        Navigator.of(context).pushNamedAndRemoveUntil(
+                                                          Routes.start,
+                                                          (route) => false,
+                                                        );
+                                                      },
+                                                    );
+                                                  },
+                                                );
+                                              }
+                                            },
+                                            child: Text(
+                                              'خروج',
+                                              style: TextStyles.font20Secondary700Weight,
+                                              textAlign: TextAlign.center,
+                                            ),
+                                          ),
+                                        ],
                                       ),
-                                    ),
-                                  ],
-                                ),
                               ),
                             ),
                           ),

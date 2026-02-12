@@ -161,9 +161,14 @@ class _PackagesViewState extends State<PackagesView> with WidgetsBindingObserver
                 );
               }
             } else {
-              print('🎯 الاشتراك نشط ولديه أسئلة متبقية - الانتقال إلى LevelsView');
+              print('🎯 الاشتراك نشط ولديه أسئلة متبقية - الانتقال إلى TeamCategoriesFirstTeamView');
               if (mounted) {
-                Navigator.of(context).pushReplacementNamed(Routes.level);
+                Navigator.of(context).pushReplacementNamed(
+                  Routes.teamCategories,
+                  arguments: {
+                    'limit': user.subscription!.limit ?? 4,
+                  },
+                );
               }
             }
           } else {

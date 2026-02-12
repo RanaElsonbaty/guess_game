@@ -3,14 +3,14 @@ class AllGamesResponse {
   final String message;
   final int code;
   final List<GameItem> data;
-  final List<dynamic> metaData;
+  final Map<String, dynamic>? metaData;
 
   AllGamesResponse({
     required this.success,
     required this.message,
     required this.code,
     required this.data,
-    required this.metaData,
+    this.metaData,
   });
 
   factory AllGamesResponse.fromJson(Map<String, dynamic> json) {
@@ -21,7 +21,7 @@ class AllGamesResponse {
       data: (json['data'] as List<dynamic>?)
           ?.map((item) => GameItem.fromJson(item))
           .toList() ?? [],
-      metaData: json['meta_data'] ?? [],
+      metaData: json['meta_data'] as Map<String, dynamic>?,
     );
   }
 }
@@ -30,13 +30,15 @@ class GameItem {
   final int id;
   final String name;
   final String status;
-  final List<PackageData> packages;
+  final List<RoundData> rounds;
+  final List<TeamInfo> teams;
 
   GameItem({
     required this.id,
     required this.name,
     required this.status,
-    required this.packages,
+    required this.rounds,
+    required this.teams,
   });
 
   factory GameItem.fromJson(Map<String, dynamic> json) {
@@ -44,8 +46,11 @@ class GameItem {
       id: json['id'] ?? 0,
       name: json['name'] ?? '',
       status: json['status'] ?? '',
-      packages: (json['packages'] as List<dynamic>?)
-          ?.map((package) => PackageData.fromJson(package))
+      rounds: (json['rounds'] as List<dynamic>?)
+          ?.map((round) => RoundData.fromJson(round))
+          .toList() ?? [],
+      teams: (json['teams'] as List<dynamic>?)
+          ?.map((team) => TeamInfo.fromJson(team))
           .toList() ?? [],
     );
   }
@@ -198,6 +203,7 @@ class TeamInfo {
   final int totalPoints;
   final int teamNumber;
   final bool isWinner;
+  final List<RoundDataItem> roundData;
 
   TeamInfo({
     required this.id,
@@ -205,6 +211,7 @@ class TeamInfo {
     required this.totalPoints,
     required this.teamNumber,
     required this.isWinner,
+    required this.roundData,
   });
 
   factory TeamInfo.fromJson(Map<String, dynamic> json) {
@@ -214,6 +221,9 @@ class TeamInfo {
       totalPoints: json['total_points'] ?? 0,
       teamNumber: json['team_number'] ?? 0,
       isWinner: json['is_winner'] ?? false,
+      roundData: (json['round_data'] as List<dynamic>?)
+          ?.map((data) => RoundDataItem.fromJson(data))
+          .toList() ?? [],
     );
   }
 }

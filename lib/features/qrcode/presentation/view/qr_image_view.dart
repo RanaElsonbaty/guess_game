@@ -27,6 +27,7 @@ class _QrImageViewState extends State<QrImageView> {
   UpdateScoreResponse? _scoreResponse;
   GameStartResponse? _gameStartResponse;
   bool _didReadArgs = false;
+  bool _isReplay = false; // Track if this is a repeat game flow
 
   @override
   void didChangeDependencies() {
@@ -49,6 +50,7 @@ class _QrImageViewState extends State<QrImageView> {
       final p = args['updatePointPlanResponse'];
       final s = args['updateScoreResponse'];
       final g = args['gameStartResponse'];
+      _isReplay = args['isReplay'] ?? false; // Get replay flag
       if (p is UpdatePointPlanResponse) {
         setState(() => _pointPlanResponse = p);
       }
@@ -178,6 +180,7 @@ class _QrImageViewState extends State<QrImageView> {
                     arguments: {
                       'updateScoreResponse': _scoreResponse,
                       'gameStartResponse': _gameStartResponse,
+                      'isReplay': _isReplay, // Pass replay flag to RoundWinnerView
                     },
                   );
                 },

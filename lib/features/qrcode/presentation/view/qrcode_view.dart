@@ -41,6 +41,7 @@ class _QrcodeViewState extends State<QrcodeView> {
   GameStartResponse? gameStartResponse;
   bool _didReadArgs = false;
   bool _isSubmitting = false;
+  bool _isReplay = false; // Track if this is a repeat game flow
 
   int _team01Questions = 0;
   int _team01Answers = 0;
@@ -67,6 +68,7 @@ class _QrcodeViewState extends State<QrcodeView> {
     // First priority: read from args directly
     if (args != null) {
       final response = args['updatePointPlanResponse'];
+      _isReplay = args['isReplay'] ?? false; // Get replay flag
       if (response is UpdatePointPlanResponse) {
         setState(() => updatePointPlanResponse = response);
         if (kDebugMode) {
@@ -299,6 +301,7 @@ class _QrcodeViewState extends State<QrcodeView> {
           'updateScoreResponse': scoreResponse,
           'updatePointPlanResponse': updateResp,
           'gameStartResponse': gameStartResponse,
+          'isReplay': _isReplay, // Pass replay flag to QrImageView
         },
       );
     } finally {

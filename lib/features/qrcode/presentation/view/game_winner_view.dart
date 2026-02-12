@@ -33,6 +33,7 @@ class _GameWinnerViewState extends State<GameWinnerView> {
   AssignWinnerResponse? _assignWinnerResponse;
   bool _didReadArgs = false;
   bool _didLoadStats = false;
+  bool _isReplay = false; // Track if this is a repeat game flow
 
   @override
   void didChangeDependencies() {
@@ -54,6 +55,7 @@ class _GameWinnerViewState extends State<GameWinnerView> {
     _pointPlanResponse = effectiveArgs?['updatePointPlanResponse'];
     _scoreResponse = effectiveArgs?['updateScoreResponse'];
     _assignWinnerResponse = effectiveArgs?['assignWinnerResponse'];
+    _isReplay = effectiveArgs?['isReplay'] ?? false; // Get replay flag
 
     if (kDebugMode) {
       print('🏆 GameWinnerView: didChangeDependencies completed');
@@ -337,6 +339,7 @@ class _GameWinnerViewState extends State<GameWinnerView> {
                       // Preserve names for prefilled GroupsView
                       'team1Name': GlobalStorage.team1Name,
                       'team2Name': GlobalStorage.team2Name,
+                      'isReplay': _isReplay, // Pass replay flag to OptionsView
                     },
                   );
                 },

@@ -28,6 +28,7 @@ class RoundWinnerView extends StatefulWidget {
 class _RoundWinnerViewState extends State<RoundWinnerView> {
   UpdateScoreResponse? _updateScoreResponse;
   GameStartResponse? _gameStartResponse;
+  bool _isReplay = false; // Track if this is a repeat game flow
 
   @override
   void didChangeDependencies() {
@@ -41,6 +42,7 @@ class _RoundWinnerViewState extends State<RoundWinnerView> {
     final effectiveArgs = args ?? globalArgs;
     _updateScoreResponse = effectiveArgs?['updateScoreResponse'];
     _gameStartResponse = effectiveArgs?['gameStartResponse'];
+    _isReplay = effectiveArgs?['isReplay'] ?? false; // Get replay flag
 
     if (kDebugMode) {
       print('🎯 RoundWinnerView: From arguments - updateScoreResponse: ${_updateScoreResponse != null}');
@@ -173,6 +175,7 @@ class _RoundWinnerViewState extends State<RoundWinnerView> {
           'assignWinnerResponse': response,
           'updateScoreResponse': _updateScoreResponse,
           'gameStartResponse': _gameStartResponse,
+          'isReplay': _isReplay, // Pass replay flag to ScoreView
         },
       );
     }

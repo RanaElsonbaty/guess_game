@@ -3,15 +3,13 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:guess_game/core/helper_functions/global_storage.dart';
-import 'package:guess_game/core/injection/service_locator.dart';
+import 'package:guess_game/core/routing/routes.dart';
 import 'package:guess_game/core/theming/colors.dart';
 import 'package:guess_game/core/theming/icons.dart';
 import 'package:guess_game/core/theming/styles.dart';
 import 'package:guess_game/core/widgets/app_drawer.dart';
 import 'package:guess_game/features/game/data/models/all_games_response.dart';
 import 'package:guess_game/features/game/presentation/cubit/get_all_games_cubit.dart';
-import 'package:guess_game/features/packages/data/repositories/packages_repository.dart';
-import 'package:guess_game/features/packages/presentation/view/payment_webview.dart';
 import 'package:guess_game/features/packages/presentation/view/widgets/header_shape_painter.dart';
 import 'package:guess_game/features/qrcode/presentation/view/widgets/game_drawer_icon.dart';
 import 'package:shimmer/shimmer.dart';
@@ -25,169 +23,106 @@ class MyRoundsView extends StatefulWidget {
 
 class _MyRoundsViewState extends State<MyRoundsView> {
   final Map<String, bool> _expandedGames = {};
-  final Map<String, bool> _expandedPackages = {};
   final Map<String, bool> _expandedRounds = {};
+  final ScrollController _scrollController = ScrollController();
+  int _currentPage = 1;
+  bool _isLoadingMore = false;
+  bool _hasMoreData = true;
 
   @override
   void initState() {
     super.initState();
     context.read<GetAllGamesCubit>().getAllGames();
+    _scrollController.addListener(_onScroll);
   }
 
-  Color _getStatusColor(String status) {
-    switch (status.toLowerCase()) {
-      case 'active':
-        return Colors.green;
-      case 'expired':
-        return Colors.red;
-      case 'pending':
-        return Colors.orange;
-      default:
-        return Colors.grey;
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent * 0.9) {
+      if (!_isLoadingMore && _hasMoreData) {
+        _loadMoreGames();
+      }
     }
   }
 
-  String _getStatusText(String status) {
-    switch (status.toLowerCase()) {
-      case 'active':
-        return 'نشط';
-      case 'expired':
-        return 'منتهي الصلاحية';
-      case 'pending':
-        return 'في الانتظار';
-      default:
-        return status;
-    }
+  void _loadMoreGames() {
+    setState(() {
+      _isLoadingMore = true;
+    });
+    
+    // Load next page
+    _currentPage++;
+    // Call API with page parameter
+    // context.read<GetAllGamesCubit>().getAllGames(page: _currentPage);
+    
+    // For now, just reset the loading state
+    Future.delayed(Duration(seconds: 1), () {
+      if (mounted) {
+        setState(() {
+          _isLoadingMore = false;
+        });
+      }
+    });
   }
 
-  void _subscribeToPackage(PackageData package, GameItem game) {
-    // Extract team data from ALL rounds of the package
-    if (package.rounds.isNotEmpty) {
-      // Collect all categories from all rounds for each team
-      final Map<int, Set<int>> teamCategoriesMap = {};
-      final Map<int, String> teamNamesMap = {};
+  void _subscribeToGame(GameItem game) {
+    // Extract team data from game.teams
+    if (game.teams.isNotEmpty) {
+      // Get team names and numbers
+      final team1 = game.teams.firstWhere((t) => t.teamNumber == 1, orElse: () => game.teams.first);
+      final team2 = game.teams.firstWhere((t) => t.teamNumber == 2, orElse: () => game.teams.last);
       
-      // Process all rounds to collect categories
-      for (final round in package.rounds) {
-        for (final item in round.roundData) {
-          final teamNumber = item.team?.teamNumber ?? 0;
-          
-          // Initialize team data if not exists
-          if (!teamCategoriesMap.containsKey(teamNumber)) {
-            teamCategoriesMap[teamNumber] = <int>{};
-            // Extract clean team name without "فريق" prefix
-            String cleanTeamName = item.team?.name ?? '';
-            if (cleanTeamName.startsWith('فريق ')) {
-              cleanTeamName = cleanTeamName.substring(5).trim();
-            }
-            if (cleanTeamName.isEmpty) {
-              cleanTeamName = teamNumber == 1 ? 'الأول' : 'الثاني';
-            }
-            teamNamesMap[teamNumber] = cleanTeamName;
-          }
-          
-          // Add category to team's set (Set automatically handles duplicates)
-          teamCategoriesMap[teamNumber]!.add(item.categoryId);
-        }
-      }
+      String team1Name = team1.name;
+      String team2Name = team2.name;
+      int team1Number = team1.teamNumber;
+      int team2Number = team2.teamNumber;
 
-      // Extract team names, categories, and team numbers
-      String team1Name = teamNamesMap[1] ?? 'الأول';
-      String team2Name = teamNamesMap[2] ?? 'الثاني';
-      
-      // Remove "فريق" prefix if it exists in the team names
-      if (team1Name.startsWith('فريق ')) {
-        team1Name = team1Name.substring(5).trim(); // Remove "فريق " (5 characters)
-      }
-      if (team2Name.startsWith('فريق ')) {
-        team2Name = team2Name.substring(5).trim(); // Remove "فريق " (5 characters)
-      }
-      
-      // If team name is empty after removing prefix, use default
-      if (team1Name.isEmpty) team1Name = 'الأول';
-      if (team2Name.isEmpty) team2Name = 'الثاني';
-      List<int> team1Categories = teamCategoriesMap[1]?.toList() ?? [];
-      List<int> team2Categories = teamCategoriesMap[2]?.toList() ?? [];
-      int team1Number = 1;
-      int team2Number = 2;
+      print('🎯 تكرار اللعب للجيم: ${game.name}');
+      print('📋 بيانات الفرق:');
+      print('  - الفريق الأول: "$team1Name" (رقم: $team1Number)');
+      print('  - الفريق الثاني: "$team2Name" (رقم: $team2Number)');
+      print('📦 game.teams.length: ${game.teams.length}');
+      print('📦 team1 object: id=${team1.id}, name="${team1.name}", teamNumber=${team1.teamNumber}');
+      print('📦 team2 object: id=${team2.id}, name="${team2.name}", teamNumber=${team2.teamNumber}');
 
-      print('🎯 الاشتراك في الباقة: ${package.name}');
-      print('📋 بيانات الفرق من جميع الجولات (${package.rounds.length} جولة):');
-      print('  - الفريق الأول: $team1Name (رقم: $team1Number), الفئات: $team1Categories');
-      print('  - الفريق الثاني: $team2Name (رقم: $team2Number), الفئات: $team2Categories');
-      print('📊 إجمالي الفئات المجمعة:');
-      print('  - فريق 1: ${team1Categories.length} فئة');
-      print('  - فريق 2: ${team2Categories.length} فئة');
+      // Save team names to GlobalStorage
+      GlobalStorage.team1Name = team1Name;
+      GlobalStorage.team2Name = team2Name;
+      
+      // Clear categories to allow user to select new ones
+      GlobalStorage.team1Categories = [];
+      GlobalStorage.team2Categories = [];
 
-      // Navigate directly to PaymentWebView with subscription
-      _performSubscription(package, {
-        'fromMyRounds': true,
-        'packageId': package.id,
-        'team1Name': team1Name,
-        'team2Name': team2Name,
-        'team1Categories': team1Categories,
-        'team2Categories': team2Categories,
-        'team1Number': team1Number,
-        'team2Number': team2Number,
-        'paymentMethod': 'online',
-        'packageLimit': package.limit, // إضافة حد الباقة
-        'totalRounds': package.rounds.length, // إضافة عدد الجولات
-      });
-    }
-  }
+      print('🚀 Navigating to GroupsView with:');
+      print('   team1Name: "$team1Name"');
+      print('   team2Name: "$team2Name"');
 
-  Future<void> _performSubscription(PackageData package, Map<String, dynamic> gameData) async {
-    try {
-      // Save game data to GlobalStorage
-      GlobalStorage.lastRouteArguments = Map<String, dynamic>.from(gameData);
-      
-      print('💾 حفظ بيانات اللعبة في GlobalStorage: $gameData');
-      
-      // Call the subscription API directly
-      final packagesRepository = getIt<PackagesRepository>();
-      final result = await packagesRepository.subscribeToPackage(package.id, increase: false);
-      
-      result.fold(
-        (failure) {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('خطأ في الاشتراك: ${failure.message}'),
-                backgroundColor: Colors.red,
-              ),
-            );
-          }
-        },
-        (paymentUrl) {
-          print('🎯 تم الحصول على رابط الدفع: $paymentUrl');
-          
-          // Navigate to PaymentWebView
-          if (mounted) {
-            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (context) => PaymentWebView(url: paymentUrl),
-              ),
-            );
-          }
+      // Navigate to GroupsView with team data
+      Navigator.of(context).pushNamed(
+        Routes.groups,
+        arguments: {
+          'isReplay': true,
+          'gameId': game.id,
+          'team1Name': team1Name, // Use team name not number
+          'team2Name': team2Name, // Use team name not number
+          'team1Number': team1Number,
+          'team2Number': team2Number,
+          'team1Categories': [],
+          'team2Categories': [],
         },
       );
-    } catch (e) {
-      print('❌ خطأ في عملية الاشتراك: $e');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('حدث خطأ في الاشتراك: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
     }
   }
 
-  Widget _buildRoundDetails(List<RoundData> rounds, String packageKey) {
+  Widget _buildRoundDetails(List<RoundData> rounds, String gameKey, List<TeamInfo> teams) {
     return Column(
       children: rounds.map((round) {
-        final roundKey = '${packageKey}_round_${round.id}';
+        final roundKey = '${gameKey}_round_${round.id}';
         final isRoundExpanded = _expandedRounds[roundKey] ?? false;
         
         return Container(
@@ -214,14 +149,13 @@ class _MyRoundsViewState extends State<MyRoundsView> {
                       child: Text(
                         'الجولة ${round.roundNumber}',
                         style: TextStyles.font14Secondary700Weight.copyWith(
-                          color: Colors.white,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                     ),
                     Icon(
                       isRoundExpanded ? Icons.expand_less : Icons.expand_more,
-                      color: Colors.white,
+                      color: AppColors.secondaryColor,
                       size: 20.sp,
                     ),
                   ],
@@ -235,16 +169,23 @@ class _MyRoundsViewState extends State<MyRoundsView> {
                         padding: EdgeInsets.only(top: 8.h),
                         child: Column(
                           children: round.roundData.map((item) {
+                            // Find team by team_id
+                            final team = teams.firstWhere(
+                              (t) => t.id == item.teamId,
+                              orElse: () => teams.first,
+                            );
+                            
+                            // Get category name
+                            final categoryName = item.category?.name ?? 'فئة ${item.categoryId}';
+                            
                             return Padding(
                               padding: EdgeInsets.only(bottom: 4.h),
                               child: Row(
                                 children: [
                                   Expanded(
                                     child: Text(
-                                      '${item.team?.name?.replaceFirst('فريق ', '') ?? 'فريق ${item.team?.teamNumber ?? 0}'}: ${item.category?.name ?? 'فئة غير محددة'}',
-                                      style: TextStyles.font12Secondary700Weight.copyWith(
-                                        color: Colors.white.withOpacity(0.8),
-                                      ),
+                                      '${team.name}: $categoryName',
+                                      style: TextStyles.font12Secondary700Weight,
                                     ),
                                   ),
                                   Text(
@@ -285,12 +226,12 @@ class _MyRoundsViewState extends State<MyRoundsView> {
             ),
             // Main content - positioned to create space from drawer
             Positioned(
-              top: 75.h, // نزله شوية للأسفل
-              left: 70.w, // إبعاده عن الـ drawer ووضعه يمين شوية
+              top: 75.h,
+              left: 70.w,
               right: 20.w,
               child: Container(
                 width: 740.w,
-                height: 255.h, // نفس ارتفاع صفحة الباقات
+                height: 255.h,
                 decoration: BoxDecoration(
                   color: Colors.white,
                 ),
@@ -361,16 +302,12 @@ class _MyRoundsViewState extends State<MyRoundsView> {
                                   children: [
                                     Text(
                                       'خطأ في تحميل البيانات',
-                                      style: TextStyles.font16Secondary700Weight.copyWith(
-                                        color: Colors.white,
-                                      ),
+                                      style: TextStyles.font16Secondary700Weight,
                                     ),
                                     SizedBox(height: 10.h),
                                     Text(
                                       state.message,
-                                      style: TextStyles.font14Secondary700Weight.copyWith(
-                                        color: Colors.white.withOpacity(0.7),
-                                      ),
+                                      style: TextStyles.font14Secondary700Weight,
                                       textAlign: TextAlign.center,
                                     ),
                                     SizedBox(height: 20.h),
@@ -384,6 +321,14 @@ class _MyRoundsViewState extends State<MyRoundsView> {
                                 ),
                               );
                             } else if (state is GetAllGamesLoaded) {
+                              // Update pagination info from meta_data
+                              if (state.response.metaData != null) {
+                                final metaData = state.response.metaData!;
+                                final currentPage = metaData['current_page'] ?? 1;
+                                final lastPage = metaData['last_page'] ?? 1;
+                                _hasMoreData = currentPage < lastPage;
+                              }
+                              
                               if (state.response.data.isEmpty) {
                                 return Center(
                                   child: Column(
@@ -392,21 +337,17 @@ class _MyRoundsViewState extends State<MyRoundsView> {
                                       Icon(
                                         Icons.games_outlined,
                                         size: 80.sp,
-                                        color: Colors.white.withOpacity(0.5),
+                                        color: AppColors.secondaryColor,
                                       ),
                                       SizedBox(height: 20.h),
                                       Text(
                                         'لا توجد جولات متاحة',
-                                        style: TextStyles.font20Secondary700Weight.copyWith(
-                                          color: Colors.white,
-                                        ),
+                                        style: TextStyles.font20Secondary700Weight,
                                       ),
                                       SizedBox(height: 10.h),
                                       Text(
                                         'ابدأ لعبة جديدة لرؤية جولاتك هنا',
-                                        style: TextStyles.font14Secondary700Weight.copyWith(
-                                          color: Colors.white.withOpacity(0.7),
-                                        ),
+                                        style: TextStyles.font14Secondary700Weight,
                                       ),
                                     ],
                                   ),
@@ -416,8 +357,21 @@ class _MyRoundsViewState extends State<MyRoundsView> {
                               return Padding(
                                 padding: EdgeInsets.all(12.w),
                                 child: ListView.builder(
-                                  itemCount: state.response.data.length,
+                                  controller: _scrollController,
+                                  itemCount: state.response.data.length + (_isLoadingMore ? 1 : 0),
                                   itemBuilder: (context, gameIndex) {
+                                    // Show loading indicator at the end
+                                    if (gameIndex == state.response.data.length) {
+                                      return Center(
+                                        child: Padding(
+                                          padding: EdgeInsets.all(16.h),
+                                          child: CircularProgressIndicator(
+                                            color: AppColors.secondaryColor,
+                                          ),
+                                        ),
+                                      );
+                                    }
+                                    
                                     final game = state.response.data[gameIndex];
                                     final gameKey = 'game_${game.id}';
                                     final isGameExpanded = _expandedGames[gameKey] ?? false;
@@ -457,41 +411,19 @@ class _MyRoundsViewState extends State<MyRoundsView> {
                                                       children: [
                                                         Text(
                                                           game.name,
-                                                          style: TextStyles.font16Secondary700Weight.copyWith(
-                                                            color: Colors.white,
-                                                          ),
+                                                          style: TextStyles.font16Secondary700Weight,
                                                         ),
                                                         SizedBox(height: 4.h),
-                                                        Row(
-                                                          children: [
-                                                            Container(
-                                                              padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 2.h),
-                                                              decoration: BoxDecoration(
-                                                                color: game.status == 'completed' ? Colors.green : Colors.orange,
-                                                                borderRadius: BorderRadius.circular(4.r),
-                                                              ),
-                                                              child: Text(
-                                                                game.status == 'completed' ? 'مكتملة' : 'قيد التقدم',
-                                                                style: TextStyles.font12Secondary700Weight.copyWith(
-                                                                  color: Colors.white,
-                                                                ),
-                                                              ),
-                                                            ),
-                                                            SizedBox(width: 8.w),
-                                                            Text(
-                                                              '${game.packages.length} باقة',
-                                                              style: TextStyles.font12Secondary700Weight.copyWith(
-                                                                color: Colors.white.withOpacity(0.7),
-                                                              ),
-                                                            ),
-                                                          ],
+                                                        Text(
+                                                          '${game.rounds.length} جولة',
+                                                          style: TextStyles.font12Secondary700Weight,
                                                         ),
                                                       ],
                                                     ),
                                                   ),
                                                   Icon(
                                                     isGameExpanded ? Icons.expand_less : Icons.expand_more,
-                                                    color: Colors.white,
+                                                    color: AppColors.secondaryColor,
                                                   ),
                                                 ],
                                               ),
@@ -501,137 +433,106 @@ class _MyRoundsViewState extends State<MyRoundsView> {
                                           AnimatedSize(
                                             duration: Duration(milliseconds: 300),
                                             child: isGameExpanded
-                                                ? Column(
-                                                    children: game.packages.map((package) {
-                                                      final packageKey = '${gameKey}_package_${package.id}';
-                                                      final isPackageExpanded = _expandedPackages[packageKey] ?? false;
-                                                      
-                                                      return Container(
-                                                        margin: EdgeInsets.all(8.w),
-                                                        decoration: BoxDecoration(
-                                                          color: Colors.white.withOpacity(0.05),
-                                                          borderRadius: BorderRadius.circular(8.r),
-                                                          border: Border.all(color: Colors.white.withOpacity(0.2)),
-                                                        ),
-                                                        child: Column(
-                                                          children: [
-                                                            // Package header - clickable
-                                                            InkWell(
-                                                              onTap: () {
-                                                                setState(() {
-                                                                  _expandedPackages[packageKey] = !isPackageExpanded;
-                                                                });
-                                                              },
-                                                              child: Container(
-                                                                padding: EdgeInsets.all(12.w),
-                                                                child: Row(
-                                                                  children: [
-                                                                    Expanded(
-                                                                      child: Column(
-                                                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                                                        children: [
-                                                                          Text(
-                                                                            package.name,
-                                                                            style: TextStyles.font14Secondary700Weight.copyWith(
-                                                                              color: Colors.white,
-                                                                            ),
-                                                                          ),
-                                                                          SizedBox(height: 4.h),
-                                                                          Row(
-                                                                            children: [
-                                                                              Text(
-                                                                                'السعر: ${package.price} ريال',
-                                                                                style: TextStyles.font12Secondary700Weight.copyWith(
-                                                                                  color: Colors.white.withOpacity(0.8),
-                                                                                ),
-                                                                              ),
-                                                                              SizedBox(width: 16.w),
-                                                                              Text(
-                                                                                'الحد الأقصى: ${package.limit}',
-                                                                                style: TextStyles.font12Secondary700Weight.copyWith(
-                                                                                  color: Colors.white.withOpacity(0.8),
-                                                                                ),
-                                                                              ),
-                                                                            ],
-                                                                          ),
-                                                                          SizedBox(height: 4.h),
-                                                                          Row(
-                                                                            children: [
-                                                                              Container(
-                                                                                padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.h),
-                                                                                decoration: BoxDecoration(
-                                                                                  color: _getStatusColor(package.subscriptionStatus),
-                                                                                  borderRadius: BorderRadius.circular(4.r),
-                                                                                ),
-                                                                                child: Text(
-                                                                                  _getStatusText(package.subscriptionStatus),
-                                                                                  style: TextStyles.font10Secondary700Weight.copyWith(
-                                                                                    color: Colors.white,
-                                                                                  ),
-                                                                                ),
-                                                                              ),
-                                                                              SizedBox(width: 8.w),
-                                                                              Text(
-                                                                                '${package.rounds.length} جولة',
-                                                                                style: TextStyles.font12Secondary700Weight.copyWith(
-                                                                                  color: Colors.white.withOpacity(0.7),
-                                                                                ),
-                                                                              ),
-                                                                            ],
-                                                                          ),
+                                                ? Container(
+                                                    padding: EdgeInsets.all(12.w),
+                                                    child: Column(
+                                                      children: [
+                                                        // Rounds
+                                                        if (game.rounds.isNotEmpty) ...[
+                                                          _buildRoundDetails(game.rounds, gameKey, game.teams),
+                                                          SizedBox(height: 12.h),
+                                                        ],
+                                                        // Repeat game button
+                                                        GestureDetector(
+                                                          onTap: () => _subscribeToGame(game),
+                                                          child: Container(
+                                                            margin: EdgeInsets.symmetric(vertical: 5.h),
+                                                            height: 40.h,
+                                                            width: double.infinity,
+                                                            child: Stack(
+                                                              alignment: Alignment.bottomCenter,
+                                                              children: [
+                                                                /// Bottom Gradient Shadow
+                                                                Positioned(
+                                                                  bottom: 0,
+                                                                  left: 10.w,
+                                                                  right: 10.w,
+                                                                  child: Container(
+                                                                    height: 6.h,
+                                                                    decoration: BoxDecoration(
+                                                                      borderRadius: BorderRadius.vertical(
+                                                                        bottom: Radius.circular(20.r),
+                                                                      ),
+                                                                      gradient: const LinearGradient(
+                                                                        begin: Alignment.topCenter,
+                                                                        end: Alignment.bottomCenter,
+                                                                        colors: [
+                                                                          AppColors.gradiant1,
+                                                                          AppColors.gradiant2,
+                                                                          AppColors.gradiant3,
+                                                                          AppColors.gradiant4,
+                                                                          AppColors.gradiant5
                                                                         ],
                                                                       ),
                                                                     ),
-                                                                    Icon(
-                                                                      isPackageExpanded ? Icons.expand_less : Icons.expand_more,
-                                                                      color: Colors.white,
-                                                                    ),
-                                                                  ],
+                                                                  ),
                                                                 ),
-                                                              ),
-                                                            ),
-                                                            // Package content - expandable
-                                                            AnimatedSize(
-                                                              duration: Duration(milliseconds: 300),
-                                                              child: isPackageExpanded
-                                                                  ? Container(
-                                                                      padding: EdgeInsets.all(12.w),
-                                                                      child: Column(
-                                                                        children: [
-                                                                          // Rounds
-                                                                          if (package.rounds.isNotEmpty) ...[
-                                                                            _buildRoundDetails(package.rounds, packageKey),
-                                                                            SizedBox(height: 12.h),
-                                                                          ],
-                                                                          // Subscribe button
-                                                                          SizedBox(
-                                                                            width: double.infinity,
-                                                                            child: ElevatedButton(
-                                                                              onPressed: () => _subscribeToPackage(package, game),
-                                                                              style: ElevatedButton.styleFrom(
-                                                                                backgroundColor: Color(0xFF79899f),
-                                                                                padding: EdgeInsets.symmetric(vertical: 12.h),
-                                                                                shape: RoundedRectangleBorder(
-                                                                                  borderRadius: BorderRadius.circular(8.r),
-                                                                                ),
-                                                                              ),
-                                                                              child: Text(
-                                                                                'تكرار اللعب',
-                                                                                style: TextStyles.font14Secondary700Weight.copyWith(
-                                                                                  color: Colors.white,
-                                                                                ),
-                                                                              ),
-                                                                            ),
-                                                                          ),
-                                                                        ],
+                                                                /// External Bottom Border
+                                                                Positioned(
+                                                                  bottom: 0,
+                                                                  left: 0,
+                                                                  right: 0,
+                                                                  child: Container(
+                                                                    height: 5.h,
+                                                                    decoration: BoxDecoration(
+                                                                      color: AppColors.buttonEternalBorder,
+                                                                      borderRadius: BorderRadius.vertical(
+                                                                        bottom: Radius.circular(18.r),
                                                                       ),
-                                                                    )
-                                                                  : SizedBox.shrink(),
+                                                                    ),
+                                                                  ),
+                                                                ),
+                                                                /// Inner Bottom Border
+                                                                Positioned(
+                                                                  bottom: 2.h,
+                                                                  left: 6.w,
+                                                                  right: 6.w,
+                                                                  child: Container(
+                                                                    height: 4.h,
+                                                                    decoration: BoxDecoration(
+                                                                      color: AppColors.buttonInnerBorder,
+                                                                      borderRadius: BorderRadius.vertical(
+                                                                        bottom: Radius.circular(14.r),
+                                                                      ),
+                                                                    ),
+                                                                  ),
+                                                                ),
+                                                                /// Main Button Body
+                                                                Container(
+                                                                  height: 55.h,
+                                                                  decoration: BoxDecoration(
+                                                                    color: AppColors.buttonYellow,
+                                                                    borderRadius: BorderRadius.circular(15.r),
+                                                                    boxShadow: [
+                                                                      BoxShadow(
+                                                                        color: AppColors.buttonEternalBorder,
+                                                                        offset: const Offset(0, 3),
+                                                                        blurRadius: 0,
+                                                                      ),
+                                                                    ],
+                                                                  ),
+                                                                  alignment: Alignment.center,
+                                                                  child: Text(
+                                                                    'تكرار اللعب',
+                                                                    style: TextStyles.font16Secondary700Weight,
+                                                                  ),
+                                                                ),
+                                                              ],
                                                             ),
-                                                          ],
+                                                          ),
                                                         ),
-                                                      );
-                                                    }).toList(),
+                                                      ],
+                                                    ),
                                                   )
                                                 : SizedBox.shrink(),
                                           ),

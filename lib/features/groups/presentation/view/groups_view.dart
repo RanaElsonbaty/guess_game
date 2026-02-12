@@ -10,8 +10,10 @@ import 'package:guess_game/core/helper_functions/toast_helper.dart';
 import 'package:guess_game/core/widgets/subscription_alert_dialog.dart';
 import 'package:guess_game/features/game/data/models/game_start_request.dart';
 import 'package:guess_game/features/game/data/models/game_start_response.dart';
+import 'package:guess_game/features/game/data/models/repeat_game_request.dart';
 import 'package:guess_game/features/game/presentation/cubit/add_one_round_cubit.dart';
 import 'package:guess_game/features/game/presentation/cubit/game_cubit.dart';
+import 'package:guess_game/features/game/presentation/cubit/repeat_game_cubit.dart';
 import 'package:guess_game/core/widgets/group_card.dart';
 import 'package:guess_game/features/qrcode/presentation/view/widgets/game_drawer_icon.dart';
 import 'package:guess_game/core/widgets/app_drawer.dart';
@@ -35,6 +37,8 @@ class _GroupsViewState extends State<GroupsView> {
   bool _isStartingGame = false;
   bool _isAddOneFlow = false;
   bool _isSameGamePackageFlow = false;
+  bool _isReplayFlow = false;
+  int _replayGameId = 0;
   int _addOneGameId = 0;
   int _addOneTeam1Id = 0;
   int _addOneTeam2Id = 0;
@@ -60,6 +64,14 @@ class _GroupsViewState extends State<GroupsView> {
     setState(() {
       _isStartingGame = true;
     });
+    
+    // Check if this is a replay flow - call repeat game API
+    if (_isReplayFlow && _replayGameId > 0) {
+      print('🔄 المستخدم ضغط على "التالي" - استدعاء API تكرار اللعبة...');
+      await _repeatGame();
+      return;
+    }
+    
     // التحقق من وجود البيانات المطلوبة
     if (GlobalStorage.team1Categories.isEmpty || GlobalStorage.team2Categories.isEmpty) {
       if (mounted) {
@@ -153,6 +165,47 @@ class _GroupsViewState extends State<GroupsView> {
           _isStartingGame = false;
         });
         ToastHelper.showError(context, '❌ فشل في بدء اللعبة: $e');
+      }
+    }
+  }
+
+  Future<void> _repeatGame() async {
+    // Create repeat game request with current team names
+    final request = RepeatGameRequest(
+      gameId: _replayGameId,
+      teams: [
+        RepeatGameTeam(
+          name: _team1Controller.text.trim(),
+          teamNumber: 1,
+        ),
+        RepeatGameTeam(
+          name: _team2Controller.text.trim(),
+          teamNumber: 2,
+        ),
+      ],
+    );
+
+    print('🔄 استدعاء /games/copy-game API...');
+    print('📤 game_id: $_replayGameId');
+    print('📤 teams: [');
+    print('  {name: "${_team1Controller.text.trim()}", team_number: 1},');
+    print('  {name: "${_team2Controller.text.trim()}", team_number: 2}');
+    print(']');
+
+    setState(() {
+      _isStartingGame = true;
+    });
+
+    try {
+      // Call repeat game API through cubit
+      await context.read<RepeatGameCubit>().repeatGame(request);
+    } catch (e) {
+      print('❌ خطأ في استدعاء API: $e');
+      if (mounted) {
+        setState(() {
+          _isStartingGame = false;
+        });
+        ToastHelper.showError(context, '❌ فشل في تكرار اللعبة: $e');
       }
     }
   }
@@ -399,10 +452,17 @@ class _GroupsViewState extends State<GroupsView> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
       if (args != null && args['isReplay'] == true && !_hasLoadedReplayData) {
+        _isReplayFlow = true;
+        _replayGameId = args['gameId'] as int? ?? 0;
+        
         final team1Name = args['team1Name'] as String? ?? '';
         final team2Name = args['team2Name'] as String? ?? '';
-        final team1Categories = args['team1Categories'] as List<int>? ?? [];
-        final team2Categories = args['team2Categories'] as List<int>? ?? [];
+        final team1CategoriesRaw = args['team1Categories'] as List<dynamic>? ?? [];
+        final team2CategoriesRaw = args['team2Categories'] as List<dynamic>? ?? [];
+        
+        // Convert List<dynamic> to List<int>
+        final team1Categories = team1CategoriesRaw.map((e) => e as int).toList();
+        final team2Categories = team2CategoriesRaw.map((e) => e as int).toList();
         
         // Set controller text only once when loading replay data
         if (team1Name.isNotEmpty) {
@@ -431,6 +491,9 @@ class _GroupsViewState extends State<GroupsView> {
         
         _hasLoadedReplayData = true; // Mark as loaded to prevent repeated loading
         setState(() {}); // Trigger rebuild to show the loaded data
+        
+        // Don't call API automatically - wait for user to click "التالي"
+        print('✅ تم تحميل بيانات تكرار اللعب - في انتظار ضغط المستخدم على "التالي"');
       }
     });
   }
@@ -440,8 +503,17 @@ class _GroupsViewState extends State<GroupsView> {
     // الحصول على بيانات الفئات المختارة من الـ arguments (كحل احتياطي)
     final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
     if (args != null && mounted) {
-      _team1Categories = args['team1Categories'] ?? [];
-      _team2Categories = args['team2Categories'] ?? [];
+      // Convert List<dynamic> to List<int> safely
+      final team1CategoriesRaw = args['team1Categories'];
+      final team2CategoriesRaw = args['team2Categories'];
+      
+      if (team1CategoriesRaw is List) {
+        _team1Categories = team1CategoriesRaw.map((e) => e as int).toList();
+      }
+      if (team2CategoriesRaw is List) {
+        _team2Categories = team2CategoriesRaw.map((e) => e as int).toList();
+      }
+      
       _isAddOneFlow = args['isAddOneCategory'] == true;
       _isSameGamePackageFlow = args['isSameGamePackage'] == true;
       _addOneGameId = args['gameId'] as int? ?? _addOneGameId;
@@ -460,51 +532,151 @@ class _GroupsViewState extends State<GroupsView> {
       }
     }
 
-    return BlocListener<AddOneRoundCubit, AddOneRoundState>(
-      listener: (context, state) {
-        if (state is AddOneRoundSuccess) {
-          if (!mounted) return;
-          setState(() => _isStartingGame = false);
-          print('✅ API Response: ${state.response.message}');
-          
-          // الحصول على عدد الراوندات القديمة والـ flow type من GlobalStorage
-          final oldRoundsCount = GlobalStorage.lastRouteArguments?['oldRoundsCount'] as int? ?? 0;
-          final isAddOneFlow = GlobalStorage.lastRouteArguments?['isAddOneFlow'] as bool? ?? false;
-          
-          // إعادة تعيين currentRoundIndex للراوند الأول الجديد
-          if (oldRoundsCount > 0) {
-            GlobalStorage.currentRoundIndex = oldRoundsCount;
-            if (isAddOneFlow) {
-              print('🔄 [AddOne] تم إعادة تعيين currentRoundIndex إلى: ${GlobalStorage.currentRoundIndex}');
-            } else {
-              print('🔄 [SameGamePackage] تم إعادة تعيين currentRoundIndex إلى: ${GlobalStorage.currentRoundIndex}');
+    return MultiBlocListener(
+      listeners: [
+        BlocListener<AddOneRoundCubit, AddOneRoundState>(
+          listener: (context, state) {
+            if (state is AddOneRoundSuccess) {
+              if (!mounted) return;
+              setState(() => _isStartingGame = false);
+              print('✅ API Response: ${state.response.message}');
+              
+              // الحصول على عدد الراوندات القديمة والـ flow type من GlobalStorage
+              final oldRoundsCount = GlobalStorage.lastRouteArguments?['oldRoundsCount'] as int? ?? 0;
+              final isAddOneFlow = GlobalStorage.lastRouteArguments?['isAddOneFlow'] as bool? ?? false;
+              
+              // إعادة تعيين currentRoundIndex للراوند الأول الجديد
+              if (oldRoundsCount > 0) {
+                GlobalStorage.currentRoundIndex = oldRoundsCount;
+                if (isAddOneFlow) {
+                  print('🔄 [AddOne] تم إعادة تعيين currentRoundIndex إلى: ${GlobalStorage.currentRoundIndex}');
+                } else {
+                  print('🔄 [SameGamePackage] تم إعادة تعيين currentRoundIndex إلى: ${GlobalStorage.currentRoundIndex}');
+                }
+              } else {
+                // fallback: استخدام الطريقة القديمة
+                GlobalStorage.currentRoundIndex = 0;
+                print('🔄 تم إعادة تعيين currentRoundIndex إلى: 0 (fallback)');
+              }
+              
+              print('📊 عدد الراوندات الكلي بعد الإضافة: ${state.response.data.rounds.length}');
+              print('📊 الراوند الحالي (currentRoundIndex): ${GlobalStorage.currentRoundIndex}');
+              
+              // تحديث gameStartResponse في GlobalStorage
+              GlobalStorage.updateGameStartResponse(state.response);
+              
+              Navigator.of(context).pushReplacementNamed(
+                Routes.gameLevel,
+                arguments: {
+                  'team1Name': GlobalStorage.team1Name,
+                  'team2Name': GlobalStorage.team2Name,
+                  'gameStartResponse': state.response,
+                },
+              );
+            } else if (state is AddOneRoundError) {
+              if (!mounted) return;
+              setState(() => _isStartingGame = false);
+              print('❌ API Error: ${state.message}');
             }
-          } else {
-            // fallback: استخدام الطريقة القديمة
-            GlobalStorage.currentRoundIndex = 0;
-            print('🔄 تم إعادة تعيين currentRoundIndex إلى: 0 (fallback)');
-          }
-          
-          print('📊 عدد الراوندات الكلي بعد الإضافة: ${state.response.data.rounds.length}');
-          print('📊 الراوند الحالي (currentRoundIndex): ${GlobalStorage.currentRoundIndex}');
-          
-          // تحديث gameStartResponse في GlobalStorage
-          GlobalStorage.updateGameStartResponse(state.response);
-          
-          Navigator.of(context).pushReplacementNamed(
-            Routes.gameLevel,
-            arguments: {
-              'team1Name': GlobalStorage.team1Name,
-              'team2Name': GlobalStorage.team2Name,
-              'gameStartResponse': state.response,
-            },
-          );
-        } else if (state is AddOneRoundError) {
-          if (!mounted) return;
-          setState(() => _isStartingGame = false);
-          print('❌ API Error: ${state.message}');
-        }
-      },
+          },
+        ),
+        BlocListener<RepeatGameCubit, RepeatGameState>(
+          listener: (context, state) {
+            if (state is RepeatGameSuccess) {
+              if (!mounted) return;
+              setState(() => _isStartingGame = false);
+              ToastHelper.showSuccess(context, '✅ تم تكرار اللعبة بنجاح!');
+              
+              // Convert RepeatGameResponse to GameStartResponse
+              final gameStartResponse = GameStartResponse.fromJson({
+                'success': state.response.success,
+                'message': state.response.message,
+                'code': state.response.code,
+                'data': {
+                  'id': state.response.data.id,
+                  'name': state.response.data.name,
+                  'status': state.response.data.status,
+                  'user_id': state.response.data.userId,
+                  'created_at': state.response.data.createdAt,
+                  'updated_at': state.response.data.updatedAt,
+                  'teams': state.response.data.teams.map((team) => {
+                    'id': team.id,
+                    'game_id': state.response.data.id,
+                    'team_number': team.teamNumber,
+                    'name': team.name,
+                    'image': null,
+                    'is_winner': team.isWinner,
+                    'created_at': state.response.data.createdAt,
+                    'updated_at': state.response.data.updatedAt,
+                    'total_points': team.totalPoints,
+                    'round_data': team.roundData.map((rd) => {
+                      'id': rd.id,
+                      'round_id': rd.roundId,
+                      'team_id': rd.teamId,
+                      'category_id': rd.categoryId,
+                      'point_plan': rd.pointPlan,
+                      'status': 'draw',
+                      'point_earned': rd.pointEarned,
+                      'qr_code': rd.qrCode,
+                      'question_number': rd.questionNumber,
+                      'answer_number': rd.answerNumber,
+                      'created_at': state.response.data.createdAt,
+                      'updated_at': state.response.data.updatedAt,
+                      'image_path': rd.imagePath,
+                      'max_answers': rd.maxAnswers,
+                      'max_questions': rd.maxQuestions,
+                    }).toList(),
+                  }).toList(),
+                  'rounds': state.response.data.rounds.map((round) => {
+                    'id': round.id,
+                    'game_id': state.response.data.id,
+                    'subscription_id': 0,
+                    'round_number': round.roundNumber,
+                    'created_at': state.response.data.createdAt,
+                    'updated_at': state.response.data.updatedAt,
+                    'round_data': round.roundData.map((rd) => {
+                      'id': rd.id,
+                      'round_id': rd.roundId,
+                      'team_id': rd.teamId,
+                      'category_id': rd.categoryId,
+                      'point_plan': rd.pointPlan,
+                      'status': 'draw',
+                      'point_earned': rd.pointEarned,
+                      'qr_code': rd.qrCode,
+                      'question_number': rd.questionNumber,
+                      'answer_number': rd.answerNumber,
+                      'created_at': state.response.data.createdAt,
+                      'updated_at': state.response.data.updatedAt,
+                      'image_path': rd.imagePath,
+                      'max_answers': rd.maxAnswers,
+                      'max_questions': rd.maxQuestions,
+                    }).toList(),
+                  }).toList(),
+                },
+                'meta_data': state.response.metaData,
+              });
+              
+              // Save to GlobalStorage
+              GlobalStorage.lastGameStartResponse = gameStartResponse;
+              GlobalStorage.saveGameStartResponse(gameStartResponse);
+
+              Navigator.of(context).pushReplacementNamed(
+                Routes.gameLevel,
+                arguments: {
+                  'team1Name': _team1Controller.text.trim(),
+                  'team2Name': _team2Controller.text.trim(),
+                  'gameStartResponse': gameStartResponse,
+                  'isReplay': true,
+                },
+              );
+            } else if (state is RepeatGameError) {
+              if (!mounted) return;
+              setState(() => _isStartingGame = false);
+              ToastHelper.showError(context, state.message);
+            }
+          },
+        ),
+      ],
       child: SafeArea(
         child: Scaffold(
             backgroundColor: Colors.white,
@@ -565,19 +737,41 @@ class _GroupsViewState extends State<GroupsView> {
               child: GestureDetector(
                 onTap: _isStartingGame ? null : () {
                   // طباعة البيانات المختارة
-                  print('🎯 الضغط على زر ابدأ');
+                  print('🎯 الضغط على زر التالي');
                   print('🏷️ اسم الفريق الأول: "${_team1Controller.text.trim()}"');
                   print('🏷️ اسم الفريق الثاني: "${_team2Controller.text.trim()}"');
-                  print('📋 فئات الفريق الأول: $_team1Categories (${_team1Categories.length} فئة)');
-                  print('📋 فئات الفريق الثاني: $_team2Categories (${_team2Categories.length} فئة)');
-                  print('📊 المجموع الكلي للفئات: ${_team1Categories.length + _team2Categories.length} فئة');
-
+                  print('🔄 وضع تكرار اللعب: $_isReplayFlow');
+                  
                   // التحقق من أن أسماء الفرق مكتوبة
                   if (_team1Controller.text.trim().isEmpty ||
                       _team2Controller.text.trim().isEmpty) {
                     ToastHelper.showError(context, 'يرجى إدخال أسماء الفرق الاثنين');
                     return;
                   }
+
+                  // في حالة تكرار اللعب، لا نحتاج للتحقق من الفئات
+                  if (_isReplayFlow) {
+                    print('🔄 وضع تكرار اللعب - تجاهل validation الفئات');
+                    print('📤 استدعاء /games/copy-game مع:');
+                    print('   game_id: $_replayGameId');
+                    print('   teams: [');
+                    print('     {name: "${_team1Controller.text.trim()}", team_number: 1},');
+                    print('     {name: "${_team2Controller.text.trim()}", team_number: 2}');
+                    print('   ]');
+                    
+                    // حفظ أسماء الفرق في GlobalStorage
+                    GlobalStorage.team1Name = _team1Controller.text.trim();
+                    GlobalStorage.team2Name = _team2Controller.text.trim();
+                    
+                    // استدعاء repeat game مباشرة
+                    _startGame();
+                    return;
+                  }
+
+                  // في الحالات الأخرى، التحقق من الفئات
+                  print('📋 فئات الفريق الأول: $_team1Categories (${_team1Categories.length} فئة)');
+                  print('📋 فئات الفريق الثاني: $_team2Categories (${_team2Categories.length} فئة)');
+                  print('📊 المجموع الكلي للفئات: ${_team1Categories.length + _team2Categories.length} فئة');
 
                   // التحقق من وجود فئات مختارة
                   if (_team1Categories.isEmpty || _team2Categories.isEmpty) {
@@ -590,10 +784,6 @@ class _GroupsViewState extends State<GroupsView> {
                   GlobalStorage.team2Categories = _team2Categories;
                   GlobalStorage.team1Name = _team1Controller.text.trim();
                   GlobalStorage.team2Name = _team2Controller.text.trim();
-
-                  // حفظ بيانات اللعبة في GlobalStorage
-                  GlobalStorage.team1Categories = _team1Categories;
-                  GlobalStorage.team2Categories = _team2Categories;
                   
                   // في حالة isSameGamePackageFlow، استخدام الأسماء المحفوظة (لا تطلب من المستخدم)
                   if (_isSameGamePackageFlow) {

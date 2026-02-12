@@ -18,6 +18,7 @@ import 'package:guess_game/features/packages/data/repositories/packages_reposito
 import 'package:guess_game/features/packages/presentation/cubit/packages_cubit.dart';
 import 'package:guess_game/features/game/data/repositories/game_repository.dart';
 import 'package:guess_game/features/game/presentation/cubit/game_cubit.dart';
+import 'package:guess_game/features/game/presentation/cubit/repeat_game_cubit.dart';
 import 'package:guess_game/features/game/presentation/cubit/add_one_round_cubit.dart';
 import 'package:guess_game/features/game/presentation/cubit/get_all_games_cubit.dart';
 import 'package:guess_game/features/terms/data/repositories/terms_repository.dart';
@@ -117,6 +118,10 @@ Future<void> setupServiceLocator() async {
 
   getIt.registerFactory<GameCubit>(
     () => GameCubit(getIt<GameRepository>()),
+  );
+
+  getIt.registerFactory<RepeatGameCubit>(
+    () => RepeatGameCubit(getIt<GameRepository>()),
   );
 
   getIt.registerFactory<AddOneRoundCubit>(

@@ -47,22 +47,37 @@ class _AppDrawerState extends State<AppDrawer> {
     try {
       final uri = Uri.parse(url);
       
-      // For mailto and tel, use platformDefault mode instead of externalApplication
-      final launchMode = url.startsWith('mailto:') || url.startsWith('tel:')
-          ? LaunchMode.platformDefault
-          : LaunchMode.externalApplication;
-      
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri, mode: launchMode);
-        developer.log(
-          '✅ Successfully launched $platform URL',
-          name: 'AppDrawer',
-        );
+      // For mailto and tel, use platformDefault mode and launch directly without canLaunchUrl check
+      if (url.startsWith('mailto:') || url.startsWith('tel:')) {
+        try {
+          await launchUrl(uri, mode: LaunchMode.platformDefault);
+          developer.log(
+            '✅ Successfully launched $platform URL',
+            name: 'AppDrawer',
+          );
+        } catch (e) {
+          // If no email/phone app is available, show a message to the user
+          developer.log(
+            '⚠️ No app available to handle $platform',
+            name: 'AppDrawer',
+          );
+          // You can show a toast or dialog here if needed
+          // For now, just log the error
+        }
       } else {
-        developer.log(
-          '❌ Cannot launch URL: $url',
-          name: 'AppDrawer',
-        );
+        // For other URLs, check if they can be launched first
+        if (await canLaunchUrl(uri)) {
+          await launchUrl(uri, mode: LaunchMode.externalApplication);
+          developer.log(
+            '✅ Successfully launched $platform URL',
+            name: 'AppDrawer',
+          );
+        } else {
+          developer.log(
+            '❌ Cannot launch URL: $url',
+            name: 'AppDrawer',
+          );
+        }
       }
     } catch (e) {
       developer.log(
@@ -626,7 +641,7 @@ class _AppDrawerState extends State<AppDrawer> {
                               final isLoading = logoutState is LogoutLoading;
                               return Column(
                                 children: [
-                                  SizedBox(height: 12.h), // قللت من 24.h إلى 12.h
+                                  SizedBox(height: 24.h), // زودت المسافة قبل زرار تسجيل الخروج
                                   _buildMenuItem(
                                     context: context,
                                     title: 'تسجيل الخروج',
@@ -706,21 +721,19 @@ class _AppDrawerState extends State<AppDrawer> {
                               if (state is SocialMediaLoaded || socialMedia != null) {
                                 final media = socialMedia ?? (state as SocialMediaLoaded).response.data;
                                 
+                                // عرض Instagram و Snapchat فقط
                                 final hasAnySocialMedia = 
-                                    (media.facebook != null && media.facebook!.isNotEmpty) ||
                                     (media.instagram != null && media.instagram!.isNotEmpty) ||
-                                    (media.twitter != null && media.twitter!.isNotEmpty) ||
-                                    (media.snapchat != null && media.snapchat!.isNotEmpty) ||
-                                    (media.linkedin != null && media.linkedin!.isNotEmpty) ||
-                                    (media.youtube != null && media.youtube!.isNotEmpty);
+                                    (media.snapchat != null && media.snapchat!.isNotEmpty);
                                 
                                 if (!hasAnySocialMedia) {
                                   return const SizedBox.shrink();
                                 }
                                 
                                 return Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  crossAxisAlignment: CrossAxisAlignment.center, // غيرت من start إلى center
                                   children: [
+                                    SizedBox(height: 24.h), // زودت المسافة قبل "تابعنا على"
                                     Text(
                                       'تابعنا على',
                                       style: TextStyles.font14Secondary700Weight,
@@ -729,18 +742,9 @@ class _AppDrawerState extends State<AppDrawer> {
                                     Wrap(
                                       spacing: 12.w,
                                       runSpacing: 12.h,
+                                      alignment: WrapAlignment.center, // أضفت center alignment للـ Wrap
                                       children: [
-                                        if (media.facebook != null && media.facebook!.isNotEmpty)
-                                          _buildSocialIcon(
-                                            icon: Icons.facebook,
-                                            onTap: () {
-                                              developer.log(
-                                                '📱 Social Media Response - Facebook: ${media.facebook}',
-                                                name: 'AppDrawer',
-                                              );
-                                              _launchURL(media.facebook, 'Facebook');
-                                            },
-                                          ),
+                                        // Instagram فقط
                                         if (media.instagram != null && media.instagram!.isNotEmpty)
                                           _buildSocialIcon(
                                             icon: Icons.camera_alt,
@@ -752,17 +756,7 @@ class _AppDrawerState extends State<AppDrawer> {
                                               _launchURL(media.instagram, 'Instagram');
                                             },
                                           ),
-                                        if (media.twitter != null && media.twitter!.isNotEmpty)
-                                          _buildSocialIcon(
-                                            icon: Icons.alternate_email,
-                                            onTap: () {
-                                              developer.log(
-                                                '📱 Social Media Response - Twitter: ${media.twitter}',
-                                                name: 'AppDrawer',
-                                              );
-                                              _launchURL(media.twitter, 'Twitter');
-                                            },
-                                          ),
+                                        // Snapchat فقط
                                         if (media.snapchat != null && media.snapchat!.isNotEmpty)
                                           _buildSocialIcon(
                                             icon: Icons.camera,
@@ -772,28 +766,6 @@ class _AppDrawerState extends State<AppDrawer> {
                                                 name: 'AppDrawer',
                                               );
                                               _launchURL(media.snapchat, 'Snapchat');
-                                            },
-                                          ),
-                                        if (media.linkedin != null && media.linkedin!.isNotEmpty)
-                                          _buildSocialIcon(
-                                            icon: Icons.business,
-                                            onTap: () {
-                                              developer.log(
-                                                '📱 Social Media Response - LinkedIn: ${media.linkedin}',
-                                                name: 'AppDrawer',
-                                              );
-                                              _launchURL(media.linkedin, 'LinkedIn');
-                                            },
-                                          ),
-                                        if (media.youtube != null && media.youtube!.isNotEmpty)
-                                          _buildSocialIcon(
-                                            icon: Icons.play_circle_filled,
-                                            onTap: () {
-                                              developer.log(
-                                                '📱 Social Media Response - YouTube: ${media.youtube}',
-                                                name: 'AppDrawer',
-                                              );
-                                              _launchURL(media.youtube, 'YouTube');
                                             },
                                           ),
                                       ],
@@ -828,8 +800,12 @@ class _AppDrawerState extends State<AppDrawer> {
       child: Container(
         padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
         decoration: BoxDecoration(
-          color: AppColors.darkBlue.withOpacity(.3),
+          color: AppColors.buttonYellow,
           borderRadius: BorderRadius.circular(8.r),
+          border: Border.all(
+            color: AppColors.buttonBorderOrange,
+            width: 2,
+          ),
         ),
         child: Row(
           children: [
@@ -863,20 +839,20 @@ class _AppDrawerState extends State<AppDrawer> {
     return InkWell(
       onTap: onTap,
       child: Container(
-        width: 40.w,
-        height: 40.h,
+        width: 50.w,
+        height: 50.w, // استخدمت .w بدلاً من .h لضمان الشكل المربع
         decoration: BoxDecoration(
-          color: AppColors.darkBlue.withOpacity(.3),
+          color: AppColors.buttonYellow,
           borderRadius: BorderRadius.circular(8.r),
           border: Border.all(
-            color: AppColors.secondaryColor.withOpacity(0.3),
-            width: 1,
+            color: AppColors.buttonBorderOrange,
+            width: 2,
           ),
         ),
         child: Icon(
           icon,
           color: AppColors.secondaryColor,
-          size: 20.w,
+          size: 24.w,
         ),
       ),
     );
@@ -893,11 +869,11 @@ class _AppDrawerState extends State<AppDrawer> {
       child: Container(
         padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
         decoration: BoxDecoration(
-          color: AppColors.darkBlue.withOpacity(.3),
+          color: AppColors.buttonYellow,
           borderRadius: BorderRadius.circular(6.r),
           border: Border.all(
-            color: AppColors.secondaryColor.withOpacity(0.2),
-            width: 1,
+            color: AppColors.buttonBorderOrange,
+            width: 2,
           ),
         ),
         child: Row(

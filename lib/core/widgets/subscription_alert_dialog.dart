@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:guess_game/core/routing/routes.dart';
+import 'package:guess_game/core/theming/colors.dart';
 import 'package:guess_game/core/theming/icons.dart';
 import 'package:guess_game/core/theming/images.dart';
 import 'package:guess_game/core/theming/styles.dart';
@@ -140,7 +141,7 @@ class _SubscriptionAlertDialogState extends State<SubscriptionAlertDialog> {
                           child: Text(
                             widget.secondaryButtonText!,
                             style: TextStyles.font10Secondary700Weight.copyWith(
-                              color: Colors.white,
+                              color: AppColors.secondaryColor,
                               fontSize: 12.sp,
                             ),
                           ),
@@ -153,7 +154,7 @@ class _SubscriptionAlertDialogState extends State<SubscriptionAlertDialog> {
                           child: Text(
                             widget.buttonText,
                             style: TextStyles.font10Secondary700Weight.copyWith(
-                              color: Colors.white,
+                              color: AppColors.secondaryColor,
                               fontSize: 12.sp,
                             ),
                           ),
@@ -168,7 +169,7 @@ class _SubscriptionAlertDialogState extends State<SubscriptionAlertDialog> {
                       child: Text(
                         widget.buttonText,
                         style: TextStyles.font10Secondary700Weight.copyWith(
-                          color: Colors.white,
+                          color: AppColors.secondaryColor,
                           fontSize: 12.sp,
                         ),
                       ),

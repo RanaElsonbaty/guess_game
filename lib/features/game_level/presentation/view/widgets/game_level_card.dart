@@ -52,29 +52,29 @@ class _GameLevelCardState extends State<GameLevelCard> {
                 widget.teamTitle,
                 style: TextStyles.font14Secondary700Weight,
               ),
-              SizedBox(height: 25.h),
+              SizedBox(height: 20.h),
               // Dynamic Image from API or fallback to static ball image
               widget.imageUrl != null && widget.imageUrl!.isNotEmpty
                 ? Image.network(
                     widget.imageUrl!,
-                    height: 50.h,
-                    width: 50.w,
+                    height: 70.h,
+                    width: 130.w,
                     fit: BoxFit.cover,
                     errorBuilder: (context, error, stackTrace) {
                       // Fallback to static image if network image fails
                       return Image.asset(
                         AppImages.ball,
-                        height: 50.h,
-                        width: 50.w,
+                        height: 70.h,
+                        width: 130.w,
                       );
                     },
                   )
                 : Image.asset(
                     AppImages.ball,
-                    height: 50.h,
-                    width: 50.w,
+                    height: 70.h,
+                    width: 130.w,
                   ),
-              SizedBox(height: 25.h),
+              SizedBox(height: 20.h),
               // Level Options (Small Cards)
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,

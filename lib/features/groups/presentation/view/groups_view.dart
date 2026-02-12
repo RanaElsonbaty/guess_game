@@ -238,6 +238,18 @@ class _GroupsViewState extends State<GroupsView> {
       return;
     }
 
+    // حفظ عدد الراوندات القديمة قبل إضافة الراوند الجديد
+    final oldRoundsCount = GlobalStorage.currentRoundIndex + 1;
+    print('📊 [AddOne] عدد الراوندات القديمة المكتملة: $oldRoundsCount');
+    print('📊 [AddOne] currentRoundIndex قبل الإضافة: ${GlobalStorage.currentRoundIndex}');
+    
+    // حفظ في GlobalStorage مع علامة isAddOneFlow
+    GlobalStorage.lastRouteArguments = {
+      ...GlobalStorage.lastRouteArguments ?? {},
+      'oldRoundsCount': oldRoundsCount,
+      'isAddOneFlow': true, // علامة للتعرف على add-one flow
+    };
+
     await context.read<AddOneRoundCubit>().addRounds(
           gameId: gameId,
           team1Id: team1Id,
@@ -318,6 +330,17 @@ class _GroupsViewState extends State<GroupsView> {
       ToastHelper.showError(context, 'لا يمكن تحديد بيانات اللعبة لإضافة جولات جديدة');
       return;
     }
+
+    // حفظ عدد الراوندات القديمة قبل إضافة الجديدة
+    final oldRoundsCount = GlobalStorage.currentRoundIndex + 1;
+    print('📊 عدد الراوندات القديمة المكتملة: $oldRoundsCount');
+    print('📊 currentRoundIndex قبل الإضافة: ${GlobalStorage.currentRoundIndex}');
+    
+    // حفظ في GlobalStorage للاستخدام بعد نجاح الـ API
+    GlobalStorage.lastRouteArguments = {
+      ...GlobalStorage.lastRouteArguments ?? {},
+      'oldRoundsCount': oldRoundsCount,
+    };
 
     // استخدام AddOneRoundCubit لإضافة الجولات مع فئات متعددة
     await context.read<AddOneRoundCubit>().addRoundsWithMultipleCategories(
@@ -443,6 +466,31 @@ class _GroupsViewState extends State<GroupsView> {
           if (!mounted) return;
           setState(() => _isStartingGame = false);
           print('✅ API Response: ${state.response.message}');
+          
+          // الحصول على عدد الراوندات القديمة والـ flow type من GlobalStorage
+          final oldRoundsCount = GlobalStorage.lastRouteArguments?['oldRoundsCount'] as int? ?? 0;
+          final isAddOneFlow = GlobalStorage.lastRouteArguments?['isAddOneFlow'] as bool? ?? false;
+          
+          // إعادة تعيين currentRoundIndex للراوند الأول الجديد
+          if (oldRoundsCount > 0) {
+            GlobalStorage.currentRoundIndex = oldRoundsCount;
+            if (isAddOneFlow) {
+              print('🔄 [AddOne] تم إعادة تعيين currentRoundIndex إلى: ${GlobalStorage.currentRoundIndex}');
+            } else {
+              print('🔄 [SameGamePackage] تم إعادة تعيين currentRoundIndex إلى: ${GlobalStorage.currentRoundIndex}');
+            }
+          } else {
+            // fallback: استخدام الطريقة القديمة
+            GlobalStorage.currentRoundIndex = 0;
+            print('🔄 تم إعادة تعيين currentRoundIndex إلى: 0 (fallback)');
+          }
+          
+          print('📊 عدد الراوندات الكلي بعد الإضافة: ${state.response.data.rounds.length}');
+          print('📊 الراوند الحالي (currentRoundIndex): ${GlobalStorage.currentRoundIndex}');
+          
+          // تحديث gameStartResponse في GlobalStorage
+          GlobalStorage.updateGameStartResponse(state.response);
+          
           Navigator.of(context).pushReplacementNamed(
             Routes.gameLevel,
             arguments: {

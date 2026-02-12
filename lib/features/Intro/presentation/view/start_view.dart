@@ -41,7 +41,7 @@ class _StartViewState extends State<StartView> {
                         children: [
                         // Logo
                         LogoSection(constraints: constraints),
-                        Text('khamny',style: GoogleFonts.getFont(
+                        Text('khamni',style: GoogleFonts.getFont(
                           AppFonts.aclonica,
                           color: AppColors.secondaryColor,
                           fontWeight: FontWeight.w400,

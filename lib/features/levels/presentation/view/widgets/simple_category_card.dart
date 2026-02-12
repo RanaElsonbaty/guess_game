@@ -28,8 +28,8 @@ class SimpleCategoryCard extends StatelessWidget {
       child: Stack(
         children: [
           Container(
-            width: 150.w, // حجم أصغر من CategoryCard الأصلي (145.w)
-            height: 140.h, // حجم أصغر من CategoryCard الأصلي (200.h)
+            width: 150.w,
+            height: 140.h,
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [Color(0xFF79899f), Color(0xFF8b929b), Color(0xFF79899f)],
@@ -40,11 +40,10 @@ class SimpleCategoryCard extends StatelessWidget {
                   : null,
             ),
             child: Column(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                // Title - نفس التصميم بس بحجم أصغر
+                // Title - في الأعلى
                 Container(
-                  height: 20.h, // أصغر من 40
+                  height: 20.h,
                   width: double.infinity,
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
@@ -56,43 +55,42 @@ class SimpleCategoryCard extends StatelessWidget {
                   ),
                   child: Text(
                     title,
-                    style: TextStyles.font14Secondary700Weight, // خط أصغر
+                    style: TextStyles.font14Secondary700Weight,
                     textAlign: TextAlign.center,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
 
-                // Ball Image with optional lock overlay - نفس التصميم بس بحجم أصغر
-                SizedBox(
-                  width: 45.w, // أصغر من 72
-                  height: 45.h, // أصغر من 72
+                // Image - تملأ باقي المساحة تحت العنوان مباشرة
+                Expanded(
                   child: Stack(
-                    alignment: Alignment.center,
                     children: [
-                      // Dynamic Image from API or fallback to static ball image
-                      imageUrl != null && imageUrl!.isNotEmpty
-                        ? Image.network(
-                            imageUrl!,
-                            width: 50.w,
-                            height: 50.h,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) {
-                              // Fallback to static image if network image fails
-                              return Image.asset(
-                                AppImages.ball,
-                                width: 50.w,
-                                height: 50.h,
-                                fit: BoxFit.cover,
-                              );
-                            },
-                          )
-                        : Image.asset(
-                            AppImages.ball,
-                            width: 50.w,
-                            height: 50.h,
-                            fit: BoxFit.cover,
-                          ),
+                      // الصورة تأخذ كامل العرض والطول المتاح
+                      Positioned.fill(
+                        child: imageUrl != null && imageUrl!.isNotEmpty
+                          ? Image.network(
+                              imageUrl!,
+                              fit: BoxFit.cover, // تملأ المساحة كاملة زي صورة الكرة
+                              width: double.infinity,
+                              height: double.infinity,
+                              errorBuilder: (context, error, stackTrace) {
+                                // Fallback to static image if network image fails
+                                return Image.asset(
+                                  AppImages.ball,
+                                  fit: BoxFit.cover,
+                                  width: double.infinity,
+                                  height: double.infinity,
+                                );
+                              },
+                            )
+                          : Image.asset(
+                              AppImages.ball,
+                              fit: BoxFit.cover,
+                              width: double.infinity,
+                              height: double.infinity,
+                            ),
+                      ),
 
                       // Lock overlay if locked
                       if (isLocked) ...[
@@ -101,10 +99,8 @@ class SimpleCategoryCard extends StatelessWidget {
                           child: Container(
                             decoration: BoxDecoration(
                               color: Colors.black.withOpacity(0.3),
-                              borderRadius: BorderRadius.circular(25.w), // نصف العرض
                             ),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(25.w),
+                            child: ClipRect(
                               child: BackdropFilter(
                                 filter: ImageFilter.blur(sigmaX: 2, sigmaY: 2),
                                 child: Container(
@@ -115,19 +111,18 @@ class SimpleCategoryCard extends StatelessWidget {
                           ),
                         ),
 
-                        // Lock image - حجم أصغر
-                        Image.asset(
-                          AppImages.lock,
-                          width: 18.w, // أصغر من 24
-                          height: 18.h, // أصغر من 24
+                        // Lock image - في المنتصف
+                        Center(
+                          child: Image.asset(
+                            AppImages.lock,
+                            width: 24.w,
+                            height: 24.h,
+                          ),
                         ),
                       ],
                     ],
                   ),
                 ),
-
-                // مساحة فارغة بدلاً من الزرار
-                SizedBox(height: 8.h), // مساحة بدلاً من الزرار
               ],
             ),
           ),

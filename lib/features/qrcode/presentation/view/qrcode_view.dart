@@ -143,7 +143,7 @@ class _QrcodeViewState extends State<QrcodeView> {
                         maxAnswers: team02RoundData?.maxAnswers ?? 2,
                         width: cardW,
                         height: 280,
-                        qrBoxSize: 150,
+                        qrBoxSize: 190,
                         canUpdateQuestions: team02RoundData?.canUpdateQuestions ?? true,
                         canUpdateAnswers: team02RoundData?.canUpdateAnswers ?? true,
                         onScoreChanged: (q, a) {
@@ -161,7 +161,7 @@ class _QrcodeViewState extends State<QrcodeView> {
                         maxAnswers: team01RoundData?.maxAnswers ?? 2,
                         width: cardW,
                         height: 280,
-                        qrBoxSize: 150,
+                        qrBoxSize: 190,
                         canUpdateQuestions: team01RoundData?.canUpdateQuestions ?? true,
                         canUpdateAnswers: team01RoundData?.canUpdateAnswers ?? true,
                         onScoreChanged: (q, a) {

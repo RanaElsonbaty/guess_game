@@ -67,8 +67,8 @@ class GreenPillButton extends StatelessWidget {
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: [
-                      AppColors.greenButtonDark.withOpacity(0.85),
-                      AppColors.greenButtonDark,
+                      AppColors.buttonBorderOrange.withOpacity(0.85),
+                      AppColors.buttonBorderOrange,
                       Colors.black,
                     ],
                   ),
@@ -84,7 +84,7 @@ class GreenPillButton extends StatelessWidget {
               child: Container(
                 height: 7.h,
                 decoration: BoxDecoration(
-                  color: AppColors.greenButtonDark,
+                  color: AppColors.buttonBorderOrange,
                   borderRadius: BorderRadius.vertical(bottom: Radius.circular(rDark)),
                 ),
               ),
@@ -98,7 +98,7 @@ class GreenPillButton extends StatelessWidget {
               child: Container(
                 height: 5.h,
                 decoration: BoxDecoration(
-                  color: AppColors.greenButtonLight.withOpacity(0.7),
+                  color: AppColors.buttonYellow.withOpacity(0.7),
                   borderRadius: BorderRadius.vertical(bottom: Radius.circular(rInnerBottom)),
                 ),
               ),
@@ -108,19 +108,12 @@ class GreenPillButton extends StatelessWidget {
             Container(
               height: hPx - 2.h,
               decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    AppColors.greenButtonLight,
-                    Color(0xFF12D900),
-                  ],
-                ),
+                color: AppColors.buttonYellow,
                 borderRadius: BorderRadius.circular(r),
                 // No border by design; the 3D effect comes from the bottom layers only.
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.greenButtonDark.withOpacity(0.95),
+                    color: AppColors.buttonBorderOrange.withOpacity(0.95),
                     offset: const Offset(0, 3),
                     blurRadius: 0,
                   ),

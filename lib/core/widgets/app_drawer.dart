@@ -235,6 +235,16 @@ class _AppDrawerState extends State<AppDrawer> {
   Widget build(BuildContext context) {
     final user = GlobalStorage.user;
     
+    // طباعة token من GlobalStorage عند فتح الـ drawer
+    developer.log(
+      '🔑 Token from GlobalStorage: ${GlobalStorage.token}',
+      name: 'AppDrawer',
+    );
+    developer.log(
+      '👤 User from GlobalStorage: ${user?.name ?? 'null'}',
+      name: 'AppDrawer',
+    );
+    
     return MultiBlocProvider(
       providers: [
         BlocProvider(

@@ -111,21 +111,19 @@ class _FolderTeamQrCardState extends State<FolderTeamQrCard> {
             child: Column(
               children: [
                 Text(widget.teamTitle, style: TextStyles.font14Secondary700Weight),
-                SizedBox(height: 10.h),
+                SizedBox(height: 8.h),
 
                 Expanded(
                   child: Center(
-                    child: Container(
+                    child: SizedBox(
                       width: widget.qrBoxSize.w,
                       height: widget.qrBoxSize.w,
-                      color: Colors.black.withOpacity(0.18),
-                      padding: EdgeInsets.all(10.w),
                       child: QrCodeVisual(qr: widget.qrCode),
                     ),
                   ),
                 ),
 
-                SizedBox(height: 14.h),
+                SizedBox(height: 8.h),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [

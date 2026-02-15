@@ -11,6 +11,7 @@ class CategoryCard extends StatelessWidget {
   final bool isLocked;
   final bool isSubscriptionLocked;
   final VoidCallback? onPressed;
+  final bool showButton; // إضافة parameter لإظهار/إخفاء الزر
 
   const CategoryCard({
     super.key,
@@ -19,6 +20,7 @@ class CategoryCard extends StatelessWidget {
     this.isLocked = false,
     this.isSubscriptionLocked = false,
     this.onPressed,
+    this.showButton = true, // افتراضياً يظهر الزر
   });
 
   @override
@@ -32,141 +34,150 @@ class CategoryCard extends StatelessWidget {
       child: Stack(
         children: [
           Container(
-            width: 145.w,
-            height: 200.h,
+            width: 150.w,
+            height: 85.h,
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [Color(0xFF79899f), Color(0xFF8b929b), Color(0xFF79899f)],
               ),
             ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            child: Stack(
               children: [
-                // Title
-                Container(
-                  height: 40,
-                  width: double.infinity,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    image: DecorationImage(
-                      image: AssetImage(AppImages.card),
-                      fit: BoxFit.fill,
-                      alignment: Alignment.topCenter,
+                // الصورة تبدأ من أسفل العنوان
+                Positioned(
+                  top: 20.h, // تبدأ من أسفل العنوان
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  child: imageUrl != null && imageUrl!.isNotEmpty
+                    ? Image.network(
+                        imageUrl!,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Image.asset(
+                            AppImages.ball,
+                            fit: BoxFit.cover,
+                          );
+                        },
+                      )
+                    : Image.asset(
+                        AppImages.ball,
+                        fit: BoxFit.cover,
+                      ),
+                ),
+
+                // Lock overlay if locked
+                if (isLocked || isSubscriptionLocked) ...[
+                  // Blur effect
+                  Positioned(
+                    top: 20.h, // يبدأ من أسفل العنوان
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.3),
+                      ),
+                      child: ClipRect(
+                        child: BackdropFilter(
+                          filter: ImageFilter.blur(sigmaX: 2, sigmaY: 2),
+                          child: Container(
+                            color: Colors.transparent,
+                          ),
+                        ),
+                      ),
                     ),
                   ),
-                  child: Text(
-                    title,
-                    style: TextStyles.font14Secondary700Weight,
+
+                  // Lock image في المنتصف
+                  Positioned(
+                    top: 20.h,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    child: Center(
+                      child: Image.asset(
+                        AppImages.lock,
+                        width: 24.w,
+                        height: 24.h,
+                      ),
+                    ),
+                  ),
+                ],
+
+                // Title في الأعلى
+                Positioned(
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  child: Container(
+                    height: 20.h,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      image: DecorationImage(
+                        image: AssetImage(AppImages.card),
+                        fit: BoxFit.fill,
+                      ),
+                    ),
+                    child: Text(
+                      title,
+                      style: TextStyles.font14Secondary700Weight,
+                      textAlign: TextAlign.center,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
                 ),
 
-                // Ball Image with optional lock overlay
-                SizedBox(
-                  width: 72,
-                  height: 72,
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      // Dynamic Image from API or fallback to static ball image
-                      imageUrl != null && imageUrl!.isNotEmpty
-                        ? Image.network(
-                            imageUrl!,
-                            width: 72,
-                            height: 72,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) {
-                              // Fallback to static image if network image fails
-                              return Image.asset(
-                                AppImages.ball,
-                                width: 72,
-                                height: 72,
-                                fit: BoxFit.cover,
-                              );
-                            },
-                          )
-                        : Image.asset(
-                            AppImages.ball,
-                            width: 72,
-                            height: 72,
-                            fit: BoxFit.cover,
-                          ),
-
-                      // Lock overlay if locked (by category status or subscription)
-                      if (isLocked || isSubscriptionLocked) ...[
-                        // Blur effect
-                        Positioned.fill(
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: Colors.black.withOpacity(0.3),
-                              borderRadius: BorderRadius.circular(36),
-                            ),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(36),
-                              child: BackdropFilter(
-                                filter: ImageFilter.blur(sigmaX: 2, sigmaY: 2),
-                                child: Container(
-                                  color: Colors.transparent,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-
-                        // Lock image
-                        Image.asset(
-                          AppImages.lock,
-                          width: 24,
-                          height: 24,
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-
-                // Button
-                Padding(
-                  padding: EdgeInsets.only(bottom: 8.h),
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      /// 🔸 Main Button Body
-                      Container(
-                        height: 28.h,
-                        width: 90.w,
-                        decoration: BoxDecoration(
-                          color: AppColors.buttonYellow,
-                        ),
+                // Button في الأسفل - يظهر فقط إذا كان showButton = true
+                if (showButton)
+                  Positioned(
+                    bottom: 4.h,
+                    left: 0,
+                    right: 0,
+                    child: Center(
+                      child: Stack(
                         alignment: Alignment.center,
-                        child: Text(
-                          'اختر',
-                          style: TextStyles.font14Secondary700Weight,
-                        ),
-                      ),
+                        children: [
+                          /// 🔸 Main Button Body
+                          Container(
+                            height: 20.h,
+                            width: 65.w,
+                            decoration: BoxDecoration(
+                              color: AppColors.buttonYellow,
+                            ),
+                            alignment: Alignment.center,
+                            child: Text(
+                              'اختر',
+                              style: TextStyles.font10Secondary700Weight.copyWith(fontSize: 9.sp),
+                            ),
+                          ),
 
-                      /// Right Border
-                      Positioned(
-                        right: 0,
-                        top: 0,
-                        bottom: 0,
-                        child: Container(
-                          width: 2,
-                          color: AppColors.buttonBorderOrange,
-                        ),
-                      ),
+                          /// Right Border
+                          Positioned(
+                            right: 0,
+                            top: 0,
+                            bottom: 0,
+                            child: Container(
+                              width: 2,
+                              color: AppColors.buttonBorderOrange,
+                            ),
+                          ),
 
-                      /// Bottom Border
-                      Positioned(
-                        bottom: 0,
-                        left: 0,
-                        right: 0,
-                        child: Container(
-                          height: 2,
-                          color: AppColors.buttonBorderOrange,
-                        ),
+                          /// Bottom Border
+                          Positioned(
+                            bottom: 0,
+                            left: 0,
+                            right: 0,
+                            child: Container(
+                              height: 2,
+                              color: AppColors.buttonBorderOrange,
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
+                    ),
                   ),
-                ),
               ],
             ),
           ),

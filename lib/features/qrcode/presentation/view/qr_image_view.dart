@@ -166,9 +166,10 @@ class _QrImageViewState extends State<QrImageView> {
               ),
             ),
 
+            // Next button aligned to the right bottom of the screen
             Positioned(
               bottom: 24,
-              right: rightAlignedToRow,
+              right: 24.w,
               child: GameBottomRightButton(
                 text: 'التالي',
                 onTap: () {

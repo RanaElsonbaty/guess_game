@@ -304,16 +304,18 @@ class _OptionsViewState extends State<OptionsView> {
 
                           // Header (painted) + title
                           Positioned(
-                            top: -23,
+                            top: -25,
                             left: 0,
                             child: SizedBox(
                               width: 285.w,
-                              height: 80.h,
-                              child: CustomPaint(painter: HeaderShapePainter()),
+                              height: 85.h,
+                              child: CustomPaint(
+                                painter: HeaderShapePainter(),
+                              ),
                             ),
                           ),
                           Positioned(
-                            top: -13,
+                            top: -20,
                             left: 50,
                             child: Text(
                               '؟',

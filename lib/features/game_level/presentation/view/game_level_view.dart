@@ -334,10 +334,10 @@ class _GameLevelViewState extends State<GameLevelView> {
                   ),
                 ),
 
-                // Start button aligned under the cards row (same as QrcodeView)
+                // Start button aligned to the right bottom of the screen
                 Positioned(
                   bottom: 24,
-                  right: 24.w + math.max(0, ((MediaQuery.sizeOf(context).width - (48.w)) - ((237 * 2 + 92).w)) / 2),
+                  right: 24.w,
                   child: GameBottomRightButton(
                     text: 'ابدأ',
                     onTap: () {

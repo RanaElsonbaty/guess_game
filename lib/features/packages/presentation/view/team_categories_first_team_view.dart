@@ -210,20 +210,20 @@ class _TeamCategoriesFirstTeamViewState extends State<TeamCategoriesFirstTeamVie
                   ),
                 ),
                 /// Header (painted) INSIDE main container
-                Positioned(
-                  top: -23,
-                  left: 0,
-                  child: SizedBox(
-                    width: 285.w,
-                    height: 80.h,
-                    child: CustomPaint(
-                      painter: HeaderShapePainter(),
+                    Positioned(
+                      top: -25,
+                      left: 0,
+                      child: SizedBox(
+                        width: 285.w,
+                        height: 85.h,
+                        child: CustomPaint(
+                          painter: HeaderShapePainter(),
+                        ),
+                      ),
                     ),
-                  ),
-                ),
                 Positioned(
-                  top: -13,
-                  left: 25,
+                  top: -20,
+                  left: 12,
                   child: Text(
                     'فئات الفريق 01',
                     style: TextStyles.font14Secondary700Weight,

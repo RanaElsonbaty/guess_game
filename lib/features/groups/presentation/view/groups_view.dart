@@ -730,10 +730,10 @@ class _GroupsViewState extends State<GroupsView> {
               ),
             ),
 
-            // Start button aligned under the cards row (same as GameLevelView)
+            // Start button aligned to the right bottom of the screen
             Positioned(
               bottom: 24,
-              right: 24.w + math.max(0, ((MediaQuery.sizeOf(context).width - (48.w)) - ((210 * 2 + 80).w)) / 2),
+              right: 24.w,
               child: GestureDetector(
                 onTap: _isStartingGame ? null : () {
                   // طباعة البيانات المختارة

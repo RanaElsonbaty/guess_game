@@ -279,19 +279,19 @@ class _PackagesViewState extends State<PackagesView> with WidgetsBindingObserver
                       ),
                       /// Header (painted) INSIDE main container
                       Positioned(
-                        top: -23,
+                        top: -25,
                         left: 0,
                         child: SizedBox(
-                          width: 260.w,
-                          height: 80.h,
+                          width: 285.w,
+                          height: 85.h,
                           child: CustomPaint(
                             painter: HeaderShapePainter(),
                           ),
                         ),
                       ),
                       Positioned(
-                        top: -13,
-                        left: 25,
+                        top: -20,
+                        left: 35,
                         child: Text(
                           'الباقات',
                           style: TextStyles.font14Secondary700Weight,

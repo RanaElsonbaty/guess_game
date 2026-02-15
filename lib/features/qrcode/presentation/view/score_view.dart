@@ -184,11 +184,10 @@ class _ScoreViewState extends State<ScoreView> {
               ),
             ),
 
-            // Bottom-right button (same size/position style as GameWinnerView)
+            // Next button aligned to the right bottom of the screen
             Positioned(
               bottom: 24,
-              // Align under the score cards row right edge (same as QrcodeView)
-              right: rightAlignedToRow,
+              right: 24.w,
               child: GameBottomRightButton(
                 text: 'التالي',
                 onTap: () {

@@ -244,20 +244,20 @@ class _GameWinnerViewState extends State<GameWinnerView> {
                       ),
 
                       /// Header (painted) INSIDE main container
-                      Positioned(
-                        top: -23,
-                        left: 0,
-                        child: SizedBox(
-                          width: 285.w,
-                          height: 80.h,
-                          child: CustomPaint(
-                            painter: HeaderShapePainter(),
-                          ),
+                    Positioned(
+                      top: -25,
+                      left: 0,
+                      child: SizedBox(
+                        width: 285.w,
+                        height: 85.h,
+                        child: CustomPaint(
+                          painter: HeaderShapePainter(),
                         ),
                       ),
+                    ),
                       Positioned(
-                        top: -13,
-                        left: 25,
+                        top: -20,
+                        left: 35,
                         child: Text(
                           'الفائز؟',
                           style: TextStyles.font14Secondary700Weight,
@@ -320,11 +320,10 @@ class _GameWinnerViewState extends State<GameWinnerView> {
               child: GameDrawerIcon(),
             ),
 
-            // Next button (bottom right)
+            // Next button aligned to the right bottom of the screen
             Positioned(
-              // Slightly closer to the main card, and aligned under the card's right edge.
               bottom: 24,
-              right: 70.w,
+              right: 24.w,
               child: GameBottomRightButton(
                 text: 'التالي',
                 onTap: () {

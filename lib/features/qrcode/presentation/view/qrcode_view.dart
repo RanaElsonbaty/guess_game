@@ -202,10 +202,10 @@ class _QrcodeViewState extends State<QrcodeView> {
               ),
             ),
 
+            // Next button aligned to the right bottom of the screen
             Positioned(
               bottom: 24,
-              // Align the button under the content row's right edge (matches the reference layout).
-              right: rightAlignedToRow,
+              right: 24.w,
               child: GameBottomRightButton(
                 text: 'التالي',
                 onTap: _isSubmitting

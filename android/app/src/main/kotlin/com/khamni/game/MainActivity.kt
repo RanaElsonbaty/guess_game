@@ -1,4 +1,4 @@
-package com.example.guess_game
+package com.khamni.game
 
 import android.content.ActivityNotFoundException
 import android.content.Intent

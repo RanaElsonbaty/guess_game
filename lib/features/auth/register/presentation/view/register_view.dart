@@ -89,7 +89,6 @@ class _RegisterViewState extends State<RegisterView> {
                             margin: EdgeInsets.fromLTRB(20.w, 40.h, 20.w, 20.h),
                             decoration: BoxDecoration(
                               color: Colors.white.withOpacity(0.9),
-                              borderRadius: BorderRadius.circular(20.r),
                               boxShadow: [
                                 BoxShadow(
                                   color: Colors.black.withOpacity(0.1),
@@ -103,11 +102,11 @@ class _RegisterViewState extends State<RegisterView> {
                                 children: [
                                   /// Header (painted) INSIDE main container
                                   Positioned(
-                                    top: -23,
+                                    top: -25,
                                     left: 0,
                                     child: SizedBox(
                                       width: 285.w,
-                                      height: 80.h,
+                                      height: 85.h,
                                       child: CustomPaint(
                                         painter: HeaderShapePainter(),
                                       ),
@@ -115,7 +114,7 @@ class _RegisterViewState extends State<RegisterView> {
                                   ),
 
                                   Positioned(
-                                    top: -13,
+                                    top: -22,
                                     left: 25,
                                     child: Text(
                                       'إنشاء حساب',

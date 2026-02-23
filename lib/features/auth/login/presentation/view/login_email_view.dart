@@ -88,7 +88,6 @@ class _LoginEmailViewState extends State<LoginEmailView> {
                           margin: EdgeInsets.symmetric(horizontal: 20.w, vertical: 20.h),
                           decoration: BoxDecoration(
                             color: Colors.white.withOpacity(0.9),
-                            borderRadius: BorderRadius.circular(20.r),
                             boxShadow: [
                               BoxShadow(
                                 color: Colors.black.withOpacity(0.1),
@@ -102,11 +101,11 @@ class _LoginEmailViewState extends State<LoginEmailView> {
                             children: [
                               /// Header (painted) INSIDE main container
                               Positioned(
-                                top: -23,
+                                top: -25,
                                 left: 0,
                                 child: SizedBox(
                                   width: 285.w,
-                                  height: 80.h,
+                                  height: 85.h,
                                   child: CustomPaint(
                                     painter: HeaderShapePainter(),
                                   ),
@@ -114,8 +113,8 @@ class _LoginEmailViewState extends State<LoginEmailView> {
                               ),
 
                               Positioned(
-                                top: -13,
-                                left: 25,
+                                top: -22,
+                                left: 14,
                                 child: Text(
                                   'تسجيل الدخول',
                                   style: TextStyles.font14Secondary700Weight,
